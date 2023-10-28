@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	client *redis.Client
+	Client *redis.Client
 )
 
 func connectRedis() {
@@ -22,6 +22,6 @@ func connectRedis() {
 		return
 	}
 
-	client = redis.NewClient(opt)
+	Client = redis.NewClient(opt)
 	logger.Info("connected to redis successfully")
 }

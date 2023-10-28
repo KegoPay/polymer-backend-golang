@@ -2,6 +2,7 @@ package logger
 
 import (
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type LoggerOptions struct{
@@ -13,20 +14,20 @@ type LoggerOptions struct{
 //
 // Only the first parameter will be accepted.
 func Info(msg string, payload ...LoggerOptions) {
-	if (len(payload) > 0){
-		Logger.Info(msg, zap.Any(payload[0].Key, payload[0].Data))
-	}else {
-		Logger.Info(msg)
+	zapFields := []zapcore.Field{}
+	for _, data := range payload{
+		zapFields = append(zapFields, zap.Any(data.Key, data.Data))
 	}
+	Logger.Info(msg, zapFields...)
 }
 
 // This logs error messages.
 //
 // Only the first parameter will be accepted.
 func Error(err error, payload ...LoggerOptions) {
-	if (len(payload) > 0){
-		Logger.Error(err.Error(), zap.Any(payload[0].Key, payload[0].Data))
-	}else {
-		Logger.Error(err.Error())
+	zapFields := []zapcore.Field{}
+	for _, data := range payload{
+		zapFields = append(zapFields, zap.Any(data.Key, data.Data))
 	}
+	Logger.Error(err.Error(), zapFields...)
 }
