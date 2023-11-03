@@ -2,27 +2,25 @@ package mongo
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"reflect"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"kego.com/infrastructure/database"
 	"kego.com/infrastructure/logger"
 )
 
 func (repo *MongoRepository[T]) CreateOne(payload T, opts ...*options.InsertOneOptions) (*T, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
-	parsed_payload := parsePayload(payload)
-	_, err := repo.Model.InsertOne(c, parsed_payload, opts...)
+	parsedPayload := interface{}(payload).(database.BaseModel).ParseModel()
+	_, err := repo.Model.InsertOne(c, parsedPayload, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running CreateOne"), logger.LoggerOptions{
 			Key: "error",
@@ -34,21 +32,18 @@ func (repo *MongoRepository[T]) CreateOne(payload T, opts ...*options.InsertOneO
 		return nil, err
 	}
 	logger.Info("mongo CreateOne complete")
-	return parsed_payload, err
+	return parsedPayload.(*T), err
 }
 
 func (repo *MongoRepository[T]) CreateBulk(payload []T, opts ...*options.InsertManyOptions) (*[]string, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
-	parsed_payload := parseMultiple(payload)
 	marshaled := []interface{}{}
-	for _, i := range parsed_payload {
-		interface{}(i).(ModelMethods).MarshalBSON()
-		interface{}(i).(ModelMethods).MarshalBinary()
-		marshaled = append(marshaled, i)
+	for _, i := range payload {
+		marshaled = append(marshaled, interface{}(i).(database.BaseModel).ParseModel())
 	}
 	response, err := repo.Model.InsertMany(c, marshaled, opts...)
 	if err != nil {
@@ -69,18 +64,15 @@ func (repo *MongoRepository[T]) CreateBulk(payload []T, opts ...*options.InsertM
 	return &ids, err
 }
 
-func (repo *MongoRepository[T]) CreateBulkAndReturnPayload(payload []T, opts ...*options.InsertManyOptions) ([]*T, error) {
-	c, cancel := createCtx()
+func (repo *MongoRepository[T]) CreateBulkAndReturnPayload(payload []T, opts ...*options.InsertManyOptions) (*[]T, error) {
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
-	parsed_payload := parseMultiple(payload)
 	marshaled := []interface{}{}
-	for _, i := range parsed_payload {
-		interface{}(i).(ModelMethods).MarshalBSON()
-		interface{}(i).(ModelMethods).MarshalBinary()
-		marshaled = append(marshaled, i)
+	for _, i := range payload {
+		marshaled = append(marshaled, interface{}(i).(database.BaseModel).ParseModel())
 	}
 	_, err := repo.Model.InsertMany(c, marshaled, opts...)
 	if err != nil {
@@ -94,18 +86,17 @@ func (repo *MongoRepository[T]) CreateBulkAndReturnPayload(payload []T, opts ...
 		return nil, err
 	}
 	logger.Info("CreateBulkAndReturnPayload complete")
-	return parsed_payload, err
+	return &payload, err
 }
 
 func (repo *MongoRepository[T]) FindOneByFilter(filter map[string]interface{}, opts ...*options.FindOneOptions) (*T, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 	var result T
-	f := parseFilter(filter)
-	doc := repo.Model.FindOne(c, f, opts...)
+	doc := repo.Model.FindOne(c, filter, opts...)
 	err := doc.Decode(&result)
 	if err != nil {
 		if err.Error() == "mongo: no documents in result" {
@@ -125,14 +116,13 @@ func (repo *MongoRepository[T]) FindOneByFilter(filter map[string]interface{}, o
 }
 
 func (repo *MongoRepository[T]) FindMany(filter map[string]interface{}, opts ...*options.FindOptions) (*[]T, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 	var result []T
-	f := parseFilter(filter)
-	cursor, err := repo.Model.Find(c, f, opts...)
+	cursor, err := repo.Model.Find(c, filter, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -157,14 +147,13 @@ func (repo *MongoRepository[T]) FindMany(filter map[string]interface{}, opts ...
 // FindManyStripped
 // Strips all unneeded parts of the payload that does is nil
 func (repo *MongoRepository[T]) FindManyStripped(filter map[string]interface{}, opts ...*options.FindOptions) (*[]map[string]interface{}, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 	var result []map[string]interface{}
-	f := parseFilter(filter)
-	cursor, err := repo.Model.Find(c, f, opts...)
+	cursor, err := repo.Model.Find(c, filter, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -187,14 +176,13 @@ func (repo *MongoRepository[T]) FindManyStripped(filter map[string]interface{}, 
 }
 
 func (repo *MongoRepository[T]) FindByID(id string, opts ...*options.FindOneOptions) (*T, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 	var result T
-	i := parseStringToMongoID(&id)
-	err := repo.Model.FindOne(c, bson.M{"_id": i}, opts...).Decode(&result)
+	err := repo.Model.FindOne(c, bson.M{"_id": id}, opts...).Decode(&result)
 	if err != nil {
 		if err.Error() == "mongo: no documents in result" {
 			return nil, nil
@@ -213,13 +201,12 @@ func (repo *MongoRepository[T]) FindByID(id string, opts ...*options.FindOneOpti
 }
 
 func (repo *MongoRepository[T]) CountDocs(filter map[string]interface{}, opts ...*options.CountOptions) (int64, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
-	cc := parseFilter(filter)
-	count, err := repo.Model.CountDocuments(c, cc, opts...)
+	count, err := repo.Model.CountDocuments(c, filter, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running CountDocs"), logger.LoggerOptions{
 			Key: "error",
@@ -235,7 +222,7 @@ func (repo *MongoRepository[T]) CountDocs(filter map[string]interface{}, opts ..
 }
 
 func (repo *MongoRepository[T]) FindLast(opts ...*options.FindOptions) (*T, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
@@ -255,13 +242,13 @@ func (repo *MongoRepository[T]) FindLast(opts ...*options.FindOptions) (*T, erro
 }
 
 func (repo *MongoRepository[T]) DeleteOne(filter map[string]interface{}) (bool, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 
-	_, err := repo.Model.DeleteOne(c, parseFilter(filter))
+	_, err := repo.Model.DeleteOne(c, filter)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running DeleteOne"), logger.LoggerOptions{
 			Key: "error",
@@ -277,13 +264,13 @@ func (repo *MongoRepository[T]) DeleteOne(filter map[string]interface{}) (bool, 
 }
 
 func (repo *MongoRepository[T]) DeleteByID(id string) (bool, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 
-	_, err := repo.Model.DeleteOne(c, bson.M{"_id": parseStringToMongoID(&id)})
+	_, err := repo.Model.DeleteOne(c, bson.M{"_id": &id})
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running DeleteByID"), logger.LoggerOptions{
 			Key: "error",
@@ -299,7 +286,7 @@ func (repo *MongoRepository[T]) DeleteByID(id string) (bool, error) {
 }
 
 func (repo *MongoRepository[T]) DeleteMany(filter map[string]interface{}) (int64, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 	defer func() {
 		cancel()
 	}()
@@ -320,13 +307,13 @@ func (repo *MongoRepository[T]) DeleteMany(filter map[string]interface{}) (int64
 }
 
 func (repo *MongoRepository[T]) UpdateByField(filter map[string]interface{}, payload *T, opts ...*options.UpdateOptions) (bool, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 
-	_, err := repo.Model.UpdateOne(c, parseFilter(filter), payload, opts...)
+	_, err := repo.Model.UpdateOne(c, filter, payload, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdateByField"), logger.LoggerOptions{
 			Key: "error",
@@ -342,7 +329,7 @@ func (repo *MongoRepository[T]) UpdateByField(filter map[string]interface{}, pay
 }
 
 func (repo *MongoRepository[T]) UpdateWithOperator(filter map[string]interface{}, payload map[string]interface{}, opts ...*options.UpdateOptions) (bool, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
@@ -364,7 +351,7 @@ func (repo *MongoRepository[T]) UpdateWithOperator(filter map[string]interface{}
 }
 
 func (repo *MongoRepository[T]) UpdateManyWithOperator(filter map[string]interface{}, payload map[string]interface{}, opts ...*options.UpdateOptions) (bool, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
@@ -386,13 +373,13 @@ func (repo *MongoRepository[T]) UpdateManyWithOperator(filter map[string]interfa
 }
 
 func (repo *MongoRepository[T]) UpdateOrCreateByField(filter map[string]interface{}, payload map[string]interface{}, opts ...*options.UpdateOptions) (bool, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 
-	_, err := repo.Model.UpdateOne(c, parseFilter(filter), bson.D{primitive.E{Key: "$set", Value: payload}}, opts...)
+	_, err := repo.Model.UpdateOne(c, filter, bson.D{primitive.E{Key: "$set", Value: payload}}, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdateOrCreateByField"), logger.LoggerOptions{
 			Key: "error",
@@ -408,13 +395,13 @@ func (repo *MongoRepository[T]) UpdateOrCreateByField(filter map[string]interfac
 }
 
 func (repo *MongoRepository[T]) UpdateOrCreateByFieldAndReturn(filter map[string]interface{}, payload T, opts ...*options.UpdateOptions) (*string, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 
-	result, err := repo.Model.UpdateOne(c, parseFilter(filter), bson.D{primitive.E{Key: "$set", Value: &payload}}, opts...)
+	result, err := repo.Model.UpdateOne(c, filter, bson.D{primitive.E{Key: "$set", Value: &payload}}, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdateOrCreateByFieldAndReturn"), logger.LoggerOptions{
 			Key: "error",
@@ -434,13 +421,13 @@ func (repo *MongoRepository[T]) UpdateOrCreateByFieldAndReturn(filter map[string
 }
 
 func (repo *MongoRepository[T]) UpdateByID(id string, payload *T, opts ...*options.UpdateOptions) (bool, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 
-	_, err := repo.Model.UpdateByID(c, parseStringToMongoID(&id), bson.D{primitive.E{Key: "$set", Value: *payload}}, opts...)
+	_, err := repo.Model.UpdateByID(c, id, bson.D{primitive.E{Key: "$set", Value: *payload}}, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdateByID"), logger.LoggerOptions{
 			Key: "error",
@@ -456,13 +443,13 @@ func (repo *MongoRepository[T]) UpdateByID(id string, payload *T, opts ...*optio
 }
 
 func (repo *MongoRepository[T]) UpdatePartialByID(id string, payload interface{}, opts ...*options.UpdateOptions) (bool, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 
-	_, err := repo.Model.UpdateByID(c, parseStringToMongoID(&id), bson.D{primitive.E{Key: "$set", Value: payload}}, opts...)
+	_, err := repo.Model.UpdateByID(c, id, bson.D{primitive.E{Key: "$set", Value: payload}}, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdatePartialByID"), logger.LoggerOptions{
 			Key: "error",
@@ -478,7 +465,7 @@ func (repo *MongoRepository[T]) UpdatePartialByID(id string, payload interface{}
 }
 
 func (repo *MongoRepository[T]) UpdatePartialByFilter(filter map[string]interface{}, payload interface{}, opts ...*options.UpdateOptions) (bool, error) {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
@@ -500,7 +487,7 @@ func (repo *MongoRepository[T]) UpdatePartialByFilter(filter map[string]interfac
 }
 
 func (repo MongoRepository[T]) StartTransaction(payload func(sc *mongo.SessionContext, c *context.Context) error) error {
-	c, cancel := createCtx()
+	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
@@ -522,53 +509,10 @@ func (repo MongoRepository[T]) StartTransaction(payload func(sc *mongo.SessionCo
 	return nil
 }
 
-func parseFilter(f interface{}) interface{} {
-	filter := (f).(map[string]interface{})
-	if filter["_id"] != nil && reflect.TypeOf(filter["_id"]).String() == "string" {
-		id := fmt.Sprintf("%v", filter["_id"])
-		filter["_id"] = parseStringToMongoID(&id)
-	}
-	return filter
-}
-
-func createCtx() (context.Context, context.CancelFunc) {
+func (repo *MongoRepository[T]) createCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 15*time.Second)
 }
 
-func parsePayload[T MongoModels](payload T) *T {
-	byteA := dataToByteArray(payload)
-	payload_map := *byteArrayToData[map[string]interface{}](byteA)
-	if payload_map["Id"] == "000000000000000000000000" {
-		payload_map["id"] = primitive.NewObjectID()
-	} else if payload_map["Id"] != nil {
-		payload_map["id"] = parseStringToMongoID(payload_map["Id"].(*string))
-	} else if payload_map["Id"] == nil {
-		payload_map["id"] = primitive.NewObjectID()
-	}
-	return byteArrayToData[T](dataToByteArray(payload_map))
-}
-
-func parseMultiple[T MongoModels](payload []T) []*T {
-	var result []*T
-	for _, data := range payload {
-		result = append(result, parsePayload(data))
-	}
-	return result
-}
-
-// turns a byte array to the specified generic type
-func byteArrayToData[T interface{}](payload []byte) *T {
-	var data T
-	json.Unmarshal(payload, &data)
-	return &data
-}
-
-func dataToByteArray(payload interface{}) []byte {
-	data, _ := json.Marshal(payload)
-	return data
-}
-
-func parseStringToMongoID(id *string) primitive.ObjectID {
-	objId, _ := primitive.ObjectIDFromHex(*id)
-	return objId
-}
+// func (repo *MongoRepository[T])  marshalBSON(payload T) ([]byte, error) {
+	
+// }

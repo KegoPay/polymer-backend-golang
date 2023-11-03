@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -28,7 +29,7 @@ func (redisRepo *RedisRepository) CreateEntry(key string, payload interface{}, t
 
 	_, err := redisRepo.Clinet.Set(c, key, payload, ttl).Result()
 	if err != nil {
-		logger.Info("redis error occured while running CreateEntry", logger.LoggerOptions{
+		logger.Error(errors.New("redis error occured while running CreateEntry"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,
 		}, logger.LoggerOptions{
@@ -55,7 +56,7 @@ func (redisRepo *RedisRepository) FindOne(key string) *string {
 		if err.Error() == "redis: nil" {
 			return nil
 		}
-		logger.Info("redis error occured while running FindOne", logger.LoggerOptions{
+		logger.Error(errors.New("redis error occured while running FindOne"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,
 		}, logger.LoggerOptions{
@@ -76,7 +77,7 @@ func (redisRepo *RedisRepository) DeleteOne(key string) bool {
 	result, err := redisRepo.Clinet.Del(c, key).Result()
 
 	if err != nil {
-		logger.Info("redis error occured while running DeleteOne", logger.LoggerOptions{
+		logger.Error(errors.New("redis error occured while running DeleteOne"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,
 		}, logger.LoggerOptions{
@@ -102,7 +103,7 @@ func (redisRepo *RedisRepository) CreateInSet(key string, score float64, member 
 	})
 
 	if err := added.Err(); err != nil {
-		logger.Info("redis error occured while running CreateInSet", logger.LoggerOptions{
+		logger.Error(errors.New("redis error occured while running CreateInSet"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,
 		}, logger.LoggerOptions{
@@ -128,7 +129,7 @@ func (redisRepo *RedisRepository) FindSet(key string) *[]string {
 
 	result := redisRepo.Clinet.ZRange(c, key, 0, -1)
 	if err := result.Err(); err != nil {
-		logger.Info("redis error occured while running FindSet", logger.LoggerOptions{
+		logger.Error(errors.New("redis error occured while running FindSet"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,
 		}, logger.LoggerOptions{

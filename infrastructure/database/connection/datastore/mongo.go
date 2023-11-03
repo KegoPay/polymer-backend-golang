@@ -6,13 +6,14 @@ import (
 	"os"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"kego.com/infrastructure/logger"
 )
 
 var (
-	// db models here
+	UserModel *mongo.Collection
 )
 
 func connectMongo() *context.CancelFunc {
@@ -28,7 +29,7 @@ func connectMongo() *context.CancelFunc {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(url))
 
 	if err != nil {
-		logger.Error(errors.New("an error occured while starting the database"), logger.LoggerOptions{Key: "error", Data: err})
+		logger.Warning("an error occured while starting the database", logger.LoggerOptions{Key: "error", Data: err})
 		return &cancel
 	}
 
@@ -41,5 +42,17 @@ func connectMongo() *context.CancelFunc {
 
 // Set up the indexes for the database
 func setUpIndexes(ctx context.Context, db *mongo.Database) {
+	UserModel = db.Collection("Users")
+	UserModel.Indexes().CreateMany(ctx, []mongo.IndexModel{{
+		Keys:    bson.D{{Key: "email", Value: 1}},
+		Options: options.Index().SetUnique(true).SetSparse(true),
+	}, {
+		Keys:    bson.D{{Key: "phone", Value: 1}},
+		Options: options.Index().SetUnique(true).SetSparse(true),
+	},{
+		Keys:    bson.D{{Key: "id", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	}})
+	
 	logger.Info("mongodb indexes set up successfully")
 }

@@ -11,8 +11,6 @@ type LoggerOptions struct{
 }
 
 // This logs info level messages.
-//
-// Only the first parameter will be accepted.
 func Info(msg string, payload ...LoggerOptions) {
 	zapFields := []zapcore.Field{}
 	for _, data := range payload{
@@ -22,12 +20,19 @@ func Info(msg string, payload ...LoggerOptions) {
 }
 
 // This logs error messages.
-//
-// Only the first parameter will be accepted.
 func Error(err error, payload ...LoggerOptions) {
 	zapFields := []zapcore.Field{}
 	for _, data := range payload{
 		zapFields = append(zapFields, zap.Any(data.Key, data.Data))
 	}
 	Logger.Error(err.Error(), zapFields...)
+}
+
+// This logs warning messages.
+func Warning(msg string, payload ...LoggerOptions) {
+	zapFields := []zapcore.Field{}
+	for _, data := range payload{
+		zapFields = append(zapFields, zap.Any(data.Key, data.Data))
+	}
+	Logger.Warn(msg, zapFields...)
 }
