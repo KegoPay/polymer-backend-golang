@@ -3,6 +3,8 @@ package mongo
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,6 +31,9 @@ func (repo *MongoRepository[T]) CreateOne(payload T, opts ...*options.InsertOneO
 			Key: "payload",
 			Data: payload,
 		})
+		if errParts := strings.Split(err.Error(), "E11000 duplicate key error collection:"); len(errParts) == 2 {
+			return nil, fmt.Errorf("%s already exists", repo.Model.Name())
+		}
 		return nil, err
 	}
 	logger.Info("mongo CreateOne complete")

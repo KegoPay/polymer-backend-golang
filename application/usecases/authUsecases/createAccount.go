@@ -23,5 +23,9 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, error){
 	}
 	payload.Password = string(passwordHash)
 	result, err := repository.UserRepo().CreateOne(*payload)
+	if err != nil {
+		apperrors.ValidationFailedError(ctx, &[]error{err})
+		return nil, err
+	}
 	return result, err
 }
