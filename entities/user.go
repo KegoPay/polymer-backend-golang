@@ -7,8 +7,8 @@ import (
 )
 
 type User struct {
-	Email       *string      `bson:"email" json:"email,omitempty" validate:"omitempty,email"`
-	Phone       *PhoneNumber `bson:"phone" json:"phone,omitempty"`
+	Email       *string      `bson:"email" json:"email,omitempty" validate:"exclusive_email_phone,omitempty,email"`
+	Phone       *PhoneNumber `bson:"phone" json:"phone,omitempty" validate:"exclusive_email_phone,omitempty"`
 	Password    string       `bson:"password" json:"-" validate:"password"`
 
 	ID          string       `bson:"_id" json:"id"`
