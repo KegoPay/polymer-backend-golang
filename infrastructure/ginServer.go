@@ -34,6 +34,7 @@ func (s *ginServer)Start(){
 		routerV1 := v1.Group("/v1")
 		{
 			authroutev1.AuthRouter(routerV1)
+			authroutev1.InfoRouter(routerV1)
 		}
 	}
 
