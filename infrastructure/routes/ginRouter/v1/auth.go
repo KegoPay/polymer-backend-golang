@@ -6,6 +6,7 @@ import (
 	"kego.com/application/controllers"
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
+	"kego.com/entities"
 )
 
 
@@ -18,6 +19,8 @@ func AuthRouter(router *gin.RouterGroup) {
 				apperrors.ErrorProcessingPayload(ctx)
 				return
 			}
+			body.DeviceID = ctx.GetHeader("KEGO_DEVICE_ID")
+			body.DeviceType = entities.DeviceType(ctx.GetHeader("KEGO_DEVICE_TYPE"))
 			controllers.CreateAccount(&interfaces.ApplicationContext[dto.CreateAccountDTO]{
 				Keys: ctx.Keys,
 				Ctx: ctx,

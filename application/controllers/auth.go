@@ -15,6 +15,11 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]){
 		Email: ctx.Body.Email,
 		Phone: ctx.Body.Phone,
 		Password: ctx.Body.Password,
+		TransactionPin: ctx.Body.TransactionPin,
+		DeviceType: ctx.Body.DeviceType,
+		DeviceID: ctx.Body.DeviceID,
+		FirstName: ctx.Body.FirstName,
+		LastName: ctx.Body.LastName,
 	})
 	if err != nil {
 		return
