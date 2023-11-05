@@ -35,6 +35,7 @@ func (s *ginServer)Start(){
 		{
 			authroutev1.AuthRouter(routerV1)
 			authroutev1.InfoRouter(routerV1)
+			authroutev1.UserRouter(routerV1)
 		}
 	}
 

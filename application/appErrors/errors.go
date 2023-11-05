@@ -31,3 +31,8 @@ func ExternalDependencyError(ctx interface{}, serviceName string, statusCode str
 func ErrorProcessingPayload(ctx interface{}){
 	server_response.Responder.Respond(ctx, http.StatusBadRequest, "abnormal payload passed", nil, nil)
 }
+
+func FatalServerError(ctx interface{}){
+	server_response.Responder.Respond(ctx, http.StatusInternalServerError,
+		"Oops! Our service is temporarily down. Our team working to fix it. Please check back later.", nil, nil)
+}
