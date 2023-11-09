@@ -36,7 +36,7 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, error){
 	}
 	result, err := repository.UserRepo().CreateOne(*payload)
 	if err != nil {
-		apperrors.ValidationFailedError(ctx, &[]error{err})
+		apperrors.EntityAlreadyExistsError(ctx, err.Error())
 		return nil, err
 	}
 	return result, err

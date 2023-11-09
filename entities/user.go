@@ -13,7 +13,7 @@ type User struct {
 	Phone             *PhoneNumber `bson:"phone" json:"phone,omitempty" validate:"exclusive_email_phone,omitempty"`
 	// BVN               string       `bson:"bvn" json:"bvn"`
 	Password          string       `bson:"password" json:"-" validate:"password"`
-	TransactionPin    string       `bson:"transactionPin" json:"transactionPin" validate:"password"`
+	TransactionPin    string       `bson:"transactionPin" json:"-" validate:"password"`
 	DeviceType        DeviceType   `bson:"deviceType" json:"deviceType" validate:"required,oneof=android ios"`
 	DeviceID          string       `bson:"deviceID" json:"deviceID" validate:"required"`
 	// AccountVerified   bool         `bson:"accountVerified" json:"accountVerified"`

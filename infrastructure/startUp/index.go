@@ -1,7 +1,7 @@
 package startup
 
 import (
-	"kego.com/infrastructure/database/connection/cache"
+	"kego.com/infrastructure/database"
 	"kego.com/infrastructure/database/connection/datastore"
 	"kego.com/infrastructure/logger"
 )
@@ -10,10 +10,8 @@ import (
 func StartServices(){
 	// initialise logger module
 	logger.InitializeLogger()
-	// connect to database
-	datastore.ConnectToDatabase()
-	// connect to cache
-	cache.ConnectToCache()
+	// set up databases
+	database.SetUpDatabase()
 }
 
 // Used to clean up after services that have been shutdown.

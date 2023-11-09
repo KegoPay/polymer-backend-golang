@@ -1,4 +1,4 @@
-package redis
+package cache
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	RedisRepo RedisRepository
+	redisRepo RedisRepository
 )
 
 type RedisRepository struct {
@@ -23,10 +23,17 @@ func generateContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 15*time.Second)
 }
 
+func (redisRepo *RedisRepository) preRequest(){
+	if redisRepo.Clinet == nil {
+		redisRepo.Clinet = redisClient.Client
+		logger.Info("redis repository initialisation complete")
+	}
+}
+
 func (redisRepo *RedisRepository) CreateEntry(key string, payload interface{}, ttl time.Duration) bool {
+	redisRepo.preRequest()
 	c, cancel := generateContext()
 	defer cancel()
-
 	_, err := redisRepo.Clinet.Set(c, key, payload, ttl).Result()
 	if err != nil {
 		logger.Error(errors.New("redis error occured while running CreateEntry"), logger.LoggerOptions{
@@ -47,6 +54,7 @@ func (redisRepo *RedisRepository) CreateEntry(key string, payload interface{}, t
 }
 
 func (redisRepo *RedisRepository) FindOne(key string) *string {
+	redisRepo.preRequest()
 	c, cancel := generateContext()
 	defer cancel()
 
@@ -71,6 +79,7 @@ func (redisRepo *RedisRepository) FindOne(key string) *string {
 }
 
 func (redisRepo *RedisRepository) DeleteOne(key string) bool {
+	redisRepo.preRequest()
 	c, cancel := generateContext()
 	defer cancel()
 
@@ -95,6 +104,7 @@ func (redisRepo *RedisRepository) DeleteOne(key string) bool {
 }
 
 func (redisRepo *RedisRepository) CreateInSet(key string, score float64, member interface{}) bool {
+	redisRepo.preRequest()
 	c, cancel := generateContext()
 	defer cancel()
 
@@ -124,6 +134,7 @@ func (redisRepo *RedisRepository) CreateInSet(key string, score float64, member 
 }
 
 func (redisRepo *RedisRepository) FindSet(key string) *[]string {
+	redisRepo.preRequest()
 	c, cancel := generateContext()
 	defer cancel()
 
@@ -145,9 +156,4 @@ func (redisRepo *RedisRepository) FindSet(key string) *[]string {
 	logger.Info("redis FindSet completed")
 	val := result.Val()
 	return &val
-}
-
-func SetUpRedisRepo() {
-	RedisRepo = RedisRepository{Clinet: redisClient.Client}
-	logger.Info("redis repository initialisation complete")
 }

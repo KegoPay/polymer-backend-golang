@@ -20,6 +20,10 @@ func EntityAlreadyExistsError(ctx interface{}, message string){
 	server_response.Responder.Respond(ctx, http. StatusConflict, message, nil, nil)
 }
 
+func AuthenticationError(ctx interface{}, message string){
+	server_response.Responder.Respond(ctx, http. StatusConflict, message, nil, nil)
+}
+
 func ExternalDependencyError(ctx interface{}, serviceName string, statusCode string, err error) {
 	logger.Error(err, logger.LoggerOptions{
 		Key: fmt.Sprintf("error with %s. status code %s", serviceName, statusCode),

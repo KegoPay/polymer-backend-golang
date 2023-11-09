@@ -14,7 +14,7 @@ import (
 
 func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 	userRepo := repository.UserRepo()
-	user, err := userRepo.FindByID(ctx.GetStringContextData("USER_ID"))
+	user, err := userRepo.FindByID(ctx.GetStringContextData("UserID"))
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx)
 		return
@@ -23,5 +23,5 @@ func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("This user profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "countries fetched", user, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "profile fetched", user, nil)
 }
