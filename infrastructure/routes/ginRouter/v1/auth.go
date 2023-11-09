@@ -22,7 +22,18 @@ func AuthRouter(router *gin.RouterGroup) {
 			body.DeviceID = ctx.GetHeader("KEGO_DEVICE_ID")
 			body.DeviceType = entities.DeviceType(ctx.GetHeader("KEGO_DEVICE_TYPE"))
 			controllers.CreateAccount(&interfaces.ApplicationContext[dto.CreateAccountDTO]{
-				Keys: ctx.Keys,
+				Ctx: ctx,
+				Body: &body,
+			})
+		})
+
+		authRouter.POST("/account/login", func(ctx *gin.Context) {
+			var body dto.LoginDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			controllers.LoginUser(&interfaces.ApplicationContext[dto.LoginDTO]{
 				Ctx: ctx,
 				Body: &body,
 			})

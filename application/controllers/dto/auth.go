@@ -12,3 +12,9 @@ type CreateAccountDTO struct {
 	DeviceID   string                 `json:"deviceID"`
 	TransactionPin   string           `json:"transactionPin"`
 }
+
+type LoginDTO struct {
+	Email      *string                `json:"email,omitempty"`
+	Phone      *string  			  `json:"phone,omitempty"`
+	Password   string                 `json:"password"`
+}

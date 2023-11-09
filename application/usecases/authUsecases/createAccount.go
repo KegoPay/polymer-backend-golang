@@ -4,9 +4,9 @@ import (
 	"errors"
 
 	apperrors "kego.com/application/appErrors"
-	"kego.com/application/cryptography"
 	"kego.com/application/repository"
 	"kego.com/entities"
+	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/validator"
 )
 

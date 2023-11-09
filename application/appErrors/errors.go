@@ -17,11 +17,11 @@ func ValidationFailedError(ctx interface{}, errMessages *[]error){
 }
 
 func EntityAlreadyExistsError(ctx interface{}, message string){
-	server_response.Responder.Respond(ctx, http. StatusConflict, message, nil, nil)
+	server_response.Responder.Respond(ctx, http.StatusConflict, message, nil, nil)
 }
 
 func AuthenticationError(ctx interface{}, message string){
-	server_response.Responder.Respond(ctx, http. StatusConflict, message, nil, nil)
+	server_response.Responder.Respond(ctx, http.StatusUnauthorized, message, nil, nil)
 }
 
 func ExternalDependencyError(ctx interface{}, serviceName string, statusCode string, err error) {

@@ -42,3 +42,14 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 		"token":   token,
 	}, nil)
 }
+
+func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
+	account, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password)
+	if account == nil || token == nil {
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "login successful", map[string]interface{}{
+		"account": account,
+		"token":   token,
+	}, nil)
+}
