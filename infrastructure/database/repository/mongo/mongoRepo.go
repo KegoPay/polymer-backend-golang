@@ -15,14 +15,21 @@ import (
 	"kego.com/infrastructure/logger"
 )
 
-func (repo *MongoRepository[T]) CreateOne(payload T, opts ...*options.InsertOneOptions) (*T, error) {
-	c, cancel := repo.createCtx()
+func (repo *MongoRepository[T]) CreateOne(ctx *context.Context, payload T, opts ...*options.InsertOneOptions) (*T, error) {
+	var cancel context.CancelFunc
+	if ctx == nil {
+		c, ctxCancel := repo.createCtx()
+		ctx = &c
+		cancel = ctxCancel
+	}
 
 	defer func() {
-		cancel()
+		if cancel != nil {
+			cancel()
+		}
 	}()
 	parsedPayload := interface{}(payload).(database.BaseModel).ParseModel()
-	_, err := repo.Model.InsertOne(c, parsedPayload, opts...)
+	_, err := repo.Model.InsertOne(*ctx, parsedPayload, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running CreateOne"), logger.LoggerOptions{
 			Key: "error",

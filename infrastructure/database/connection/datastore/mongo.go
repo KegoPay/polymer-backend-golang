@@ -14,6 +14,8 @@ import (
 
 var (
 	UserModel *mongo.Collection
+	WalletModel *mongo.Collection
+	BusinessModel *mongo.Collection
 )
 
 func connectMongo() *context.CancelFunc {
@@ -50,8 +52,33 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 		Keys:    bson.D{{Key: "phone", Value: 1}},
 		Options: options.Index().SetUnique(true).SetSparse(true),
 	},{
-		Keys:    bson.D{{Key: "id", Value: 1}},
+		Keys:    bson.D{{Key: "_id", Value: 1}},
 		Options: options.Index().SetUnique(true),
+	}})
+
+	WalletModel = db.Collection("Wallets")
+	WalletModel.Indexes().CreateMany(ctx, []mongo.IndexModel{{
+		Keys:    bson.D{{Key: "businessID", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	},{
+		Keys:    bson.D{{Key: "_id", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	},{
+		Keys:    bson.D{{Key: "userID", Value: 1}},
+		Options: options.Index(),
+	}})
+
+
+	BusinessModel = db.Collection("Businesses")
+	BusinessModel.Indexes().CreateMany(ctx, []mongo.IndexModel{{
+		Keys:    bson.D{{Key: "walletID", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	},{
+		Keys:    bson.D{{Key: "_id", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	},{
+		Keys:    bson.D{{Key: "userID", Value: 1}},
+		Options: options.Index(),
 	}})
 	
 	logger.Info("mongodb indexes set up successfully")

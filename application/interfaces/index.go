@@ -1,7 +1,5 @@
 package interfaces
 
-import "fmt"
-
 type ApplicationContext[T interface{}] struct{
 	Body *T
 	Keys map[string]any
@@ -19,7 +17,6 @@ func (ac *ApplicationContext[T]) SetContextData(key string, data any) {
 		ac.Keys = map[string]any{}
 	}
 	ac.Keys[key] = data
-	fmt.Println(ac.Keys)
 }
 
 func (ac *ApplicationContext[T]) GetStringContextData(key string) (value string) {

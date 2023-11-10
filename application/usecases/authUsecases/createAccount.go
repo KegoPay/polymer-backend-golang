@@ -34,7 +34,7 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, error){
 	}else {
 		payload.PhoneVerified = &accountVerificationStatus
 	}
-	result, err := repository.UserRepo().CreateOne(*payload)
+	result, err := repository.UserRepo().CreateOne(nil, *payload)
 	if err != nil {
 		apperrors.EntityAlreadyExistsError(ctx, err.Error())
 		return nil, err
