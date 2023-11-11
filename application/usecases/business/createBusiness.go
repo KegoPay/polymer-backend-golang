@@ -63,7 +63,6 @@ func CreateBusiness(ctx any, payload *entities.Business) (*entities.Business, *e
 		return nil
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx)
 		return nil, nil, err
 	}
 	return business, wallet, nil

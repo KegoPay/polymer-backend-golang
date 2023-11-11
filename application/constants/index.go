@@ -1,7 +1,6 @@
 package constants
 
-type ApplicationConstants string
-
-var (
-	SUPPORT_EMAIL ApplicationConstants = "support@kego.com"
+const (
+	SUPPORT_EMAIL string = "support@kego.com"
+	BUSINESS_WALLET_LIMIT int = 10
 )
