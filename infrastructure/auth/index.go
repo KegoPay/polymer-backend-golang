@@ -1,12 +1,64 @@
 package auth
 
 import (
+	"crypto/rand"
 	"errors"
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/golang-jwt/jwt"
+	"kego.com/infrastructure/cryptography"
+	"kego.com/infrastructure/database/repository/cache"
 	"kego.com/infrastructure/logger"
 )
+
+
+const otpChars = "1234567890"
+
+func GenerateOTP(length int, email string) (*string, error) {
+	buffer := make([]byte, length)
+	_, err := rand.Read(buffer)
+	if err != nil {
+		return nil, err
+	}
+	otpCharsLength := len(otpChars)
+	for i := 0; i < length; i++ {
+		buffer[i] = otpChars[int(buffer[i])%otpCharsLength]
+	}
+	otp := string(buffer)
+	otpSaved := saveOTP(email, otp)
+	if !otpSaved {
+		return nil, errors.New("could not save otp")
+	}
+	return &otp, nil
+}
+
+func saveOTP(email string, otp string) bool {
+	hashedOTP, err := cryptography.CryptoHahser.HashString(otp)
+	if err != nil {
+		logger.Error(errors.New("auth module error - error while saving otp"),logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		return false
+	}
+	return cache.Cache.CreateEntry(fmt.Sprintf("%s-otp", email), string(hashedOTP), 10*time.Minute) // otp is valid for 10 mins
+}
+
+func VerifyOTP(key string, otp string) (string, bool) {
+	data := cache.Cache.FindOne(fmt.Sprintf("%s-otp", key))
+	if data == nil {
+		logger.Info(fmt.Sprintf("%s otp not found", key),)
+		return "this otp has expired", false
+	}
+	success := cryptography.CryptoHahser.VerifyData(*data, otp)
+	if !success {
+		return "wrong otp provided", false
+	}
+	cache.Cache.DeleteOne(fmt.Sprintf("%s-otp", key))
+	return "", true
+}
 
 func GenerateAuthToken(claimsData ClaimsData) (*string, error) {
 	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

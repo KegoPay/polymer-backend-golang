@@ -6,21 +6,28 @@ import (
 	"kego.com/application/utils"
 )
 
+type UserMetaData struct {
+	CustomerID         *int       `bson:"customerID" json:"customerID"`
+	CustomerCode       *string       `bson:"customerCode" json:"customerCode"`
+}
+
 type User struct {
-	FirstName         string       `bson:"firstName" json:"firstName" validate:"required"`
-	LastName          string       `bson:"lastName" json:"lastName" validate:"required"`
-	Email             *string      `bson:"email" json:"email,omitempty" validate:"exclusive_email_phone,omitempty,email"`
-	Phone             *PhoneNumber `bson:"phone" json:"phone,omitempty" validate:"exclusive_email_phone,omitempty"`
-	// BVN               string       `bson:"bvn" json:"bvn"`
-	Password          string       `bson:"password" json:"-" validate:"password"`
-	TransactionPin    string       `bson:"transactionPin" json:"-" validate:"password"`
-	DeviceType        DeviceType   `bson:"deviceType" json:"deviceType" validate:"required,oneof=android ios"`
-	DeviceID          string       `bson:"deviceID" json:"deviceID" validate:"required"`
-	// AccountVerified   bool         `bson:"accountVerified" json:"accountVerified"`
-	// KYCCompleted   bool         `bson:"kycCompleted" json:"accoukycCompletedntVerified"`
-	EmailVerified     *bool        `bson:"emailVerified" json:"emailVerified"`
-	PhoneVerified     *bool        `bson:"phoneVerified" json:"phoneVerified"`
-	AccountRestricted bool         `bson:"accountRestricted" json:"accountRestricted"`
+	FirstName         				string       `bson:"firstName" json:"firstName" validate:"required"`
+	LastName          				string       `bson:"lastName" json:"lastName" validate:"required"`
+	Email            				string       `bson:"email" json:"email,omitempty" validate:"required,email"`
+	Phone             				PhoneNumber  `bson:"phone" json:"phone,omitempty" validate:"required"`
+	Password          				string       `bson:"password" json:"-" validate:"password"`
+	TransactionPin    				string       `bson:"transactionPin" json:"-" validate:"password"`
+	DeviceType        				DeviceType   `bson:"deviceType" json:"deviceType" validate:"required,oneof=android ios"`
+	DeviceID          				string       `bson:"deviceID" json:"deviceID" validate:"required"`
+	KYCFailedReason    				*string      `bson:"kycFailedReason" json:"kycFailedReason"`
+	KYCCompleted   					bool         `bson:"kycCompleted" json:"kycCompleted"`
+	EmailVerified     				bool         `bson:"emailVerified" json:"emailVerified"`
+	PhoneVerified     				bool         `bson:"phoneVerified" json:"phoneVerified"`
+	AccountRestricted 				bool         `bson:"accountRestricted" json:"accountRestricted"`
+	BankDetails		  				BankDetails  `bson:"bankDetails" json:"bankDetails" validate:"required"`
+	BVN		  		  				string 	  	 `bson:"bvn" json:"bvn" validate:"required"`
+	MetaData		  		  		*UserMetaData `bson:"metadata" json:"metadata"`
 
 	ID        string    `bson:"_id" json:"id"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`

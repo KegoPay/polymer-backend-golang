@@ -3,6 +3,7 @@ package startup
 import (
 	"kego.com/infrastructure/database"
 	"kego.com/infrastructure/database/connection/datastore"
+	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
 )
 
@@ -12,6 +13,8 @@ func StartServices(){
 	logger.InitializeLogger()
 	// set up databases
 	database.SetUpDatabase()
+	
+	identityverification.InitialiseIdentityVerifier()
 }
 
 // Used to clean up after services that have been shutdown.

@@ -3,6 +3,7 @@ package interfaces
 type ApplicationContext[T interface{}] struct{
 	Body *T
 	Keys map[string]any
+	Query map[string]any
 	Header map[string][]string
 	Ctx any
 }

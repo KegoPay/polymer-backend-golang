@@ -12,7 +12,7 @@ import (
 func InfoRouter(router *gin.RouterGroup) {
 	infoRouter := router.Group("/info")
 	{
-		infoRouter.GET("/countries", func(ctx *gin.Context) {
+		infoRouter.POST("/countries", func(ctx *gin.Context) {
 			var body dto.CountryFilter
 			if err := ctx.ShouldBindJSON(&body); err != nil {
 				apperrors.ErrorProcessingPayload(ctx)
@@ -22,6 +22,12 @@ func InfoRouter(router *gin.RouterGroup) {
 				Keys: ctx.Keys,
 				Ctx: ctx,
 				Body: &body,
+			})
+		})
+
+		infoRouter.GET("/banks", func(ctx *gin.Context) {
+			controllers.FetchBanks(&interfaces.ApplicationContext[any]{
+				Ctx: ctx,
 			})
 		})
 	}

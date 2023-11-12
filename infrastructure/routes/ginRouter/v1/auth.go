@@ -7,6 +7,7 @@ import (
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
 	"kego.com/entities"
+	middlewares "kego.com/infrastructure/middleware"
 )
 
 
@@ -37,6 +38,43 @@ func AuthRouter(router *gin.RouterGroup) {
 				Ctx: ctx,
 				Body: &body,
 			})
+		})
+
+		authRouter.GET("/otp/resend", func(ctx *gin.Context) {
+			query := map[string]any{
+				"email": ctx.Query("email"),
+			}
+			controllers.ResendOTP(&interfaces.ApplicationContext[any]{
+				Ctx: ctx,
+				Query: query,
+			})
+		})
+
+		authRouter.POST("/account/verify", func(ctx *gin.Context) {
+			var body dto.VerifyData
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			controllers.VerifyAccount(&interfaces.ApplicationContext[dto.VerifyData]{
+				Ctx: ctx,
+				Body: &body,
+			})
+		})
+
+		authRouter.GET("/account/exits",  func(ctx *gin.Context) {
+			query := map[string]any{
+				"email": ctx.Query("email"),
+			}
+			controllers.AccountWithEmailExists(&interfaces.ApplicationContext[any]{
+				Ctx: ctx,
+				Query: query,
+			})
+		})
+
+		authRouter.GET("/account/kyc/retry", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+			appContext, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			controllers.RetryIdentityVerification(appContext)
 		})
 	}
 }

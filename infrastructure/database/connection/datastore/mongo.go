@@ -47,21 +47,15 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 	UserModel = db.Collection("Users")
 	UserModel.Indexes().CreateMany(ctx, []mongo.IndexModel{{
 		Keys:    bson.D{{Key: "email", Value: 1}},
-		Options: options.Index().SetUnique(true).SetSparse(true),
-	}, {
-		Keys:    bson.D{{Key: "phone", Value: 1}},
-		Options: options.Index().SetUnique(true).SetSparse(true),
-	},{
-		Keys:    bson.D{{Key: "_id", Value: 1}},
 		Options: options.Index().SetUnique(true),
-	}})
+	}, {
+		Keys:    bson.D{{Key: "bvn", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	},})
 
 	WalletModel = db.Collection("Wallets")
 	WalletModel.Indexes().CreateMany(ctx, []mongo.IndexModel{{
 		Keys:    bson.D{{Key: "businessID", Value: 1}},
-		Options: options.Index().SetUnique(true),
-	},{
-		Keys:    bson.D{{Key: "_id", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	},{
 		Keys:    bson.D{{Key: "userID", Value: 1}},
@@ -72,9 +66,6 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 	BusinessModel = db.Collection("Businesses")
 	BusinessModel.Indexes().CreateMany(ctx, []mongo.IndexModel{{
 		Keys:    bson.D{{Key: "walletID", Value: 1}},
-		Options: options.Index().SetUnique(true),
-	},{
-		Keys:    bson.D{{Key: "_id", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	},{
 		Keys:    bson.D{{Key: "userID", Value: 1}},
