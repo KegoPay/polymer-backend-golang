@@ -2,11 +2,13 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
 	apperrors "kego.com/application/appErrors"
 	bankssupported "kego.com/application/banksSupported"
+	"kego.com/application/constants"
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
 	"kego.com/application/repository"
@@ -194,7 +196,7 @@ func ResendOTP(ctx *interfaces.ApplicationContext[any]) {
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil)
 }
 
-func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyData]) {
+func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
 	msg, success := auth.VerifyOTP(ctx.Body.Email, ctx.Body.Otp)
 	if !success {
 		apperrors.ClientError(ctx.Ctx, msg, nil)
@@ -348,4 +350,66 @@ func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 		response["emailVerified"] = account.EmailVerified
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "success", response, nil)
+}
+
+func VerifyPassword(ctx *interfaces.ApplicationContext[dto.VerifyPassword]){
+	userRepo := repository.UserRepo()
+	account, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
+		"password": 1,
+	}))
+	if err != nil {
+		logger.Error(errors.New("error fetching a user account to verify password"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		apperrors.FatalServerError(ctx.Ctx)
+		return
+	}
+	if account == nil {
+		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("This user profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL))
+		return
+	} 
+	passwordMatch := cryptography.CryptoHahser.VerifyData(account.Password, ctx.Body.Password)
+	if !passwordMatch {
+		apperrors.AuthenticationError(ctx.Ctx, "wrong password")
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "success", nil, nil)
+}
+
+func DeactivateAccount(ctx *interfaces.ApplicationContext[any]){
+	userRepo := repository.UserRepo()
+	account, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
+		"deactivated": 1,
+	}))
+	if err != nil {
+		logger.Error(errors.New("error fetching a user account to deactivate account"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		apperrors.FatalServerError(ctx.Ctx)
+		return
+	}
+	if account == nil {
+		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("This user profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL))
+		return
+	} 
+	if account.Deactivated {
+		apperrors.ClientError(ctx.Ctx, "account has already been deactivated", nil)
+		return
+	}
+	success, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]interface{}{
+		"deactivated": true,
+	})
+	if !success || err != nil {
+		logger.Error(errors.New("error while deactivating user account"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		},  logger.LoggerOptions{
+			Key: "success",
+			Data: success,
+		}, )
+		apperrors.FatalServerError(ctx.Ctx)
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "deactivated", nil, nil)
 }

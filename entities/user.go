@@ -25,6 +25,7 @@ type User struct {
 	EmailVerified     				bool         `bson:"emailVerified" json:"emailVerified"`
 	PhoneVerified     				bool         `bson:"phoneVerified" json:"phoneVerified"`
 	AccountRestricted 				bool         `bson:"accountRestricted" json:"accountRestricted"`
+	Deactivated 					bool         `bson:"deactivated" json:"deactivated"`
 	BankDetails		  				BankDetails  `bson:"bankDetails" json:"bankDetails" validate:"required"`
 	BVN		  		  				string 	  	 `bson:"bvn" json:"bvn" validate:"required"`
 	MetaData		  		  		*UserMetaData `bson:"metadata" json:"metadata"`

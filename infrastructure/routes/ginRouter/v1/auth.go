@@ -51,12 +51,12 @@ func AuthRouter(router *gin.RouterGroup) {
 		})
 
 		authRouter.POST("/account/verify", func(ctx *gin.Context) {
-			var body dto.VerifyData
+			var body dto.VerifyAccountData
 			if err := ctx.ShouldBindJSON(&body); err != nil {
 				apperrors.ErrorProcessingPayload(ctx)
 				return
 			}
-			controllers.VerifyAccount(&interfaces.ApplicationContext[dto.VerifyData]{
+			controllers.VerifyAccount(&interfaces.ApplicationContext[dto.VerifyAccountData]{
 				Ctx: ctx,
 				Body: &body,
 			})
@@ -102,6 +102,26 @@ func AuthRouter(router *gin.RouterGroup) {
 				Ctx: appContextAny.Ctx,
 			}
 			controllers.UpdatePassword(&appContext)
+		})
+
+		authRouter.POST("/password/verify", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.VerifyPassword
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.VerifyPassword]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.VerifyPassword(&appContext)
+		})
+
+		authRouter.GET("/account/deactivate", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+			appContext, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			controllers.DeactivateAccount(appContext)
 		})
 	}
 }
