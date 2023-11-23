@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -12,10 +13,12 @@ import (
 	authusecases "kego.com/application/usecases/authUsecases"
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
+	"kego.com/infrastructure/cryptography"
 	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/messaging/emails"
 	server_response "kego.com/infrastructure/serverResponse"
+	"kego.com/infrastructure/validator"
 )
 
 func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
@@ -57,6 +60,105 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 		"account": account,
 		"token":   token,
 	}, nil)
+}
+
+
+func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
+	msg, success := auth.VerifyOTP(ctx.Body.Email, ctx.Body.Otp)
+	if !success {
+		apperrors.ClientError(ctx.Ctx, msg, nil)
+		return
+	}
+	userRepo := repository.UserRepo()
+	account, err := userRepo.FindOneByFilter(map[string]interface{}{
+		"email": ctx.Body.Email,
+	})
+	if err != nil {
+		logger.Error(errors.New("error fetching a user account to reset password"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		apperrors.FatalServerError(ctx.Ctx)
+		return
+	}
+	if account == nil {
+		apperrors.NotFoundError(ctx.Ctx, "account with email not found")
+		return
+	}
+	account.Password = ctx.Body.NewPassword
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(*account)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		return
+	}
+	hashedPassword, err := cryptography.CryptoHahser.HashString(ctx.Body.NewPassword)
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx)
+		return
+	}
+	success, err = userRepo.UpdatePartialByFilter(map[string]interface{}{
+		"email": ctx.Body.Email,
+	}, map[string]interface{}{
+		"password": string(hashedPassword),
+	})
+	if !success || err != nil {
+		apperrors.FatalServerError(ctx.Ctx)
+	}
+	
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password reset", nil, nil)
+}
+
+func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
+	userRepo := repository.UserRepo()
+	account, err := userRepo.FindOneByFilter(map[string]interface{}{
+		"email": ctx.GetStringContextData("Email"),
+	})
+	if err != nil {
+		logger.Error(errors.New("error fetching a user account to reset password"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		apperrors.FatalServerError(ctx.Ctx)
+		return
+	}
+	if account == nil {
+		apperrors.NotFoundError(ctx.Ctx, "account with email not found")
+		return
+	}
+	success := cryptography.CryptoHahser.VerifyData(account.Password, ctx.Body.CurrentPassword)
+	if !success {
+		apperrors.ClientError(ctx.Ctx, "incorrect password", nil)
+		return
+	}
+	account.Password = ctx.Body.NewPassword
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(*account)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		return
+	}
+	hashed_password, err := cryptography.CryptoHahser.HashString(ctx.Body.NewPassword)
+	if err != nil {
+		logger.Error(errors.New("error hashing users new password"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		apperrors.FatalServerError(ctx.Ctx)
+		return
+	}
+	success, err = userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]interface{}{
+		"password": string(hashed_password),
+	})
+	if !success || err != nil {
+		logger.Error(errors.New("error while updating user password"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		},  logger.LoggerOptions{
+			Key: "success",
+			Data: success,
+		}, )
+		apperrors.FatalServerError(ctx.Ctx)
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password updated", nil, nil)
 }
 
 

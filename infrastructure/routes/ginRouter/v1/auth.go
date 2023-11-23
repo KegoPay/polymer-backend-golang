@@ -76,5 +76,32 @@ func AuthRouter(router *gin.RouterGroup) {
 			appContext, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			controllers.RetryIdentityVerification(appContext)
 		})
+
+		authRouter.POST("/account/password/reset",  func(ctx *gin.Context) {
+			var body dto.ResetPasswordDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			controllers.ResetPassword(&interfaces.ApplicationContext[dto.ResetPasswordDTO]{
+				Ctx: ctx,
+				Body: &body,
+			})
+		})
+
+		authRouter.POST("/account/password/update", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.UpdatePassword
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.UpdatePassword]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.UpdatePassword(&appContext)
+		})
 	}
 }

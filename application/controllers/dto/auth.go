@@ -25,3 +25,14 @@ type VerifyData struct {
 	Otp     string `json:"otp"`
 	Email	string `json:"email"`
 }
+
+type ResetPasswordDTO struct {
+	Otp         string `json:"otp"`
+	NewPassword string `json:"newPassword"`
+	Email       string `json:"email"`
+}
+
+type UpdatePassword struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
