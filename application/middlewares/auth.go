@@ -5,8 +5,10 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	apperrors "kego.com/application/appErrors"
 	"kego.com/application/interfaces"
+	"kego.com/application/repository"
 	"kego.com/infrastructure/auth"
 	"kego.com/infrastructure/database/repository/cache"
 	"kego.com/infrastructure/logger"
@@ -38,6 +40,14 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any]) (*interfa
 		valid_token := cache.Cache.FindOne(auth_token_claims["userID"].(string))
 		if valid_token == nil {
 			apperrors.AuthenticationError(ctx.Ctx, "this session has expired")
+			return nil, false
+		}
+		userRepo := repository.UserRepo()
+		account, err := userRepo.FindByID(auth_token_claims["userID"].(string), options.FindOne().SetProjection(map[string]any{
+			"deactivated": 1,
+		}))
+		if account.Deactivated {
+			apperrors.AuthenticationError(ctx.Ctx, "account has been deactivated")
 			return nil, false
 		}
 		ctx.SetContextData("UserID", auth_token_claims["userID"])
