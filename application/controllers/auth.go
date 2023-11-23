@@ -231,7 +231,9 @@ func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 	userRepo := repository.UserRepo()
 	account, err := userRepo.FindOneByFilter(map[string]interface{}{
 		"email": email,
-	})
+	}, options.FindOne().SetProjection(map[string]interface{}{
+		"emailVerified": 1,
+	}))
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx)
 		return
