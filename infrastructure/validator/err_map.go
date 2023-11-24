@@ -14,7 +14,7 @@ func fieldErrorMap(tag string, field string, value interface{}, param interface{
 		// custom
 		"password":      			fmt.Sprintf("%s should be a secret 4 digit number", field),
 		"exclusive_email_phone": 	"An email or phone number must be provided to sign up",
-		
+		"user_agent": 				"Unsupported UserAgent",
 	}
 	return err_map[tag]
 }

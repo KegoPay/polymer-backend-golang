@@ -20,8 +20,9 @@ func AuthRouter(router *gin.RouterGroup) {
 				apperrors.ErrorProcessingPayload(ctx)
 				return
 			}
-			body.DeviceID = ctx.GetHeader("KEGO_DEVICE_ID")
-			body.DeviceType = entities.DeviceType(ctx.GetHeader("KEGO_DEVICE_TYPE"))
+			body.DeviceID = ctx.GetHeader("kegopay_device_id")
+			body.UserAgent = entities.UserAgent(ctx.Request.UserAgent())
+			body.AppVersion = ctx.GetHeader("kegopay_app_version")
 			controllers.CreateAccount(&interfaces.ApplicationContext[dto.CreateAccountDTO]{
 				Ctx: ctx,
 				Body: &body,

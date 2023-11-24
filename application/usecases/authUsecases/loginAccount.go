@@ -48,7 +48,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string) (*ent
 		UserID:    account.ID,
 		IssuedAt:  time.Now().Unix(),
 		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(10)).Unix(), //lasts for 10 mins
-		DeviceType: account.DeviceType,
+		DeviceType: account.UserAgent,
 		DeviceID:   account.DeviceID,
 	})
 	cache.Cache.CreateEntry(account.ID, *token, time.Minute * time.Duration(10)) // cache authentication token for 10 mins

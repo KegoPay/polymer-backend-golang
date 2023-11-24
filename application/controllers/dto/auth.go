@@ -5,12 +5,13 @@ import "kego.com/entities"
 type CreateAccountDTO struct {
 	FirstName         string       	  		 `json:"firstName"`
 	LastName          string       	 		 `json:"lastName"`
-	Email      		  string                `json:"email,omitempty"`
-	Phone      		  entities.PhoneNumber  `json:"phone,omitempty"`
+	Email      		  string                 `json:"email,omitempty"`
+	Phone      		  entities.PhoneNumber   `json:"phone,omitempty"`
 	Password   		  string                 `json:"password"`
-	DeviceType 		  entities.DeviceType    `json:"deviceType"`
+	UserAgent 		  entities.UserAgent     `json:"deviceType"`
 	DeviceID  		  string                 `json:"deviceID"`
 	TransactionPin    string           		 `json:"transactionPin"`
+	AppVersion        string       			 `json:"appVersion"`
 	BVN    			  string           		 `json:"bvn"`
 	BankDetails 	  entities.BankDetails	 `json:"bankDetails"`
 }

@@ -29,12 +29,13 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 		Phone:          ctx.Body.Phone,
 		Password:       ctx.Body.Password,
 		TransactionPin: ctx.Body.TransactionPin,
-		DeviceType:     ctx.Body.DeviceType,
+		UserAgent:     ctx.Body.UserAgent,
 		DeviceID:       ctx.Body.DeviceID,
 		FirstName:      ctx.Body.FirstName,
 		LastName:       ctx.Body.LastName,
 		BankDetails: 	ctx.Body.BankDetails,
 		BVN: 			ctx.Body.BVN,
+		AppVersion: ctx.Body.AppVersion,
 	})
 	if err != nil {
 		return

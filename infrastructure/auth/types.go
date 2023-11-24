@@ -9,6 +9,6 @@ type ClaimsData struct {
     Phone      *entities.PhoneNumber
     ExpiresAt  int64
     IssuedAt   int64
-    DeviceType entities.DeviceType
+    DeviceType entities.UserAgent
     DeviceID   string
 }

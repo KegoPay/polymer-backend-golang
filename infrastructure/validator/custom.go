@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"os"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
@@ -17,6 +18,17 @@ func validatePasswordStrength(fl validator.FieldLevel) bool {
 		}
 	}
 	return digitCount >= 4
+}
+
+func userAgentConditionalValidator(fl validator.FieldLevel) bool {
+	agent := fl.Field().String()
+	if os.Getenv("GIN_MODE") != "release" {
+		return true
+	}
+	if agent != string(entities.IOS_AGENT) || agent != string(entities.ANDROID_AGENT) {
+		return false
+	}
+	return true
 }
 
 func exclusiveEmailAndPhone(fl validator.FieldLevel) bool {

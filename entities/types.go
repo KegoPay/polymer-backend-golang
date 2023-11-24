@@ -12,11 +12,11 @@ var (
 )
 
 // Represents the type of device the app is installed in
-type DeviceType string
+type UserAgent string
 
 var (
-	ios DeviceType = "ios"
-	android DeviceType = "android"
+	IOS_AGENT UserAgent = "kegopay/ios"
+	ANDROID_AGENT UserAgent = "kegopay/android"
 )
 
 // Represents the reason an account was restricted
