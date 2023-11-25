@@ -55,7 +55,12 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 }
 
 func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
-	account, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password)
+	appVersion := ctx.GetHeader("Kegopay-App-Version")
+	if appVersion == nil {
+		apperrors.ClientError(ctx.Ctx, "provide the app version", nil)
+		return
+	}
+	account, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password, appVersion.(string))
 	if account == nil || token == nil {
 		return
 	}

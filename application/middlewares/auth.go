@@ -45,15 +45,41 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any]) (*interfa
 		userRepo := repository.UserRepo()
 		account, err := userRepo.FindByID(auth_token_claims["userID"].(string), options.FindOne().SetProjection(map[string]any{
 			"deactivated": 1,
+			"userAgent": 1,
+			"deviceID": 1,
+			"appVersion": 1,
 		}))
+		if account == nil {
+			apperrors.NotFoundError(ctx.Ctx, "this account no longer exists")
+			return nil, false
+		}
 		if account.Deactivated {
 			apperrors.AuthenticationError(ctx.Ctx, "account has been deactivated")
 			return nil, false
 		}
+		if auth_token_claims["appVersion"] != account.AppVersion || account.AppVersion != ctx.GetHeader("Kegopay-App-Version") {
+			logger.Warning("client made request using app version different from that in access token", logger.LoggerOptions{
+				Key: "token",
+				Data: auth_token,
+			},logger.LoggerOptions{
+				Key: "token appVersion",
+				Data: auth_token_claims["appVersion"],
+			}, logger.LoggerOptions{
+				Key: "client appVersion",
+				Data: account.AppVersion,
+			}, logger.LoggerOptions{
+				Key: "request appVersion",
+				Data: ctx.GetHeader("kegopay_app_version"),
+			})
+			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access")
+			return nil, false
+		}
+
 		ctx.SetContextData("UserID", auth_token_claims["userID"])
 		ctx.SetContextData("Email", auth_token_claims["email"])
 		ctx.SetContextData("Phone", auth_token_claims["phone"])
 		ctx.SetContextData("DeviceID", auth_token_claims["deviceID"])
-		ctx.SetContextData("DeviceType", auth_token_claims["deviceType"])
+		ctx.SetContextData("UserAgent", auth_token_claims["userAgent"])
+		ctx.SetContextData("AppVersion", auth_token_claims["appVersion"])
 		return ctx, true
 }
