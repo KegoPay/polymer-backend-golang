@@ -27,5 +27,23 @@ func BusinessRouter(router *gin.RouterGroup) {
 			}
 			controllers.CreateBusiness(&appContext)
 		})
+
+		businessRouter.PATCH("/:businessID/update", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.UpdateBusinessDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.UpdateBusinessDTO]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			appContext.Param = map[string]any{
+				"businessID": ctx.Param("businessID"),
+			}
+			controllers.UpdateBusiness(&appContext)
+		})
 	}
 }

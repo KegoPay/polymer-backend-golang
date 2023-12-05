@@ -24,3 +24,12 @@ func CreateBusiness(ctx *interfaces.ApplicationContext[dto.BusinessDTO]){
 		"wallet": wallet,
 	}, nil)
 }
+
+func UpdateBusiness(ctx *interfaces.ApplicationContext[dto.UpdateBusinessDTO]){
+	ctx.Body.ID = ctx.GetStringParameter("businessID")
+	err := business.UpdateBusiness(ctx.Ctx, ctx.Body)
+	if err != nil {
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "business updated", nil, nil)
+}

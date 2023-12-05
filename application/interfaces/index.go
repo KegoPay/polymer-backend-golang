@@ -4,6 +4,7 @@ type ApplicationContext[T interface{}] struct{
 	Body *T
 	Keys map[string]any
 	Query map[string]any
+	Param map[string]any
 	Header map[string][]string
 	Ctx any
 }
@@ -32,6 +33,21 @@ func (ac *ApplicationContext[T]) GetBoolContextData(key string) (value bool) {
 		value = val.(bool)
 	}
 	return
+}
+
+func (ac *ApplicationContext[T]) GetParameter(key string) any {
+	param := ac.Param[key]
+	return param
+}
+
+func (ac *ApplicationContext[T]) GetStringParameter(key string) string {
+	param := ac.Param[key]
+	return param.(string)
+}
+
+func (ac *ApplicationContext[T]) GetBoolParameter(key string) bool {
+	param := ac.Param[key]
+	return param.(bool)
 }
 
 func (ac *ApplicationContext[T]) GetHeader(key string) (value any) {

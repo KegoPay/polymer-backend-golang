@@ -153,7 +153,7 @@ func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
 		apperrors.FatalServerError(ctx.Ctx)
 		return
 	}
-	success, err = userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]interface{}{
+	modified, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]interface{}{
 		"password": string(hashed_password),
 	})
 	if !success || err != nil {
@@ -161,8 +161,8 @@ func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
 			Key: "error",
 			Data: err,
 		},  logger.LoggerOptions{
-			Key: "success",
-			Data: success,
+			Key: "modified",
+			Data: modified,
 		}, )
 		apperrors.FatalServerError(ctx.Ctx)
 	}
@@ -407,7 +407,7 @@ func DeactivateAccount(ctx *interfaces.ApplicationContext[any]){
 	success, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]interface{}{
 		"deactivated": true,
 	})
-	if !success || err != nil {
+	if success == 0 || err != nil {
 		logger.Error(errors.New("error while deactivating user account"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,

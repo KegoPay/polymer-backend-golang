@@ -454,14 +454,14 @@ func (repo *MongoRepository[T]) UpdateByID(id string, payload *T, opts ...*optio
 	return true, err
 }
 
-func (repo *MongoRepository[T]) UpdatePartialByID(id string, payload interface{}, opts ...*options.UpdateOptions) (bool, error) {
+func (repo *MongoRepository[T]) UpdatePartialByID(id string, payload interface{}, opts ...*options.UpdateOptions) (int64, error) {
 	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 
-	_, err := repo.Model.UpdateByID(c, id, bson.D{primitive.E{Key: "$set", Value: payload}}, opts...)
+	result , err := repo.Model.UpdateByID(c, id, bson.D{primitive.E{Key: "$set", Value: payload}}, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdatePartialByID"), logger.LoggerOptions{
 			Key: "error",
@@ -470,10 +470,10 @@ func (repo *MongoRepository[T]) UpdatePartialByID(id string, payload interface{}
 			Key: "resourceID",
 			Data: id,
 		})
-		return false, err
+		return 0, err
 	}
 	logger.Info("UpdatePartialByID complete")
-	return true, err
+	return result.MatchedCount, err
 }
 
 func (repo *MongoRepository[T]) UpdatePartialByFilter(filter map[string]interface{}, payload interface{}, opts ...*options.UpdateOptions) (bool, error) {
