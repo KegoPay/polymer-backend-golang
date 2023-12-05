@@ -3,8 +3,10 @@ package controllers
 import (
 	"net/http"
 
+	apperrors "kego.com/application/appErrors"
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
+	"kego.com/application/repository"
 	"kego.com/application/usecases/business"
 	"kego.com/entities"
 	server_response "kego.com/infrastructure/serverResponse"
@@ -32,4 +34,16 @@ func UpdateBusiness(ctx *interfaces.ApplicationContext[dto.UpdateBusinessDTO]){
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "business updated", nil, nil)
+}
+
+func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
+	businessRepo := repository.BusinessRepo()
+	businesses, err := businessRepo.FindMany(map[string]interface{}{
+		"userID": ctx.GetStringContextData("UserID"),
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx)
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "businesses fetched", businesses, nil)
 }

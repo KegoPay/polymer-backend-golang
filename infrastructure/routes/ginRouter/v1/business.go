@@ -45,5 +45,15 @@ func BusinessRouter(router *gin.RouterGroup) {
 			}
 			controllers.UpdateBusiness(&appContext)
 		})
+
+
+		businessRouter.GET("/fetch", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			appContext := interfaces.ApplicationContext[any]{
+				Keys: appContextAny.Keys,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.FetchBusinesses(&appContext)
+		})
 	}
 }
