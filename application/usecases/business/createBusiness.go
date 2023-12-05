@@ -30,7 +30,7 @@ func CreateBusiness(ctx any, payload *entities.Business) (*entities.Business, *e
 			UserID: payload.UserID,
 			Frozen: false,
 			Balance: 0,
-			AvailableBalance: 0,
+			LedgerBalance: 0,
 		}
 		walletPayload = walletPayload.ParseModel().(*entities.Wallet)
 		payload.WalletID = walletPayload.ID

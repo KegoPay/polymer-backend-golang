@@ -10,7 +10,7 @@ type Wallet struct {
 	UserID          	string    `bson:"userID" json:"userID" validate:"required"`
 	BusinessID      	string    `bson:"businessID" json:"businessID" validate:"required"`
 	Frozen          	bool      `bson:"frozen" json:"frozen"`
-	AvailableBalance 	uint      `bson:"availableBalance" json:"availableBalance"`
+	LedgerBalance 	uint      	  `bson:"ledgerBalance" json:"ledgerBalance"`
 	Balance         	uint      `bson:"balance" json:"balance"`
 
 	ID        string    `bson:"_id" json:"id"`
