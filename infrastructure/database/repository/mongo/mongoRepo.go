@@ -253,14 +253,21 @@ func (repo *MongoRepository[T]) FindLast(opts ...*options.FindOptions) (*T, erro
 	return &lastRecord, nil
 }
 
-func (repo *MongoRepository[T]) DeleteOne(filter map[string]interface{}) (bool, error) {
-	c, cancel := repo.createCtx()
+func (repo *MongoRepository[T]) DeleteOne(ctx *context.Context,  filter map[string]interface{}) (int64, error) {
+	var cancel context.CancelFunc
+	if ctx == nil {
+		c, ctxCancel := repo.createCtx()
+		ctx = &c
+		cancel = ctxCancel
+	}
 
 	defer func() {
-		cancel()
+		if cancel != nil {
+			cancel()
+		}
 	}()
 
-	_, err := repo.Model.DeleteOne(c, filter)
+	result, err := repo.Model.DeleteOne(*ctx, filter)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running DeleteOne"), logger.LoggerOptions{
 			Key: "error",
@@ -269,20 +276,20 @@ func (repo *MongoRepository[T]) DeleteOne(filter map[string]interface{}) (bool, 
 			Key: "filter",
 			Data: filter,
 		})
-		return false, err
+		return 0, err
 	}
 	logger.Info("DeleteOne complete")
-	return true, err
+	return result.DeletedCount, err
 }
 
-func (repo *MongoRepository[T]) DeleteByID(id string) (bool, error) {
+func (repo *MongoRepository[T]) DeleteByID(id string) (int64, error) {
 	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 
-	_, err := repo.Model.DeleteOne(c, bson.M{"_id": &id})
+	result, err := repo.Model.DeleteOne(c, bson.M{"_id": &id})
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running DeleteByID"), logger.LoggerOptions{
 			Key: "error",
@@ -291,10 +298,10 @@ func (repo *MongoRepository[T]) DeleteByID(id string) (bool, error) {
 			Key: "resourceID",
 			Data: id,
 		})
-		return false, err
+		return 0, err
 	}
 	logger.Info("DeleteByID complete")
-	return true, err
+	return result.DeletedCount, err
 }
 
 func (repo *MongoRepository[T]) DeleteMany(filter map[string]interface{}) (int64, error) {

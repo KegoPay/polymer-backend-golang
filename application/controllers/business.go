@@ -33,7 +33,15 @@ func UpdateBusiness(ctx *interfaces.ApplicationContext[dto.UpdateBusinessDTO]){
 	if err != nil {
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "business updated", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business updated", nil, nil)
+}
+
+func DeleteBusiness(ctx *interfaces.ApplicationContext[any]){
+	err := business.DeleteBusiness(ctx.Ctx, ctx.GetStringParameter("businessID"))
+	if err != nil {
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business deleted", nil, nil)
 }
 
 func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
