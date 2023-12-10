@@ -29,7 +29,7 @@ func ExternalDependencyError(ctx interface{}, serviceName string, statusCode str
 		Key: fmt.Sprintf("error with %s. status code %s", serviceName, statusCode),
 	})
 	server_response.Responder.Respond(ctx, http.StatusServiceUnavailable,
-		"Oops! Our service is temporarily down. Our team working to fix it. Please check back later.", nil, nil)
+		"Omo! Our service is temporarily down. Our team working to fix it. Please check back later.", nil, nil)
 }
 
 func ErrorProcessingPayload(ctx interface{}){
@@ -38,8 +38,14 @@ func ErrorProcessingPayload(ctx interface{}){
 
 func FatalServerError(ctx interface{}){
 	server_response.Responder.Respond(ctx, http.StatusInternalServerError,
-		"Oops! Our service is temporarily down. Our team working to fix it. Please check back later.", nil, nil)
+		"Omo! Our service is temporarily down. Our team working to fix it. Please check back later.", nil, nil)
 }
+
+func UnknownError(ctx interface{}){
+	server_response.Responder.Respond(ctx, http.StatusBadRequest,
+		"Omo! Something went wrong somewhere. Please check back later.", nil, nil)
+}
+
 
 func ClientError(ctx interface{}, msg string, errs []error){
 	server_response.Responder.Respond(ctx, http.StatusBadRequest, msg, nil, errs)

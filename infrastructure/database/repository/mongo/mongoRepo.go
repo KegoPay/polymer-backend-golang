@@ -369,14 +369,14 @@ func (repo *MongoRepository[T]) UpdateWithOperator(filter map[string]interface{}
 	return true, err
 }
 
-func (repo *MongoRepository[T]) UpdateManyWithOperator(filter map[string]interface{}, payload map[string]interface{}, opts ...*options.UpdateOptions) (bool, error) {
+func (repo *MongoRepository[T]) UpdateManyWithOperator(filter map[string]interface{}, payload map[string]interface{}, opts ...*options.UpdateOptions) (int64, error) {
 	c, cancel := repo.createCtx()
 
 	defer func() {
 		cancel()
 	}()
 
-	_, err := repo.Model.UpdateMany(c, filter, payload, opts...)
+	affected, err := repo.Model.UpdateMany(c, filter, payload, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdateManyWithOperator"), logger.LoggerOptions{
 			Key: "error",
@@ -385,10 +385,10 @@ func (repo *MongoRepository[T]) UpdateManyWithOperator(filter map[string]interfa
 			Key: "filter",
 			Data: filter,
 		})
-		return false, err
+		return 0, err
 	}
 	logger.Info("UpdateManyWithOperator complete")
-	return true, err
+	return affected.ModifiedCount, err
 }
 
 func (repo *MongoRepository[T]) UpdateOrCreateByField(filter map[string]interface{}, payload map[string]interface{}, opts ...*options.UpdateOptions) (bool, error) {

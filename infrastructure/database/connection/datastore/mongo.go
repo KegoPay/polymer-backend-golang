@@ -15,6 +15,7 @@ import (
 var (
 	UserModel *mongo.Collection
 	WalletModel *mongo.Collection
+	FrozenWalletLogModel *mongo.Collection
 	BusinessModel *mongo.Collection
 )
 
@@ -62,7 +63,6 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 		Options: options.Index(),
 	}})
 
-
 	BusinessModel = db.Collection("Businesses")
 	BusinessModel.Indexes().CreateMany(ctx, []mongo.IndexModel{{
 		Keys:    bson.D{{Key: "walletID", Value: 1}},
@@ -71,6 +71,8 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 		Keys:    bson.D{{Key: "userID", Value: 1}},
 		Options: options.Index(),
 	}})
+
+	FrozenWalletLogModel = db.Collection("FrozenWalletLogs")
 	
 	logger.Info("mongodb indexes set up successfully")
 }
