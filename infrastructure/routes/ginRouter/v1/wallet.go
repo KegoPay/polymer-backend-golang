@@ -29,5 +29,20 @@ func WalletRouter(router *gin.RouterGroup) {
 			}
 			controllers.SendInternationalPayment(&appContext)
 		})
+
+		walletRouter.POST("/:businessID/payment/local/verify-name", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.NameVerificationDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.NameVerificationDTO]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.VerifyLocalAccountName(&appContext)
+		})
 	}
 }
