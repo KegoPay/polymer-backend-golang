@@ -1,4 +1,4 @@
-package payment_processor
+package local_payment_processor
 
 type PaystackNameVerificationResponseDTO struct {
 	Status 	bool						  `json:"status"`

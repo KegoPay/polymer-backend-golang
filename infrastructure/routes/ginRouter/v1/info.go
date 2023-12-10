@@ -30,5 +30,11 @@ func InfoRouter(router *gin.RouterGroup) {
 				Ctx: ctx,
 			})
 		})
+
+		infoRouter.GET("/exchange-rates", func(ctx *gin.Context) {
+			controllers.FetchExchangeRates(&interfaces.ApplicationContext[any]{
+				Ctx: ctx,
+			})
+		})
 	}
 }
