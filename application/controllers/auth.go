@@ -230,7 +230,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
 		return
 	}
 	bankCode := ""
-	for _, bank := range bankssupported.SupportedBanks {
+	for _, bank := range bankssupported.KYCSupportedBanks {
 		if bank.Name == account.BankDetails.BankName{
 			bankCode = bank.Code
 			break
@@ -282,7 +282,7 @@ func RetryIdentityVerification(ctx *interfaces.ApplicationContext[any]){
 	}
 
 	bankCode := ""
-	for _, bank := range bankssupported.SupportedBanks {
+	for _, bank := range bankssupported.KYCSupportedBanks {
 		if bank.Name == account.BankDetails.BankName{
 			bankCode = bank.Code
 			break

@@ -16,6 +16,6 @@ func FilterCountries(ctx *interfaces.ApplicationContext[dto.CountryFilter]){
 }
 
 func FetchBanks(ctx *interfaces.ApplicationContext[any]){
-	banks := bankssupported.SupportedBanks
+	banks := bankssupported.KYCSupportedBanks
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "countries fetched", banks, nil)
 }

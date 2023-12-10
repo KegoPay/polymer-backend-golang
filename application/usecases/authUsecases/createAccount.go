@@ -19,7 +19,7 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, error){
 		return nil, errors.New("")
 	}
 	bankExists := ""
-	for _, bank := range bankssupported.SupportedBanks {
+	for _, bank := range bankssupported.KYCSupportedBanks {
 		if bank.Name == payload.BankDetails.BankName{
 			bankExists = bank.Code
 			break

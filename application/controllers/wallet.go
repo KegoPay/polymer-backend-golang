@@ -28,7 +28,7 @@ func SendInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPayment
 
 func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificationDTO]){
 	bankCode := ""
-	for _, bank := range bankssupported.SupportedBanks {
+	for _, bank := range bankssupported.KYCSupportedBanks {
 		if bank.Name == ctx.Body.BankName {
 			bankCode = bank.Code
 			break
