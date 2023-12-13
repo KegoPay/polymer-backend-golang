@@ -12,6 +12,8 @@ import (
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
 	"kego.com/application/repository"
+	"kego.com/application/services"
+	"kego.com/application/services/types"
 	authusecases "kego.com/application/usecases/authUsecases"
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
@@ -358,35 +360,12 @@ func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "success", response, nil)
 }
 
-func VerifyPassword(ctx *interfaces.ApplicationContext[dto.VerifyPassword]){
-	userRepo := repository.UserRepo()
-	account, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
-		"password": 1,
-	}))
-	if err != nil {
-		logger.Error(errors.New("error fetching a user account to verify password"), logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
-		apperrors.FatalServerError(ctx.Ctx)
-		return
-	}
-	if account == nil {
-		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("This user profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL))
-		return
-	} 
-	passwordMatch := cryptography.CryptoHahser.VerifyData(account.Password, ctx.Body.Password)
-	if !passwordMatch {
-		apperrors.AuthenticationError(ctx.Ctx, "wrong password")
-		return
-	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "success", nil, nil)
-}
-
-func DeactivateAccount(ctx *interfaces.ApplicationContext[any]){
+func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){
 	userRepo := repository.UserRepo()
 	account, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
 		"deactivated": 1,
+		"password": 1,
+		"transactionPin": 1,
 	}))
 	if err != nil {
 		logger.Error(errors.New("error fetching a user account to deactivate account"), logger.LoggerOptions{
@@ -402,6 +381,12 @@ func DeactivateAccount(ctx *interfaces.ApplicationContext[any]){
 	} 
 	if account.Deactivated {
 		apperrors.ClientError(ctx.Ctx, "account has already been deactivated", nil)
+		return
+	}
+	match := services.VerifyPin(ctx.Ctx, account, ctx.Body.Pin, &types.PinSelectionType{
+		Password: true,
+	})
+	if !match {
 		return
 	}
 	success, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]interface{}{

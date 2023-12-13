@@ -41,3 +41,7 @@ type UpdatePassword struct {
 	CurrentPassword string `json:"currentPassword"`
 	NewPassword     string `json:"newPassword"`
 }
+
+type ConfirmPin struct {
+	Pin    string           		 `json:"pin"`
+}
