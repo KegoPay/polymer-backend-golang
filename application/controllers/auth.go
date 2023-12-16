@@ -26,12 +26,12 @@ import (
 )
 
 func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
-	account, err := authusecases.CreateAccount(ctx.Ctx, &entities.User{
+	account, wallet, err := authusecases.CreateAccount(ctx.Ctx, &entities.User{
 		Email:          ctx.Body.Email,
 		Phone:          ctx.Body.Phone,
 		Password:       ctx.Body.Password,
 		TransactionPin: ctx.Body.TransactionPin,
-		UserAgent:     ctx.Body.UserAgent,
+		UserAgent:      ctx.Body.UserAgent,
 		DeviceID:       ctx.Body.DeviceID,
 		FirstName:      ctx.Body.FirstName,
 		LastName:       ctx.Body.LastName,
@@ -53,6 +53,7 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 	},)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "account created", map[string]interface{}{
 		"account": account,
+		"wallet": wallet,
 	}, nil)
 }
 

@@ -13,7 +13,7 @@ import (
 	"kego.com/infrastructure/validator"
 )
 
-func CreateWallet(ctx any, trxCtx *context.Context, payload *entities.Wallet) (*entities.Wallet, error) {
+func CreateWallet(ctx any, trxCtx context.Context, payload *entities.Wallet) (*entities.Wallet, error) {
 	validationErr := validator.ValidatorInstance.ValidateStruct(*payload)
 	if validationErr != nil {
 		apperrors.ValidationFailedError(ctx, validationErr)

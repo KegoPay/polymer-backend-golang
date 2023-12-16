@@ -15,12 +15,12 @@ type LockedFunds struct {
 
 type Wallet struct {
 	UserID          	string   		 `bson:"userID" json:"userID" validate:"required"`
-	BusinessID      	string   		 `bson:"businessID" json:"businessID" validate:"required"`
+	BusinessID      	*string   		 `bson:"businessID" json:"businessID"`
 	Frozen          	bool     		 `bson:"frozen" json:"frozen"`
 	LedgerBalance 		uint64   		 `bson:"ledgerBalance" json:"ledgerBalance"`
 	Balance         	uint64    	 	 `bson:"balance" json:"balance"`
 	Currency         	string   		 `bson:"currency" json:"currency" validate:"iso4217"`
-	LockedFundsLog      []LockedFunds    `bson:"lockedFundsLog" json:"lockedFundsLog" validate:"required"`
+	LockedFundsLog      []LockedFunds    `bson:"lockedFundsLog" json:"lockedFundsLog"`
 
 	ID        string    `bson:"_id" json:"id"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`

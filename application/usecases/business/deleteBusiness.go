@@ -14,7 +14,7 @@ import (
 func DeleteBusiness(ctx any, id string) error {
 	businessRepo := repository.BusinessRepo()
 
-	businessRepo.StartTransaction(func(sc *mongo.SessionContext, c *context.Context) error {
+	businessRepo.StartTransaction(func(sc mongo.Session, c context.Context) error {
 		deleted, err := businessRepo.DeleteOne(c, map[string]interface{}{
 			"_id": id,
 		})

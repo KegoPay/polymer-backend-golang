@@ -23,10 +23,10 @@ func CreateBusiness(ctx any, payload *entities.Business) (*entities.Business, *e
 	var business *entities.Business
 	var wallet *entities.Wallet
 	var err error
-	businessRepo.StartTransaction(func(sc *mongo.SessionContext, c *context.Context) error {
+	businessRepo.StartTransaction(func(sc mongo.Session, c context.Context) error {
 		payload = payload.ParseModel().(*entities.Business)
 		walletPayload := &entities.Wallet{
-			BusinessID: payload.ID,
+			BusinessID: &payload.ID,
 			UserID: payload.UserID,
 			Frozen: false,
 			Balance: 0,
@@ -36,6 +36,7 @@ func CreateBusiness(ctx any, payload *entities.Business) (*entities.Business, *e
 		walletPayload = walletPayload.ParseModel().(*entities.Wallet)
 		payload.WalletID = walletPayload.ID
 		b, e := businessRepo.CreateOne(c, *payload)
+		e = errors.New("")
 		if e != nil {
 			logger.Error(errors.New("error creating users business"), logger.LoggerOptions{
 				Key: "error",

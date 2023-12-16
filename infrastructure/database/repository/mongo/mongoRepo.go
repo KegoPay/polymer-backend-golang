@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -15,11 +16,11 @@ import (
 	"kego.com/infrastructure/logger"
 )
 
-func (repo *MongoRepository[T]) CreateOne(ctx *context.Context, payload T, opts ...*options.InsertOneOptions) (*T, error) {
+func (repo *MongoRepository[T]) CreateOne(ctx context.Context, payload T, opts ...*options.InsertOneOptions) (*T, error) {
 	var cancel context.CancelFunc
 	if ctx == nil {
 		c, ctxCancel := repo.createCtx()
-		ctx = &c
+		ctx = c
 		cancel = ctxCancel
 	}
 
@@ -29,7 +30,7 @@ func (repo *MongoRepository[T]) CreateOne(ctx *context.Context, payload T, opts 
 		}
 	}()
 	parsedPayload := interface{}(payload).(database.BaseModel).ParseModel()
-	_, err := repo.Model.InsertOne(*ctx, parsedPayload, opts...)
+	_, err := repo.Model.InsertOne(ctx, parsedPayload, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running CreateOne"), logger.LoggerOptions{
 			Key: "error",
@@ -253,11 +254,11 @@ func (repo *MongoRepository[T]) FindLast(opts ...*options.FindOptions) (*T, erro
 	return &lastRecord, nil
 }
 
-func (repo *MongoRepository[T]) DeleteOne(ctx *context.Context,  filter map[string]interface{}) (int64, error) {
+func (repo *MongoRepository[T]) DeleteOne(ctx context.Context,  filter map[string]interface{}) (int64, error) {
 	var cancel context.CancelFunc
 	if ctx == nil {
 		c, ctxCancel := repo.createCtx()
-		ctx = &c
+		ctx = c
 		cancel = ctxCancel
 	}
 
@@ -267,7 +268,7 @@ func (repo *MongoRepository[T]) DeleteOne(ctx *context.Context,  filter map[stri
 		}
 	}()
 
-	result, err := repo.Model.DeleteOne(*ctx, filter)
+	result, err := repo.Model.DeleteOne(ctx, filter)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running DeleteOne"), logger.LoggerOptions{
 			Key: "error",
@@ -505,19 +506,18 @@ func (repo *MongoRepository[T]) UpdatePartialByFilter(filter map[string]interfac
 	return true, err
 }
 
-func (repo MongoRepository[T]) StartTransaction(payload func(sc *mongo.SessionContext, c *context.Context) error) error {
-	c, cancel := repo.createCtx()
-
-	defer func() {
-		cancel()
-	}()
-
-	if err := repo.Model.Database().Client().UseSession(c, func(sc mongo.SessionContext) error {
-		if err := sc.StartTransaction(); err != nil {
-			return err
-		}
-		return payload(&sc, &c)
-	}); err != nil {
+func (repo MongoRepository[T]) StartTransaction(payload func(sc mongo.Session, c context.Context) error) error {
+	session, err := repo.Model.Database().Client().StartSession()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer session.EndSession(context.Background())
+	ctx := mongo.NewSessionContext(context.Background(), session)
+	err = session.StartTransaction()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := payload(session, ctx); err != nil {
 		logger.Error(errors.New("mongo error occured while running StartTransaction"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,

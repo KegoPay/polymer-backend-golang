@@ -22,6 +22,7 @@ type User struct {
 	DeviceID          				string       `bson:"deviceID" json:"deviceID" validate:"required"`
 	AppVersion          			string       `bson:"appVersion" json:"appVersion" validate:"required"`
 	KYCFailedReason    				*string      `bson:"kycFailedReason" json:"kycFailedReason"`
+	WalletID  						string    	 `bson:"walletID" json:"walletID"`
 	KYCCompleted   					bool         `bson:"kycCompleted" json:"kycCompleted"`
 	EmailVerified     				bool         `bson:"emailVerified" json:"emailVerified"`
 	PhoneVerified     				bool         `bson:"phoneVerified" json:"phoneVerified"`

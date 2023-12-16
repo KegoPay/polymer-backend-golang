@@ -9,7 +9,7 @@ import (
 	"kego.com/infrastructure/logger"
 )
 
-func DeleteWallet(ctx any, transactionCtx *context.Context, businessID string) error {
+func DeleteWallet(ctx any, transactionCtx context.Context, businessID string) error {
 	walletRepo := repository.WalletRepo()
 	deleted, err := walletRepo.DeleteOne(transactionCtx, map[string]interface{}{
 		"businessID": businessID,
