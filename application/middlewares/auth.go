@@ -9,6 +9,7 @@ import (
 	apperrors "kego.com/application/appErrors"
 	"kego.com/application/interfaces"
 	"kego.com/application/repository"
+	"kego.com/application/utils"
 	"kego.com/infrastructure/auth"
 	"kego.com/infrastructure/database/repository/cache"
 	"kego.com/infrastructure/logger"
@@ -57,11 +58,10 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any]) (*interfa
 			apperrors.AuthenticationError(ctx.Ctx, "account has been deactivated")
 			return nil, false
 		}
-		if auth_token_claims["appVersion"] != account.AppVersion || account.AppVersion != ctx.GetHeader("Kegopay-App-Version") {
+
+		userAgent := ctx.GetHeader("User-Agent").(string)
+		if auth_token_claims["appVersion"] != account.AppVersion || account.AppVersion != *utils.ExtractAppVersionFromUserAgentHeader(userAgent) ||  auth_token_claims["appVersion"] != *utils.ExtractAppVersionFromUserAgentHeader(userAgent) {
 			logger.Warning("client made request using app version different from that in access token", logger.LoggerOptions{
-				Key: "token",
-				Data: auth_token,
-			},logger.LoggerOptions{
 				Key: "token appVersion",
 				Data: auth_token_claims["appVersion"],
 			}, logger.LoggerOptions{
@@ -69,13 +69,37 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any]) (*interfa
 				Data: account.AppVersion,
 			}, logger.LoggerOptions{
 				Key: "request appVersion",
-				Data: ctx.GetHeader("kegopay_app_version"),
+				Data: *utils.ExtractAppVersionFromUserAgentHeader(userAgent),
 			})
+			auth.SignOutUser(ctx.Ctx, account.ID, "client made request using app version different from that in access token")
+			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access")
+			return nil, false
+		}
+		deviceID := ctx.GetHeader("Polymer-Device-Id")
+		if deviceID == nil {
+			auth.SignOutUser(ctx.Ctx, account.ID, "client made request using app version different from that in access token")
+			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access")
+			return nil, false
+		}
+		if auth_token_claims["deviceID"] != account.DeviceID || account.DeviceID != deviceID.(string) ||  auth_token_claims["deviceID"] != deviceID.(string) {
+			logger.Warning("client made request using app version different from that in access token",logger.LoggerOptions{
+				Key: "token appVersion",
+				Data: auth_token_claims["appVersion"],
+			}, logger.LoggerOptions{
+				Key: "client appVersion",
+				Data: account.AppVersion,
+			}, logger.LoggerOptions{
+				Key: "request appVersion",
+				Data: *utils.ExtractAppVersionFromUserAgentHeader(userAgent),
+			})
+			auth.SignOutUser(ctx.Ctx, account.ID, "client made request using device id different from that in access token")
 			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access")
 			return nil, false
 		}
 
 		ctx.SetContextData("UserID", auth_token_claims["userID"])
+		ctx.SetContextData("LastName", auth_token_claims["lastName"])
+		ctx.SetContextData("FirstName", auth_token_claims["firstName"])
 		ctx.SetContextData("Email", auth_token_claims["email"])
 		ctx.SetContextData("Phone", auth_token_claims["phone"])
 		ctx.SetContextData("DeviceID", auth_token_claims["deviceID"])

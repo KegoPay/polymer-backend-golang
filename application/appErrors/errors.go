@@ -13,7 +13,7 @@ func NotFoundError(ctx interface{}, message string){
 }
 
 func ValidationFailedError(ctx interface{}, errMessages *[]error){
-	server_response.Responder.Respond(ctx, http.StatusUnprocessableEntity, "payload validation failed", nil, *errMessages)
+	server_response.Responder.Respond(ctx, http.StatusUnprocessableEntity, "Payload validation failed 🙄", nil, *errMessages)
 }
 
 func EntityAlreadyExistsError(ctx interface{}, message string){
@@ -29,23 +29,32 @@ func ExternalDependencyError(ctx interface{}, serviceName string, statusCode str
 		Key: fmt.Sprintf("error with %s. status code %s", serviceName, statusCode),
 	})
 	server_response.Responder.Respond(ctx, http.StatusServiceUnavailable,
-		"Omo! Our service is temporarily down. Our team working to fix it. Please check back later.", nil, nil)
+		"Omo! Our service is temporarily down 😢. Our team is working to fix it. Please check back later.", nil, nil)
 }
 
 func ErrorProcessingPayload(ctx interface{}){
-	server_response.Responder.Respond(ctx, http.StatusBadRequest, "abnormal payload passed", nil, nil)
+	server_response.Responder.Respond(ctx, http.StatusBadRequest, "Abnormal payload passed 🤨", nil, nil)
 }
 
 func FatalServerError(ctx interface{}){
 	server_response.Responder.Respond(ctx, http.StatusInternalServerError,
-		"Omo! Our service is temporarily down. Our team working to fix it. Please check back later.", nil, nil)
+		"Omo! Our service is temporarily down 😢. Our team is working to fix it. Please check back later.", nil, nil)
 }
 
 func UnknownError(ctx interface{}){
 	server_response.Responder.Respond(ctx, http.StatusBadRequest,
-		"Omo! Something went wrong somewhere. Please check back later.", nil, nil)
+		"Omo! Something went wrong somewhere 😭. Please check back later.", nil, nil)
 }
 
+func UnsupportedAppVersion(ctx interface{}){
+	server_response.Responder.Respond(ctx, http.StatusBadRequest,
+		"Uh oh! Seems you're using an old version of the app. 🤦🏻‍♂️\n Upgrade to the latest version to continue enjoying our blazing fast services! 🚀", nil, nil)
+}
+
+func UnsupportedUserAgent(ctx interface{}){
+	server_response.Responder.Respond(ctx, http.StatusBadRequest,
+		"Unsupported user agent 👮🏻‍♂️", nil, nil)
+}
 
 func ClientError(ctx interface{}, msg string, errs []error){
 	server_response.Responder.Respond(ctx, http.StatusBadRequest, msg, nil, errs)

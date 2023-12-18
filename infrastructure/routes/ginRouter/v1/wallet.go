@@ -19,6 +19,7 @@ func WalletRouter(router *gin.RouterGroup) {
 				apperrors.ErrorProcessingPayload(ctx)
 				return
 			}
+			body.IPAddress = ctx.ClientIP()
 			appContext := interfaces.ApplicationContext[dto.SendPaymentDTO]{
 				Keys: appContextAny.Keys,
 				Body: &body,
@@ -27,7 +28,7 @@ func WalletRouter(router *gin.RouterGroup) {
 			appContext.Param = map[string]any{
 				"businessID": ctx.Param("businessID"),
 			}
-			controllers.SendInternationalPayment(&appContext)
+			controllers.InitiateBusinessInternationalPayment(&appContext)
 		})
 
 		walletRouter.POST("/:businessID/payment/local/verify-name", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {

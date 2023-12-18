@@ -154,7 +154,7 @@ func verifyWalletBalance(ctx any, wallet *entities.Wallet, amount uint64) (bool,
 		return false, err
 	}
 	if wallet.Balance < amount {
-		err := fmt.Errorf("Insufficient funds. Credit your account with at least %s%d to complete this transaction.", wallet.Currency, utils.ParseAmountToHigherDenomination(amount))
+		err := fmt.Errorf("Insufficient funds. Credit your account with at least %s%v to complete this transaction.", wallet.Currency, utils.UInt64ToFloat32Currency(amount))
 		apperrors.ClientError(ctx, err.Error(), nil)
 		return false, err
 	}
@@ -184,7 +184,6 @@ func LockFunds(ctx any, wallet *entities.Wallet, amount uint64, intent entities.
 		LockedAt: time.Now(),
 		Reason: intent,
 	}
-
 	walletRepository := repository.WalletRepo()
 	affected, err := walletRepository.UpdateManyWithOperator(map[string]interface{}{
 		"_id": wallet.ID,

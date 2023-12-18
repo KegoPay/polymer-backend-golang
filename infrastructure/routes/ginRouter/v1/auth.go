@@ -6,7 +6,7 @@ import (
 	"kego.com/application/controllers"
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
-	"kego.com/entities"
+	"kego.com/application/utils"
 	middlewares "kego.com/infrastructure/middleware"
 )
 
@@ -20,9 +20,14 @@ func AuthRouter(router *gin.RouterGroup) {
 				apperrors.ErrorProcessingPayload(ctx)
 				return
 			}
-			body.DeviceID = ctx.GetHeader("Kegopay-Device-Id")
-			body.UserAgent = entities.UserAgent(ctx.Request.UserAgent())
-			body.AppVersion = ctx.GetHeader("Kegopay-App-Version")
+			body.DeviceID = ctx.GetHeader("polymer-device-id")
+			body.UserAgent = ctx.Request.UserAgent()
+			appVersion := utils.ExtractAppVersionFromUserAgentHeader(ctx.Request.UserAgent())
+			if appVersion == nil {
+				apperrors.UnsupportedAppVersion(ctx)
+				return
+			}
+			body.AppVersion = *appVersion
 			controllers.CreateAccount(&interfaces.ApplicationContext[dto.CreateAccountDTO]{
 				Ctx: ctx,
 				Body: &body,
@@ -35,6 +40,12 @@ func AuthRouter(router *gin.RouterGroup) {
 				apperrors.ErrorProcessingPayload(ctx)
 				return
 			}
+			deviceID := ctx.GetHeader("polymer-device-id")
+			if deviceID == "" {
+				apperrors.AuthenticationError(ctx, "no client id")
+				return
+			}
+			body.DeviceID = deviceID
 			controllers.LoginUser(&interfaces.ApplicationContext[dto.LoginDTO]{
 				Ctx: ctx,
 				Body: &body,

@@ -67,6 +67,8 @@ func GenerateAuthToken(claimsData ClaimsData) (*string, error) {
 		"exp":        claimsData.ExpiresAt,
 		"email":      claimsData.Email,
 		"phone":      claimsData.Phone,
+		"firstName":  claimsData.FirstName,
+		"lastName":   claimsData.LastName,
 		"iat":        claimsData.IssuedAt,
 		"deviceID":   claimsData.DeviceID,
 		"userAgent": claimsData.UserAgent,
@@ -100,4 +102,14 @@ func DecodeAuthToken(tokenString string) (*jwt.Token, error) {
 		return nil, err
 	}
 	return token, nil
+}
+
+func SignOutUser(ctx any, id string, reason string){
+	deleted := cache.Cache.DeleteOne(id)
+	if !deleted {
+		logger.Error(errors.New("failed to sign out user"), logger.LoggerOptions{
+			Key: "id",
+			Data: id,
+		})
+	}
 }

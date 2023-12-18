@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 	apperrors "kego.com/application/appErrors"
 	"kego.com/infrastructure/logger"
+	middlewares "kego.com/infrastructure/middleware"
 	authroutev1 "kego.com/infrastructure/routes/ginRouter/v1"
 	server_response "kego.com/infrastructure/serverResponse"
 	startup "kego.com/infrastructure/startUp"
@@ -27,6 +28,8 @@ func (s *ginServer)Start(){
 	defer startup.CleanUpServices()
 
 	server := gin.Default()
+
+	server.Use(middlewares.UserAgentMiddleware())
 
 	v1 := server.Group("/api",)
 

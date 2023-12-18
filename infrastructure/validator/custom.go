@@ -2,6 +2,7 @@ package validator
 
 import (
 	"os"
+	"strings"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
@@ -25,7 +26,7 @@ func userAgentConditionalValidator(fl validator.FieldLevel) bool {
 	if os.Getenv("GIN_MODE") != "release" {
 		return true
 	}
-	if agent != string(entities.IOS_AGENT) || agent != string(entities.ANDROID_AGENT) {
+	if !strings.Contains(agent, "Android") ||  !strings.Contains(agent, "iOS") {
 		return false
 	}
 	return true

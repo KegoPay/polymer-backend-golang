@@ -11,7 +11,7 @@ import (
 	"kego.com/infrastructure/database/repository/cache"
 )
 
-func LoginAccount(ctx any, email *string, phone *string, password *string, appVersion string) (*entities.User, *string) {
+func LoginAccount(ctx any, email *string, phone *string, password *string, appVersion string, userAgent string, deviceID string) (*entities.User, *string) {
 	userRepo := repository.UserRepo()
 	var account *entities.User
 	var err error
@@ -53,14 +53,23 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		IssuedAt:  time.Now().Unix(),
 		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(10)).Unix(), //lasts for 10 mins
 		UserAgent: account.UserAgent,
+		FirstName: account.FirstName,
+		LastName: account.LastName,
 		DeviceID:   account.DeviceID,
 		AppVersion: account.AppVersion,
 	})
-	if appVersion != account.AppVersion {
-		userRepo.UpdatePartialByID(account.ID, map[string]any{
-			"appVersion": appVersion,
-		})
+	var updateAccountPayload = map[string]any{}
+	if account.UserAgent != userAgent{
+		updateAccountPayload["userAgent"] = userAgent
+		account.UserAgent = userAgent
 	}
+	if appVersion != account.AppVersion {
+		updateAccountPayload["appVersion"] = appVersion
+		account.AppVersion = appVersion
+	}
+	updateAccountPayload["deviceID"] = deviceID
+	account.DeviceID = deviceID
+	userRepo.UpdatePartialByID(account.ID,updateAccountPayload)
 	cache.Cache.CreateEntry(account.ID, *token, time.Minute * time.Duration(10)) // cache authentication token for 10 mins
 	return account, token
 }

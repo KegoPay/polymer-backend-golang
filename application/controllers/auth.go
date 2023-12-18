@@ -15,6 +15,7 @@ import (
 	"kego.com/application/services"
 	"kego.com/application/services/types"
 	authusecases "kego.com/application/usecases/authUsecases"
+	"kego.com/application/utils"
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
 	"kego.com/infrastructure/cryptography"
@@ -58,12 +59,12 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 }
 
 func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
-	appVersion := ctx.GetHeader("Kegopay-App-Version")
+	appVersion := utils.ExtractAppVersionFromUserAgentHeader(ctx.GetHeader("User-Agent").(string))
 	if appVersion == nil {
-		apperrors.ClientError(ctx.Ctx, "provide the app version", nil)
+		apperrors.UnsupportedAppVersion(ctx.Ctx)
 		return
 	}
-	account, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password, appVersion.(string))
+	account, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password, *appVersion, ctx.GetHeader("User-Agent").(string), ctx.Body.DeviceID)
 	if account == nil || token == nil {
 		return
 	}

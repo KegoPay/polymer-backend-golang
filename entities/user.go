@@ -18,7 +18,7 @@ type User struct {
 	Phone             				PhoneNumber  `bson:"phone" json:"phone,omitempty" validate:"required"`
 	Password          				string       `bson:"password" json:"-" validate:"password"`
 	TransactionPin    				string       `bson:"transactionPin" json:"-" validate:"password"`
-	UserAgent        				UserAgent    `bson:"userAgent" json:"userAgent" validate:"user_agent,required"`
+	UserAgent        				string    	 `bson:"userAgent" json:"userAgent" validate:"user_agent,required"`
 	DeviceID          				string       `bson:"deviceID" json:"deviceID" validate:"required"`
 	AppVersion          			string       `bson:"appVersion" json:"appVersion" validate:"required"`
 	KYCFailedReason    				*string      `bson:"kycFailedReason" json:"kycFailedReason"`

@@ -14,6 +14,7 @@ import (
 
 var (
 	UserModel *mongo.Collection
+	TransactionModel *mongo.Collection
 	WalletModel *mongo.Collection
 	FrozenWalletLogModel *mongo.Collection
 	BusinessModel *mongo.Collection
@@ -73,6 +74,8 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 	}})
 
 	FrozenWalletLogModel = db.Collection("FrozenWalletLogs")
+
+	TransactionModel = db.Collection("Transactions")
 	
 	logger.Info("mongodb indexes set up successfully")
 }

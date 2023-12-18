@@ -57,6 +57,7 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 			Balance: 0,
 			LedgerBalance: 0,
 			Currency: "NGN",
+			LockedFundsLog: []entities.LockedFunds{},
 		}
 
 		walletPayload = walletPayload.ParseModel().(*entities.Wallet)
@@ -95,9 +96,10 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 		if strings.Contains(err.Error(), "already exists"){
 			apperrors.EntityAlreadyExistsError(ctx, err.Error())
 			return nil, nil, err
+		}else {
+			apperrors.ClientError(ctx, err.Error(), nil)
+			return nil, nil, err
 		}
-		apperrors.FatalServerError(ctx)
-		return nil, nil, err
 	}
 	return user, wallet,  err
 }

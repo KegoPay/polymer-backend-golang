@@ -8,7 +8,7 @@ type CreateAccountDTO struct {
 	Email      		  string                 `json:"email,omitempty"`
 	Phone      		  entities.PhoneNumber   `json:"phone,omitempty"`
 	Password   		  string                 `json:"password"`
-	UserAgent 		  entities.UserAgent     `json:"deviceType"`
+	UserAgent 		  string     			 `json:"deviceType"`
 	DeviceID  		  string                 `json:"deviceID"`
 	TransactionPin    string           		 `json:"transactionPin"`
 	AppVersion        string       			 `json:"appVersion"`
@@ -20,6 +20,7 @@ type LoginDTO struct {
 	Email      *string                `json:"email,omitempty"`
 	Phone      *string  			  `json:"phone,omitempty"`
 	Password   string                 `json:"password"`
+	DeviceID   string                 `json:"deviceID"`
 }
 
 type VerifyAccountData struct {
