@@ -23,6 +23,14 @@ func GetStringPointer(text string) *string {
 	return &text
 }
 
+func GetBooleanPointer(data bool) *bool {
+	return &data
+}
+
+func GetFloat32Pointer(data float32) *float32 {
+	return &data
+}
+
 func CountryCodeToCountryName(code string) string {
 	countryCodeMap := map[string]string {
 		"NG": "Nigeria",

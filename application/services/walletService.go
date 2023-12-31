@@ -18,7 +18,7 @@ import (
 )
 
 
-func GetWalletByBusinessID(ctx any, id string) (*entities.Wallet, error) {
+func GetWalletByBusinessID(ctx any, id string, userID string) (*entities.Wallet, error) {
 	walletRepository := repository.WalletRepo()
 	wallet, err := walletRepository.FindOneByFilter(map[string]interface{}{
 		"businessID": id,
@@ -162,7 +162,7 @@ func verifyWalletBalance(ctx any, wallet *entities.Wallet, amount uint64) (bool,
 }
 
 func InitiatePreAuth(ctx any, businessID string, userID string, amount uint64, pin string) (*entities.Wallet, error) {
-	wallet, err := GetWalletByBusinessID(ctx, businessID)
+	wallet, err := GetWalletByBusinessID(ctx, businessID, userID)
 	if err != nil {
 		return nil, err
 	}

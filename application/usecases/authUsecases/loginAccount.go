@@ -33,10 +33,6 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		apperrors.NotFoundError(ctx, "this account does not exist")
 		return nil, nil
 	}
-	if  phone != nil && !account.PhoneVerified {
-		apperrors.ClientError(ctx, "verify your phone number to use it to login", nil)
-		return nil, nil
-	} 
 	if !account.EmailVerified {
 		apperrors.ClientError(ctx, "verify your email to use it to login", nil)
 		return nil, nil

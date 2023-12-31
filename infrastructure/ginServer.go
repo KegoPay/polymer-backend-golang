@@ -28,6 +28,7 @@ func (s *ginServer)Start(){
 	defer startup.CleanUpServices()
 
 	server := gin.Default()
+	server.MaxMultipartMemory =  15 << 20  // 8 MiB
 
 	server.Use(middlewares.UserAgentMiddleware())
 

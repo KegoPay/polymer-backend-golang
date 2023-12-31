@@ -72,7 +72,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 			UserAgent: ctx.GetStringContextData("UserAgent"),
 		},
 		Sender: entities.TransactionSender{
-			BusinessName: wallet.BusinessName,
+			BusinessName: *wallet.BusinessName,
 			FirstName: ctx.GetStringContextData("FirstName"),
 			LastName: ctx.GetStringContextData("LastName"),
 			Email: ctx.GetStringContextData("Email"),

@@ -46,9 +46,6 @@ func UpdateUserProfile(ctx *interfaces.ApplicationContext[dto.UpdateUserDTO]){us
 	if ctx.Body.LastName != nil {
 		user.LastName = *ctx.Body.LastName
 	}
-	if ctx.Body.BankDetails != nil {
-		user.BankDetails = *ctx.Body.BankDetails
-	}
 	if ctx.Body.Phone != nil {
 		user.Phone = *ctx.Body.Phone
 	}

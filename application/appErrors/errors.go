@@ -46,6 +46,10 @@ func UnknownError(ctx interface{}){
 		"Omo! Something went wrong somewhere 😭. Please check back later.", nil, nil)
 }
 
+func CustomError(ctx interface{}, msg string){
+	server_response.Responder.Respond(ctx, http.StatusBadRequest, msg, nil, nil)
+}
+
 func UnsupportedAppVersion(ctx interface{}){
 	server_response.Responder.Respond(ctx, http.StatusBadRequest,
 		"Uh oh! Seems you're using an old version of the app. 🤦🏻‍♂️\n Upgrade to the latest version to continue enjoying our blazing fast services! 🚀", nil, nil)

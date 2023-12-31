@@ -3,6 +3,7 @@ package startup
 import (
 	"kego.com/infrastructure/database"
 	"kego.com/infrastructure/database/connection/datastore"
+	fileupload "kego.com/infrastructure/file_upload"
 	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
 	international_payment_processor "kego.com/infrastructure/payment_processor/chimoney"
@@ -16,6 +17,7 @@ func StartServices(){
 	// set up databases
 	database.SetUpDatabase()
 	
+	fileupload.InitialiseFileUploader()
 	identityverification.InitialiseIdentityVerifier()
 	local_payment_processor.InitialisePaystackPaymentProcessor()
 	international_payment_processor.InitialiseChimoneyPaymentProcessor()

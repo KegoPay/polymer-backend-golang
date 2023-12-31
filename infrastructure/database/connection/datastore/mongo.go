@@ -57,9 +57,6 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 
 	WalletModel = db.Collection("Wallets")
 	WalletModel.Indexes().CreateMany(ctx, []mongo.IndexModel{{
-		Keys:    bson.D{{Key: "businessID", Value: 1}},
-		Options: options.Index().SetUnique(true),
-	},{
 		Keys:    bson.D{{Key: "userID", Value: 1}},
 		Options: options.Index(),
 	}})

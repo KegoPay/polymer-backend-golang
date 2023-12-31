@@ -1,19 +1,15 @@
 package dto
 
-import "kego.com/entities"
+import "mime/multipart"
 
 type CreateAccountDTO struct {
-	FirstName         string       	  		 `json:"firstName"`
-	LastName          string       	 		 `json:"lastName"`
-	Email      		  string                 `json:"email,omitempty"`
-	Phone      		  entities.PhoneNumber   `json:"phone,omitempty"`
-	Password   		  string                 `json:"password"`
+	Email      		  string                 `json:"email"`
+	Password      		  string                 `json:"password"`
 	UserAgent 		  string     			 `json:"deviceType"`
 	DeviceID  		  string                 `json:"deviceID"`
 	TransactionPin    string           		 `json:"transactionPin"`
 	AppVersion        string       			 `json:"appVersion"`
 	BVN    			  string           		 `json:"bvn"`
-	BankDetails 	  entities.BankDetails	 `json:"bankDetails"`
 }
 
 type LoginDTO struct {
@@ -23,9 +19,14 @@ type LoginDTO struct {
 	DeviceID   string                 `json:"deviceID"`
 }
 
-type VerifyAccountData struct {
+type VerifyEmailData struct {
 	Otp     string `json:"otp"`
 	Email	string `json:"email"`
+}
+
+type VerifyAccountData struct {
+	ProfileImage     *multipart.FileHeader
+	Email 			 string
 }
 
 type VerifyPassword struct {

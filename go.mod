@@ -4,7 +4,13 @@ go 1.21.2
 
 require github.com/google/uuid v1.4.0
 
-require github.com/sendgrid/rest v2.6.9+incompatible // indirect
+require (
+	github.com/cloudinary/cloudinary-go v1.7.0 // indirect
+	github.com/cloudinary/cloudinary-go/v2 v2.6.2 // indirect
+	github.com/creasty/defaults v1.5.1 // indirect
+	github.com/gorilla/schema v1.2.0 // indirect
+	github.com/sendgrid/rest v2.6.9+incompatible // indirect
+)
 
 require (
 	github.com/axiaoxin-com/logging v1.2.3 // indirect

@@ -3,12 +3,10 @@ package authusecases
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	apperrors "kego.com/application/appErrors"
-	bankssupported "kego.com/application/banksSupported"
 	"kego.com/application/repository"
 	walletUsecases "kego.com/application/usecases/wallet"
 	"kego.com/entities"
@@ -23,29 +21,12 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 		apperrors.ValidationFailedError(ctx, valiedationErr)
 		return nil, nil, errors.New("")
 	}
-	bankExists := ""
-	for _, bank := range bankssupported.KYCSupportedBanks {
-		if bank.Name == payload.BankDetails.BankName{
-			bankExists = bank.Code
-			break
-		}
-	}
-	if bankExists  == "" {
-		apperrors.NotFoundError(ctx, fmt.Sprintf("%s is not a supported bank on our platform yet.", payload.BankDetails.BankName))
-		return nil, nil,  errors.New("")
-	}
 	passwordHash, err := cryptography.CryptoHahser.HashString(payload.Password)
 	if err != nil {
 		apperrors.ValidationFailedError(ctx, &[]error{err})
 		return nil, nil, err
 	}
-	transactionPinHash, err := cryptography.CryptoHahser.HashString(payload.TransactionPin)
-	if err != nil {
-		apperrors.ValidationFailedError(ctx, &[]error{err})
-		return nil, nil, err
-	}
 	payload.Password = string(passwordHash)
-	payload.TransactionPin = string(transactionPinHash)
 	userRepo := repository.UserRepo()
 	var user *entities.User
 	var wallet *entities.Wallet

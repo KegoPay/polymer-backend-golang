@@ -29,7 +29,7 @@ func CreateBusiness(ctx any, payload *entities.Business) (*entities.Business, *e
 		walletPayload := &entities.Wallet{
 			BusinessID: &payload.ID,
 			UserID: payload.UserID,
-			BusinessName: payload.Name,
+			BusinessName: &payload.Name,
 			Frozen: false,
 			Balance: 0,
 			LedgerBalance: 0,

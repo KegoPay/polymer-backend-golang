@@ -63,13 +63,13 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.POST("/account/verify", func(ctx *gin.Context) {
-			var body dto.VerifyAccountData
+		authRouter.POST("/email/verify", func(ctx *gin.Context) {
+			var body dto.VerifyEmailData
 			if err := ctx.ShouldBindJSON(&body); err != nil {
 				apperrors.ErrorProcessingPayload(ctx)
 				return
 			}
-			controllers.VerifyAccount(&interfaces.ApplicationContext[dto.VerifyAccountData]{
+			controllers.VerifyEmail(&interfaces.ApplicationContext[dto.VerifyEmailData]{
 				Ctx: ctx,
 				Body: &body,
 			})
@@ -85,9 +85,23 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.GET("/account/kyc/retry", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
-			appContext, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
-			controllers.RetryIdentityVerification(appContext)
+		authRouter.GET("/account/verify", func(ctx *gin.Context) {
+			var body dto.VerifyAccountData
+			file, err := ctx.FormFile("profile_image")
+			if err != nil {
+				apperrors.FatalServerError(ctx)
+				return
+			}
+			if file == nil {
+				apperrors.NotFoundError(ctx, "pass in a picture for identity verification")
+				return
+			}
+			body.ProfileImage = file
+			body.Email = ctx.Query("email")
+			controllers.VerifyAccount(&interfaces.ApplicationContext[dto.VerifyAccountData]{
+				Ctx: ctx,
+				Body: &body,
+			})
 		})
 
 		authRouter.POST("/account/password/reset",  func(ctx *gin.Context) {
