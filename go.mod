@@ -5,11 +5,30 @@ go 1.21.2
 require github.com/google/uuid v1.4.0
 
 require (
+	cloud.google.com/go v0.46.3 // indirect
+	cloud.google.com/go/firestore v1.1.0 // indirect
+	cloud.google.com/go/storage v1.0.0 // indirect
+	firebase.google.com/go v3.13.0+incompatible // indirect
+	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/cloudinary/cloudinary-go v1.7.0 // indirect
 	github.com/cloudinary/cloudinary-go/v2 v2.6.2 // indirect
 	github.com/creasty/defaults v1.5.1 // indirect
+	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
 	github.com/gorilla/schema v1.2.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.1 // indirect
+	github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
+	go.opencensus.io v0.22.0 // indirect
+	golang.org/x/exp v0.0.0-20200821190819-94841d0725da // indirect
+	golang.org/x/lint v0.0.0-20190930215403-16217165b5de // indirect
+	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
+	golang.org/x/tools v0.6.0 // indirect
+	google.golang.org/api v0.13.0 // indirect
+	google.golang.org/appengine v1.6.1 // indirect
+	google.golang.org/genproto v0.0.0-20191108220845-16a3f7862a1a // indirect
+	google.golang.org/grpc v1.21.1 // indirect
+	honnef.co/go/tools v0.0.1-2019.2.3 // indirect
 )
 
 require (
@@ -62,13 +81,13 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
-	go.mongodb.org/mongo-driver v1.12.1 // indirect
+	go.mongodb.org/mongo-driver v1.13.1 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
+	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
