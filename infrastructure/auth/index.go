@@ -105,6 +105,10 @@ func DecodeAuthToken(tokenString string) (*jwt.Token, error) {
 }
 
 func SignOutUser(ctx any, id string, reason string){
+	logger.Info("system user signout initiated", logger.LoggerOptions{
+		Key: "reason",
+		Data: reason,
+	})
 	deleted := cache.Cache.DeleteOne(id)
 	if !deleted {
 		logger.Error(errors.New("failed to sign out user"), logger.LoggerOptions{

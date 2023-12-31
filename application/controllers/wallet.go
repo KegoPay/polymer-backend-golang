@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	apperrors "kego.com/application/appErrors"
 	bankssupported "kego.com/application/banksSupported"
@@ -13,6 +14,8 @@ import (
 	"kego.com/application/services"
 	"kego.com/application/utils"
 	"kego.com/entities"
+	"kego.com/infrastructure/messaging/emails"
+	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 	international_payment_processor "kego.com/infrastructure/payment_processor/chimoney"
 	server_response "kego.com/infrastructure/serverResponse"
 )
@@ -28,20 +31,24 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		apperrors.UnknownError(ctx.Ctx)
 		return
 	}
-	ctx.Body.Amount = utils.Float32ToUint64Currency((*rates)["convertedValue"])
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, businessID, ctx.GetStringContextData("UserID"), ctx.Body.Amount, ctx.Body.Pin)
+	amountInNGN := utils.Float32ToUint64Currency((*rates)["convertedValue"])
+	wallet , err := services.InitiatePreAuth(ctx.Ctx, businessID, ctx.GetStringContextData("UserID"), amountInNGN, ctx.Body.Pin)
 	if err != nil {
 		return
 	}
-	err = services.LockFunds(ctx.Ctx, wallet, ctx.Body.Amount, entities.ChimoneyDebitInternational)
+	err = services.LockFunds(ctx.Ctx, wallet, amountInNGN, entities.ChimoneyDebitInternational)
 	if err != nil {
 		return
+	}
+	destinationCountry := utils.CountryCodeToCountryName(ctx.Body.DestinationCountryCode)
+	if os.Getenv("GIN_MODE") != "release" {
+		destinationCountry = utils.CountryCodeToCountryName("NG")
 	}
 	response := services.InitiateInternationalPayment(ctx.Ctx, &international_payment_processor.InternationalPaymentRequestPayload{
-		DestinationCountry: "Nigeria",
+		DestinationCountry: destinationCountry,
 		AccountNumber: ctx.Body.AccountNumber,
 		BankCode: ctx.Body.BankCode,
-		ValueInUSD: utils.Float32ToUint64Currency((*rates)["convertToUSD"]),
+		ValueInUSD: (*rates)["convertToUSD"],
 	})
 	if response == nil {
 		return
@@ -50,8 +57,9 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		TransactionReference: response.Chimoneys[0].ChiRef,
 		MetaData: response.Chimoneys[0],
 		AmountInUSD: utils.Float32ToUint64Currency(response.Chimoneys[0].ValueInUSD),
+		AmountInNGN: amountInNGN,
 		Amount: ctx.Body.Amount,
-		Currency: wallet.Currency,
+		Currency: utils.CountryCodeToCurrencyCode(ctx.Body.DestinationCountryCode),
 		WalletID: wallet.ID,
 		UserID: wallet.UserID,
 		BusinessID: wallet.BusinessID,
@@ -91,6 +99,15 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		apperrors.FatalServerError(ctx.Ctx)
 		return
 	}
+	pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("DeviceID"), "Your payment is on its way! 🚀",
+		fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.Name, utils.CountryCodeToCountryName(transaction.Recepient.Country)))
+	emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
+		"FIRSTNAME": transaction.Sender.FirstName,
+		"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(transaction.Currency),
+		"AMOUNT": utils.UInt64ToFloat32Currency(transaction.Amount),
+		"RECEPIENT_NAME": transaction.Recepient.Name,
+		"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(transaction.Recepient.Country),
+	})
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
 }
 

@@ -43,6 +43,31 @@ func CountryCodeToCountryName(code string) string {
 	return countryCodeMap[code]
 }
 
+func CountryCodeToCurrencyCode(code string) string {
+	countryCodeMap := map[string]string {
+		"NG": "NGN",
+		"IN": "INR",
+		"US": "USD",
+		"KE": "KES",
+		"ZA": "ZAR",
+		"GB": "GBP",
+	}
+	return countryCodeMap[code]
+}
+
+func CurrencyCodeToCurrencySymbol(code string) string {
+    currencySymbolMap := map[string]string{
+        "NGN": "₦",
+        "INR": "₹",
+        "USD": "$",
+        "KES": "KSh",
+        "ZAR": "R",
+        "GBP": "£",
+    }
+    return currencySymbolMap[code]
+}
+
+
 func Float32ToUint64Currency(value float32) uint64 {
 	roundedValue := math.Round(float64(value * 100))
 	uintValue := uint64(roundedValue)

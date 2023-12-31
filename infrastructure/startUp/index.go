@@ -6,6 +6,7 @@ import (
 	fileupload "kego.com/infrastructure/file_upload"
 	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
+	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 	international_payment_processor "kego.com/infrastructure/payment_processor/chimoney"
 	local_payment_processor "kego.com/infrastructure/payment_processor/paystack"
 )
@@ -18,6 +19,7 @@ func StartServices(){
 	database.SetUpDatabase()
 	
 	fileupload.InitialiseFileUploader()
+	pushnotification.InitialisePushNotificationService()
 	identityverification.InitialiseIdentityVerifier()
 	local_payment_processor.InitialisePaystackPaymentProcessor()
 	international_payment_processor.InitialiseChimoneyPaymentProcessor()

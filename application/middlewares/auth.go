@@ -77,12 +77,12 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any]) (*interfa
 		}
 		deviceID := ctx.GetHeader("Polymer-Device-Id")
 		if deviceID == nil {
-			auth.SignOutUser(ctx.Ctx, account.ID, "client made request using app version different from that in access token")
+			auth.SignOutUser(ctx.Ctx, account.ID, "client made request without a device id")
 			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access")
 			return nil, false
 		}
 		if auth_token_claims["deviceID"] != account.DeviceID || account.DeviceID != deviceID.(string) ||  auth_token_claims["deviceID"] != deviceID.(string) {
-			logger.Warning("client made request using app version different from that in access token",logger.LoggerOptions{
+			logger.Warning("client made request using device id different from that in access token",logger.LoggerOptions{
 				Key: "token appVersion",
 				Data: auth_token_claims["appVersion"],
 			}, logger.LoggerOptions{

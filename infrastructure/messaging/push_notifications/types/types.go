@@ -1,5 +1,5 @@
 package types
 
 type PushNotificationServiceType interface{
-	PushOne(string, string, string)
+	PushOne(deviceID string, header string,  body string)
 }

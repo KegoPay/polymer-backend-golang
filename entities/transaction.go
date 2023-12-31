@@ -39,6 +39,7 @@ type TransactionRecepient struct {
 type Transaction struct {
 	TransactionReference string               `bson:"transactionReference" json:"transactionReference" validate:"required"`
 	Amount               uint64               `bson:"amount" json:"amount" validate:"required"`
+	AmountInNGN          uint64          	  `bson:"amountInNGN" json:"amountInNGN" validate:"required"`
 	AmountInUSD          uint64               `bson:"amountInUSD" json:"amountInUSD" validate:"required"`
 	Currency             string               `bson:"currency" json:"currency" validate:"iso4217"`
 	WalletID             string               `bson:"walletID" json:"walletID" validate:"required"`
