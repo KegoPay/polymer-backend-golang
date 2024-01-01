@@ -2,21 +2,36 @@ package services
 
 import (
 	"fmt"
+	"os"
 
 	apperrors "kego.com/application/appErrors"
-	payment_processor "kego.com/infrastructure/payment_processor/paystack"
+	paymentprocessor "kego.com/infrastructure/payment_processor"
+	"kego.com/infrastructure/payment_processor/types"
 )
 
 
 func NameVerification(ctx any, accountNumber string, bankCode string) *string {
-	response, statusCode, err := payment_processor.LocalPaymentProcessor.NameVerification(accountNumber,bankCode)
+	response, statusCode, err := paymentprocessor.LocalPaymentProcessor.NameVerification(accountNumber, bankCode)
 	if err != nil {
-		apperrors.ExternalDependencyError(ctx, "paystack", fmt.Sprintf("%d", statusCode), err)
+		apperrors.ExternalDependencyError(ctx, os.Getenv("LOCAL_PAYMENT_PROCESSOR"), fmt.Sprintf("%d", statusCode), err)
 		return nil
 	}
-	if statusCode == 422 {
-		apperrors.ClientError(ctx, fmt.Sprintf("Account number %s could not be verified at the specified bank", accountNumber), nil)
+	return &response.AccountName
+}
+
+func InitiateLocalPayment(ctx any, payload *types.InitiateLocalTransferPayload) *types.InitiateLocalTransferDataField {
+	response, statusCode, err :=  paymentprocessor.LocalPaymentProcessor.InitiateLocalTransfer(payload)
+	if err != nil {
+		apperrors.ExternalDependencyError(ctx, os.Getenv("LOCAL_PAYMENT_PROCESSOR"), fmt.Sprintf("%d", statusCode), err)
 		return nil
 	}
-	return &response.Data.AccountName
+	if response == nil {
+		apperrors.UnknownError(ctx)
+		return nil
+	}
+	if *statusCode >= 400 {
+		apperrors.UnknownError(ctx)
+		return nil
+	}
+	return response
 }

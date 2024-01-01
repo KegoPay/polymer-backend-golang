@@ -2,7 +2,7 @@ package dto
 
 type SendPaymentDTO struct {
 	Pin         			string       	 `json:"pin"`
-	FullName         		string      	 `json:"fullName"`
+	FullName         		*string      	 `json:"fullName"`
 	Amount      			uint64      	 `json:"amount"`
 	DestinationCountryCode  string 		 	 `json:"destinationCountryCode"`
 	BankCode				string 		 	 `json:"bankCode"`

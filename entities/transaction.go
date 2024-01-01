@@ -10,15 +10,16 @@ type TransactionIntent string
 
 const (
 	PaystackDVACredit          TransactionIntent = "paystack_dva_credit"
+	FlutterwaveDVACredit          TransactionIntent = "flutterwave_dva_credit"
 	ChimoneyDebitInternational TransactionIntent = "chimoney_debit_international"
 	PaystackDebitLocal         TransactionIntent = "paystack_debit_local"
+	FlutterwaveDebitLocal         TransactionIntent = "flutterwave_debit_local"
 )
 
 type DeviceInfo struct {
 	IPAddress  string    `bson:"ipAddress" json:"ipAddress" validate:"required,ip"`
 	DeviceID   string    `bson:"deviceID" json:"deviceID" validate:"required"`
 	UserAgent  string 	 `bson:"userAgent" json:"userAgent" validate:"user_agent,required"`
-	AppVersion string    `bson:"appVersion" json:"appVersion" validate:"required"`
 }
 
 type TransactionSender struct {
@@ -33,6 +34,7 @@ type TransactionRecepient struct {
 	AccountNumber string  `bson:"accountNumber" json:"accountNumber" validate:"required"`
 	Country       string  `bson:"country" json:"country" validate:"iso3166_1_alpha2"`
 	BankCode      string  `bson:"bankCode" json:"bankCode" validate:"required"`
+	BankName      string  `bson:"bankName" json:"bankName"`
 	BranchCode    *string `bson:"branchCode" json:"branchCode" validate:"required"`
 }
 
@@ -40,8 +42,11 @@ type Transaction struct {
 	TransactionReference string               `bson:"transactionReference" json:"transactionReference" validate:"required"`
 	Amount               uint64               `bson:"amount" json:"amount" validate:"required"`
 	AmountInNGN          uint64          	  `bson:"amountInNGN" json:"amountInNGN" validate:"required"`
-	AmountInUSD          uint64               `bson:"amountInUSD" json:"amountInUSD" validate:"required"`
+	Fee          		 uint64          	  `bson:"fee" json:"fee" validate:"required"`
+	ProcessorFee         uint64          	  `bson:"processorFee" json:"processorFee" validate:"required"`
+	AmountInUSD          *uint64              `bson:"amountInUSD" json:"amountInUSD" validate:"required"`
 	Currency             string               `bson:"currency" json:"currency" validate:"iso4217"`
+	ProcessorFeeCurrency string               `bson:"processorFeeCurrency" json:"processorFeeCurrency" validate:"iso4217"`
 	WalletID             string               `bson:"walletID" json:"walletID" validate:"required"`
 	UserID               string               `bson:"userID" json:"userID" validate:"required"`
 	BusinessID           *string              `bson:"businessID" json:"businessID"`

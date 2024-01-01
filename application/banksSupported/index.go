@@ -2,7 +2,7 @@ package bankssupported
 
 import "kego.com/entities"
 
-var KYCSupportedBanks []entities.Bank = []entities.Bank{
+var SupportedLocalBanks []entities.Bank = []entities.Bank{
 	{
 		Name: "9mobile 9Payment Service Bank",
 		Code: "120001",

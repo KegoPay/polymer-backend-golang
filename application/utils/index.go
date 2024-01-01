@@ -1,22 +1,14 @@
 package utils
 
 import (
-	"math"
 	"regexp"
 
 	"github.com/google/uuid"
+	"kego.com/application/constants"
 )
 
 func GenerateUUIDString() string {
 	return uuid.NewString()
-}
-
-func ParseAmountToSmallerDenomination(amount uint64) uint64 {
-	return amount * 100
-}
-
-func ParseAmountToHigherDenomination(amount uint64) uint64 {
-	return amount / 100
 }
 
 func GetStringPointer(text string) *string {
@@ -29,6 +21,33 @@ func GetBooleanPointer(data bool) *bool {
 
 func GetFloat32Pointer(data float32) *float32 {
 	return &data
+}
+
+func GetUInt64Pointer(data uint64) *uint64 {
+	return &data
+}
+
+func GetTransactionFee(amount uint64) uint64 {
+	fee := (float32(amount) * constants.INTERNATIONAL_TRANSACTION_FEE_RATE) / 100.0
+    return Float32ToUint64Currency(fee)
+}
+
+func GetLocalTransactionFee(amount uint64) (localProcessorFee float32, polymerFee float32) {
+	var vat float32
+    if amount <= 500000 {
+		vat = float32(constants.LOCAL_PROCESSOR_FEE_LT_5000) * constants.LOCAL_TRANSACTION_FEE_VAT
+		polymerFee = float32(constants.LOCAL_PROCESSOR_FEE_LT_5000) * constants.LOCAL_TRANSACTION_FEE_RATE
+        localProcessorFee = constants.LOCAL_PROCESSOR_FEE_LT_5000 + vat
+    } else if amount <= 5000000 {
+		vat = float32(constants.LOCAL_PROCESSOR_FEE_LT_50000) * constants.LOCAL_TRANSACTION_FEE_VAT
+		polymerFee = float32(constants.LOCAL_PROCESSOR_FEE_LT_50000) * constants.LOCAL_TRANSACTION_FEE_RATE
+        localProcessorFee = constants.LOCAL_PROCESSOR_FEE_LT_50000 + vat
+    } else {
+		vat = float32(constants.LOCAL_PROCESSOR_FEE_GT_50000) * constants.LOCAL_TRANSACTION_FEE_VAT
+		polymerFee = float32(constants.LOCAL_PROCESSOR_FEE_GT_50000) * constants.LOCAL_TRANSACTION_FEE_RATE
+        localProcessorFee = constants.LOCAL_PROCESSOR_FEE_GT_50000 + vat
+    }
+    return localProcessorFee, polymerFee
 }
 
 func CountryCodeToCountryName(code string) string {
@@ -69,8 +88,7 @@ func CurrencyCodeToCurrencySymbol(code string) string {
 
 
 func Float32ToUint64Currency(value float32) uint64 {
-	roundedValue := math.Round(float64(value * 100))
-	uintValue := uint64(roundedValue)
+	uintValue := uint64(value * 100)
 	return uintValue
 }
 

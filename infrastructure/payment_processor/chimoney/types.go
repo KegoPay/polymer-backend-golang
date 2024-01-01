@@ -1,4 +1,4 @@
-package international_payment_processor
+package chimoney_international_payment_processor
 
 import "kego.com/entities"
 

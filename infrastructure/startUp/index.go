@@ -7,8 +7,7 @@ import (
 	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
 	pushnotification "kego.com/infrastructure/messaging/push_notifications"
-	international_payment_processor "kego.com/infrastructure/payment_processor/chimoney"
-	local_payment_processor "kego.com/infrastructure/payment_processor/paystack"
+	paymentprocessor "kego.com/infrastructure/payment_processor"
 )
 
 // Used to start services such as loggers, databases, queues, etc.
@@ -21,8 +20,8 @@ func StartServices(){
 	fileupload.InitialiseFileUploader()
 	pushnotification.InitialisePushNotificationService()
 	identityverification.InitialiseIdentityVerifier()
-	local_payment_processor.InitialisePaystackPaymentProcessor()
-	international_payment_processor.InitialiseChimoneyPaymentProcessor()
+	paymentprocessor.LocalPaymentProcessor.InitialisePaymentProcessor()
+	paymentprocessor.InternationalPaymentProcessor.InitialisePaymentProcessor()
 }
 
 // Used to clean up after services that have been shutdown.

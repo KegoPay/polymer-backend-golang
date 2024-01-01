@@ -42,6 +42,30 @@ func GetWalletByBusinessID(ctx any, id string, userID string) (*entities.Wallet,
 	return wallet, nil
 }
 
+func GetWalletByUserID(ctx any, id string) (*entities.Wallet, error) {
+	walletRepository := repository.WalletRepo()
+	wallet, err := walletRepository.FindOneByFilter(map[string]interface{}{
+		"userID": id,
+	})
+	if err != nil {
+		logger.Error(errors.New("error fetching a userID wallet"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key: "userID",
+			Data: id,
+		})
+		apperrors.FatalServerError(ctx)
+		return nil, err
+	}
+	if wallet == nil {
+		err := fmt.Errorf("This wallet was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL)
+		apperrors.NotFoundError(ctx, err.Error())
+		return nil, err
+	} 
+	return wallet, nil
+}
+
 func FreezeWallet(ctx any, walletID string, userID string, reason wallet_constants.FrozenAccountReason, time wallet_constants.FrozenAccountTime) (bool, error) {
 	walletRepository := repository.WalletRepo()
 	frozenWalletLogRepository := repository.FrozenWalletLogRepo()

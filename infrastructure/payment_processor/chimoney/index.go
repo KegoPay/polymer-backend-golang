@@ -1,4 +1,4 @@
-package international_payment_processor
+package chimoney_international_payment_processor
 
 import (
 	"encoding/json"
@@ -14,21 +14,20 @@ import (
 
 
 
-var InternationalPaymentProcessor *ChimoneyPaymentProcessor
-
-func InitialiseChimoneyPaymentProcessor() {
-	InternationalPaymentProcessor = &ChimoneyPaymentProcessor{
-		Network: &network.NetworkController{
-			BaseUrl: os.Getenv("CHIMONEY_BASE_URL"),
-		},
-		AuthToken: os.Getenv("CHIMONEY_ACCESS_TOKEN"),
-	}
-}
+var InternationalPaymentProcessor *ChimoneyPaymentProcessor = &ChimoneyPaymentProcessor{}
 
 type ChimoneyPaymentProcessor struct {
 	Network *network.NetworkController
 	AuthToken string
 }
+
+func (chimoneyPP *ChimoneyPaymentProcessor) InitialisePaymentProcessor() {
+	InternationalPaymentProcessor.Network = &network.NetworkController{
+		BaseUrl: os.Getenv("CHIMONEY_BASE_URL"),
+	}
+	InternationalPaymentProcessor.AuthToken = os.Getenv("CHIMONEY_ACCESS_TOKEN")
+}
+
 
 func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(currency any, amount any) (*map[string]float32, int, error){
 	response, statusCode, err := chimoneyPP.Network.Get("/info/exchange-rates", &map[string]string{

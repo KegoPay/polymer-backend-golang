@@ -1,4 +1,4 @@
-package local_payment_processor
+package paystack_local_payment_processor
 
 import (
 	"encoding/json"
@@ -13,19 +13,18 @@ import (
 var LocalPaymentProcessor *PaystackPaymentProcessor
 
 
-func InitialisePaystackPaymentProcessor() {
+type PaystackPaymentProcessor struct {
+	Network *network.NetworkController
+	AuthToken string
+}
+
+func (paystackPP *PaystackPaymentProcessor) InitialisePaymentProcessor() {
 	LocalPaymentProcessor = &PaystackPaymentProcessor{
 		Network: &network.NetworkController{
 			BaseUrl: os.Getenv("PAYSTACK_BASE_URL"),
 		},
 		AuthToken: os.Getenv("PAYSTACK_ACCESS_TOKEN"),
 	}
-}
-
-
-type PaystackPaymentProcessor struct {
-	Network *network.NetworkController
-	AuthToken string
 }
 
 func (paystackPP *PaystackPaymentProcessor) NameVerification(accountNumber string, bankCode string) (*PaystackNameVerificationResponseDTO, int, error) {

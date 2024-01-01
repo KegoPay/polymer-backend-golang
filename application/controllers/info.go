@@ -22,7 +22,7 @@ func FilterCountries(ctx *interfaces.ApplicationContext[dto.CountryFilter]){
 }
 
 func FetchLocalBanks(ctx *interfaces.ApplicationContext[any]){
-	banks := bankssupported.KYCSupportedBanks
+	banks := bankssupported.SupportedLocalBanks
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "banks fetched", banks, nil)
 }
 
@@ -30,7 +30,7 @@ func FetchInternationalBanks(ctx *interfaces.ApplicationContext[dto.CountryCode]
 	var banks *[]entities.Bank
 
 	if ctx.Body.Code == "NG" {
-		banks = &bankssupported.KYCSupportedBanks
+		banks = &bankssupported.SupportedLocalBanks
 	} else {
 		banks = services.FetchInternationalBanks(ctx.Ctx, ctx.Body.Code)
 	}
