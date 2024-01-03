@@ -27,27 +27,34 @@ func GetUInt64Pointer(data uint64) *uint64 {
 	return &data
 }
 
-func GetTransactionFee(amount uint64) uint64 {
-	fee := (float32(amount) * constants.INTERNATIONAL_TRANSACTION_FEE_RATE) / 100.0
-    return Float32ToUint64Currency(fee)
+func GetInternationalTransactionFee(amount uint64) (internationalProcessorFee uint64, transactionFee uint64) {
+	transactionFee = Float32ToUint64Currency(UInt64ToFloat32Currency(amount) * constants.INTERNATIONAL_TRANSACTION_FEE_RATE)
+	internationalProcessorFee = Float32ToUint64Currency(UInt64ToFloat32Currency(amount) * constants.INTERNATIONAL_PROCESSOR_FEE_RATE)
+    return
 }
 
-func GetLocalTransactionFee(amount uint64) (localProcessorFee float32, polymerFee float32) {
+func GetLocalTransactionFee(amount uint64) (localProcessorFee float32, totalPolymerFee float32) {
 	var vat float32
     if amount <= 500000 {
-		vat = float32(constants.LOCAL_PROCESSOR_FEE_LT_5000) * constants.LOCAL_TRANSACTION_FEE_VAT
-		polymerFee = float32(constants.LOCAL_PROCESSOR_FEE_LT_5000) * constants.LOCAL_TRANSACTION_FEE_RATE
+		vat = constants.LOCAL_PROCESSOR_FEE_LT_5000 * constants.LOCAL_TRANSACTION_FEE_VAT
+		polymerFee := constants.LOCAL_PROCESSOR_FEE_LT_5000 * constants.LOCAL_TRANSACTION_FEE_RATE
+		polymerVat := polymerFee * constants.LOCAL_TRANSACTION_FEE_VAT
+		totalPolymerFee = polymerVat + polymerFee
         localProcessorFee = constants.LOCAL_PROCESSOR_FEE_LT_5000 + vat
     } else if amount <= 5000000 {
-		vat = float32(constants.LOCAL_PROCESSOR_FEE_LT_50000) * constants.LOCAL_TRANSACTION_FEE_VAT
-		polymerFee = float32(constants.LOCAL_PROCESSOR_FEE_LT_50000) * constants.LOCAL_TRANSACTION_FEE_RATE
+		vat = constants.LOCAL_PROCESSOR_FEE_LT_50000 * constants.LOCAL_TRANSACTION_FEE_VAT
+		polymerFee := constants.LOCAL_PROCESSOR_FEE_LT_50000 * constants.LOCAL_TRANSACTION_FEE_RATE
+		polymerVat := polymerFee * constants.LOCAL_TRANSACTION_FEE_VAT
+		totalPolymerFee = polymerVat + polymerFee
         localProcessorFee = constants.LOCAL_PROCESSOR_FEE_LT_50000 + vat
     } else {
-		vat = float32(constants.LOCAL_PROCESSOR_FEE_GT_50000) * constants.LOCAL_TRANSACTION_FEE_VAT
-		polymerFee = float32(constants.LOCAL_PROCESSOR_FEE_GT_50000) * constants.LOCAL_TRANSACTION_FEE_RATE
+		vat = constants.LOCAL_PROCESSOR_FEE_GT_50000 * constants.LOCAL_TRANSACTION_FEE_VAT
+		polymerFee := constants.LOCAL_PROCESSOR_FEE_GT_50000 * constants.LOCAL_TRANSACTION_FEE_RATE
+		polymerVat := polymerFee * constants.LOCAL_TRANSACTION_FEE_VAT
+		totalPolymerFee = polymerVat + polymerFee
         localProcessorFee = constants.LOCAL_PROCESSOR_FEE_GT_50000 + vat
     }
-    return localProcessorFee, polymerFee
+    return localProcessorFee, totalPolymerFee
 }
 
 func CountryCodeToCountryName(code string) string {

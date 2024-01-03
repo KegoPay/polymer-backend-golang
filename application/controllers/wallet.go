@@ -22,6 +22,14 @@ import (
 )
 
 func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
+	if ctx.Body.Amount < 1000 {
+		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil)
+		return
+	}
+	if ctx.Body.Amount >= 30000000000 {
+		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil)
+		return
+	}
 	businessID := ctx.GetStringParameter("businessID") 
 	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Body.DestinationCountryCode, ctx.Body.Amount)
 	if err != nil {
@@ -33,8 +41,8 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		return
 	}
 	amountInNGN := utils.Float32ToUint64Currency((*rates)["convertedValue"])
-	fee := utils.GetTransactionFee(amountInNGN)
-	totalAmount := fee + amountInNGN
+	internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(amountInNGN)
+	totalAmount := internationalProcessorFee + transactionFee + amountInNGN
 	wallet , err := services.InitiatePreAuth(ctx.Ctx, businessID, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin)
 	if err != nil {
 		return
@@ -61,9 +69,9 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		MetaData: response.Chimoneys[0],
 		AmountInUSD: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(response.Chimoneys[0].ValueInUSD)),
 		AmountInNGN: totalAmount,
-		Fee: fee,
+		Fee: transactionFee,
 		ProcessorFeeCurrency: "USD",
-		ProcessorFee: uint64(response.Chimoneys[0].Fee),
+		ProcessorFee: internationalProcessorFee,
 		Amount: ctx.Body.Amount,
 		Currency: utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
 		WalletID: wallet.ID,
@@ -118,6 +126,14 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 }
 
 func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
+	if ctx.Body.Amount < 1000 {
+		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil)
+		return
+	}
+	if ctx.Body.Amount >= 30000000000 {
+		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil)
+		return
+	}
 	businessID := ctx.GetStringParameter("businessID") 
 	localProcessorFee, polymerFee := utils.GetLocalTransactionFee(ctx.Body.Amount)
 	totalAmount := ctx.Body.Amount + utils.Float32ToUint64Currency(localProcessorFee) + utils.Float32ToUint64Currency(polymerFee)
@@ -214,6 +230,38 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(transaction.Recepient.Country),
 	})
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
+}
+
+func BusinessLocalPaymentFee(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
+	if ctx.Body.Amount < 1000 {
+		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil)
+		return
+	}
+	if ctx.Body.Amount >= 30000000000 {
+		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil)
+		return
+	}
+	localProcessorFee, polymerFee := utils.GetLocalTransactionFee(ctx.Body.Amount)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "fee calculated", map[string]any{
+		"processorFee": utils.Float32ToUint64Currency(localProcessorFee),
+		"polymerFee": utils.Float32ToUint64Currency(polymerFee),
+	}, nil)
+}
+
+func BusinessInternationalPaymentFee(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
+	if ctx.Body.Amount < 1000 {
+		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil)
+		return
+	}
+	if ctx.Body.Amount >= 30000000000 {
+		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil)
+		return
+	}
+	internationalProcessorFee, polymerFee := utils.GetInternationalTransactionFee(ctx.Body.Amount)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "fee calculated", map[string]any{
+		"processorFee": internationalProcessorFee,
+		"polymerFee": polymerFee,
+	}, nil)
 }
 
 func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificationDTO]){
