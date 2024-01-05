@@ -1,10 +1,12 @@
 package apperrors
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	"kego.com/infrastructure/logger"
+	"kego.com/infrastructure/logger/metrics"
 	server_response "kego.com/infrastructure/serverResponse"
 )
 
@@ -37,11 +39,13 @@ func ErrorProcessingPayload(ctx interface{}){
 }
 
 func FatalServerError(ctx interface{}){
+	metrics.MetricMonitor.ReportError(ctx, errors.New("fatal server error"))
 	server_response.Responder.Respond(ctx, http.StatusInternalServerError,
 		"Omo! Our service is temporarily down 😢. Our team is working to fix it. Please check back later.", nil, nil)
 }
 
 func UnknownError(ctx interface{}){
+	metrics.MetricMonitor.ReportError(ctx, errors.New("an unknown error occured"))
 	server_response.Responder.Respond(ctx, http.StatusBadRequest,
 		"Omo! Something went wrong somewhere 😭. Please check back later.", nil, nil)
 }
@@ -56,6 +60,7 @@ func UnsupportedAppVersion(ctx interface{}){
 }
 
 func UnsupportedUserAgent(ctx interface{}){
+	metrics.MetricMonitor.ReportError(ctx, errors.New("unspported user agent"))
 	server_response.Responder.Respond(ctx, http.StatusBadRequest,
 		"Unsupported user agent 👮🏻‍♂️", nil, nil)
 }

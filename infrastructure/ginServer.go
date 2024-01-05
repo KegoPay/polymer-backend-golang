@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 	apperrors "kego.com/application/appErrors"
 	"kego.com/infrastructure/logger"
+	"kego.com/infrastructure/logger/metrics"
 	middlewares "kego.com/infrastructure/middleware"
 	authroutev1 "kego.com/infrastructure/routes/ginRouter/v1"
 	server_response "kego.com/infrastructure/serverResponse"
@@ -30,6 +31,7 @@ func (s *ginServer)Start(){
 	server := gin.Default()
 	server.MaxMultipartMemory =  15 << 20  // 8 MiB
 
+	server.Use(metrics.MetricMonitor.MetricMiddleware().(func (*gin.Context)))
 	server.Use(middlewares.UserAgentMiddleware())
 
 	v1 := server.Group("/api",)

@@ -6,6 +6,7 @@ import (
 	fileupload "kego.com/infrastructure/file_upload"
 	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
+	"kego.com/infrastructure/logger/metrics"
 	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 	paymentprocessor "kego.com/infrastructure/payment_processor"
 )
@@ -17,6 +18,7 @@ func StartServices(){
 	// set up databases
 	database.SetUpDatabase()
 	
+	metrics.MetricMonitor.Init()
 	fileupload.InitialiseFileUploader()
 	pushnotification.InitialisePushNotificationService()
 	identityverification.InitialiseIdentityVerifier()
