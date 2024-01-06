@@ -21,13 +21,25 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 		apperrors.ValidationFailedError(ctx, valiedationErr)
 		return nil, nil, errors.New("")
 	}
+	userRepo := repository.UserRepo()
+	bvnExists, err := userRepo.CountDocs(map[string]any{
+		"bvn": payload.BVN,
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx)
+		return nil, nil, err
+	}
+	if bvnExists != 0 {
+		err = errors.New("bvn is already registered to another account")
+		apperrors.EntityAlreadyExistsError(ctx, err.Error())
+		return nil, nil, err
+	}
 	passwordHash, err := cryptography.CryptoHahser.HashString(payload.Password)
 	if err != nil {
 		apperrors.ValidationFailedError(ctx, &[]error{err})
 		return nil, nil, err
 	}
 	payload.Password = string(passwordHash)
-	userRepo := repository.UserRepo()
 	var user *entities.User
 	var wallet *entities.Wallet
 	userRepo.StartTransaction(func(sc mongo.Session, c context.Context) error {
