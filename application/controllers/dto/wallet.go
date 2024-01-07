@@ -16,3 +16,7 @@ type NameVerificationDTO struct {
 	AccountNumber  string       `bson:"accountNumber" json:"accountNumber"`
 	BankName       string       `bson:"bankName" json:"bankName"`
 }
+
+type SetPaymentTagDTO struct {
+	Tag  string       `bson:"tag" json:"tag" validate:"required,alphanum,string_min_length_3"`
+}

@@ -29,6 +29,7 @@ type User struct {
 	WatchListed		  		  		string 	  	 `bson:"watchListed" json:"watchListed"`
 	Nationality		  		  		string 	  	 `bson:"nationality" json:"nationality"`
 	ProfileImage		  		  	string 	  	 `bson:"profileImage" json:"profileImage"`
+	Tag		  		  				string 	  	 `bson:"tag" json:"tag"`
 
 	ID        string    `bson:"_id" json:"id"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`

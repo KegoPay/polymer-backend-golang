@@ -4,6 +4,7 @@ func init(){
 	validate.RegisterValidation("exclusive_email_phone", exclusiveEmailAndPhone, true)
 	validate.RegisterValidation("password", validatePasswordStrength)
 	validate.RegisterValidation("user_agent", userAgentConditionalValidator)
+	validate.RegisterValidation("string_min_length_3", stringLengthValidator)
 }
 
 type Validator struct {}

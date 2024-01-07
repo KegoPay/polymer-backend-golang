@@ -40,3 +40,8 @@ func exclusiveEmailAndPhone(fl validator.FieldLevel) bool {
 	}
 	return false
 }
+
+func stringLengthValidator(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+	return len(value) >= 3
+}

@@ -10,6 +10,7 @@ import (
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
 	"kego.com/application/repository"
+	userusecases "kego.com/application/usecases/userUseCases"
 	"kego.com/infrastructure/logger"
 	server_response "kego.com/infrastructure/serverResponse"
 	"kego.com/infrastructure/validator"
@@ -56,4 +57,12 @@ func UpdateUserProfile(ctx *interfaces.ApplicationContext[dto.UpdateUserDTO]){us
 	}
 	userRepo.UpdateByID(ctx.GetStringContextData("UserID"), user)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "update completed", nil, nil)
+}
+
+func SetPaymentTag(ctx *interfaces.ApplicationContext[dto.SetPaymentTagDTO]){
+	err := userusecases.UpdateUserTag(ctx.Ctx, ctx.GetStringContextData("UserID"), *ctx.Body)
+	if err != nil {
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Your payment tag has been set successfully", nil, nil)
 }
