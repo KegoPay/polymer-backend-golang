@@ -85,7 +85,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.GET("/account/verify", func(ctx *gin.Context) {
+		authRouter.POST("/account/verify", func(ctx *gin.Context) {
 			var body dto.VerifyAccountData
 			file, err := ctx.FormFile("profile_image")
 			if err != nil {

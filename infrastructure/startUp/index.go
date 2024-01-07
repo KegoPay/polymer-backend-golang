@@ -28,6 +28,6 @@ func StartServices(){
 
 // Used to clean up after services that have been shutdown.
 func CleanUpServices(){
-	// clean up database resources
 	datastore.CleanUp()
+	metrics.MetricMonitor.CleanUp()
 }

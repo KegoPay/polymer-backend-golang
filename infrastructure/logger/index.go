@@ -16,6 +16,7 @@ func Info(msg string, payload ...LoggerOptions) {
 	for _, data := range payload{
 		zapFields = append(zapFields, zap.Any(data.Key, data.Data))
 	}
+	// metrics.MetricMonitor.
 	Logger.Info(msg, zapFields...)
 }
 
