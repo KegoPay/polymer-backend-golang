@@ -9,16 +9,15 @@ import (
 	"kego.com/infrastructure/logger/metrics"
 	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 	paymentprocessor "kego.com/infrastructure/payment_processor"
+	"kego.com/infrastructure/pubsub"
 )
 
 // Used to start services such as loggers, databases, queues, etc.
 func StartServices(){
-	// initialise logger module
 	logger.InitializeLogger()
-	// set up databases
 	database.SetUpDatabase()
-	
 	metrics.MetricMonitor.Init()
+	pubsub.PubSub.Connect()
 	fileupload.InitialiseFileUploader()
 	pushnotification.InitialisePushNotificationService()
 	identityverification.InitialiseIdentityVerifier()
