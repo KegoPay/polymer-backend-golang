@@ -5,7 +5,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"kego.com/infrastructure/logger"
 )
 
