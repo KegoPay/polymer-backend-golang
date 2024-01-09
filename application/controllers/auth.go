@@ -239,6 +239,10 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		apperrors.FatalServerError(ctx.Ctx)
 		return
 	}
+	if account == nil {
+		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("Account with email %s does not exist. Please contact support on %s to help resolve this issue.", ctx.Body.Email, constants.SUPPORT_EMAIL))
+		return
+	}
 	if !account.EmailVerified {
 		apperrors.ClientError(ctx.Ctx, "verify your email before attempting identity verification", nil)
 		return
