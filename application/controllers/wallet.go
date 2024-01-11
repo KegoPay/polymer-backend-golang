@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"go.mongodb.org/mongo-driver/mongo/options"
 	apperrors "kego.com/application/appErrors"
 	bankssupported "kego.com/application/banksSupported"
 	"kego.com/application/controllers/dto"
@@ -283,4 +284,21 @@ func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificat
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "name verification complete", map[string]string{
 		"name": *name,
 	}, nil)
+}
+
+func FetchPastTransactions(ctx *interfaces.ApplicationContext[any]){
+	transactionsRepo := repository.TransactionRepo()
+	transactions, err := transactionsRepo.FindMany(map[string]interface{}{
+		"userID": ctx.GetStringContextData("UserID"),
+	}, &options.FindOptions{
+		Limit: utils.GetInt64Pointer(15),
+		Sort: map[string]any{
+			"createdAt": -1,
+		},
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx)
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil)
 }

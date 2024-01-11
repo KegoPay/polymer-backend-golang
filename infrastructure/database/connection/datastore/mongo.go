@@ -55,7 +55,7 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 		Options: options.Index().SetUnique(true),
 	},{
 		Keys:    bson.D{{Key: "tag", Value: 1}},
-		Options: options.Index().SetUnique(true),
+		Options: options.Index(),
 	}})
 
 	WalletModel = db.Collection("Wallets")

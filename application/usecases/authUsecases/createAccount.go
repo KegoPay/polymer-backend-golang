@@ -3,6 +3,7 @@ package authusecases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -55,7 +56,10 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 
 		walletPayload = walletPayload.ParseModel().(*entities.Wallet)
 		userPayload.WalletID = walletPayload.ID
+		fmt.Println("before crete user")
 		userData, e := userRepo.CreateOne(c, *userPayload)
+		fmt.Println("after user")
+		fmt.Println(userPayload)
 		if e != nil {
 			logger.Error(errors.New("error creating users account"), logger.LoggerOptions{
 				Key: "error",
@@ -69,7 +73,11 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 			return e
 		}
 		user = userData
+		fmt.Println("before crete wallet")
+		fmt.Println(walletPayload)
 		wallet, e = walletUsecases.CreateWallet(ctx, c, walletPayload)
+		fmt.Println("after crete wallet")
+		fmt.Println(e)
 		if e != nil {
 			logger.Error(errors.New("error creating users wallet"), logger.LoggerOptions{
 				Key: "error",

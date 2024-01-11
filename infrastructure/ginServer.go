@@ -44,6 +44,7 @@ func (s *ginServer)Start(){
 			authroutev1.UserRouter(routerV1)
 			authroutev1.BusinessRouter(routerV1)
 			authroutev1.WalletRouter(routerV1)
+			authroutev1.TransactionRouter(routerV1)
 		}
 	}
 

@@ -6,7 +6,7 @@ import (
 	"kego.com/application/middlewares"
 )
 
-func AuthenticationMiddleware(admin_route bool) gin.HandlerFunc {
+func AuthenticationMiddleware(business_route bool) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		appContext, next := middlewares.AuthenticationMiddleware(&interfaces.ApplicationContext[any]{
 			Ctx:    ctx,

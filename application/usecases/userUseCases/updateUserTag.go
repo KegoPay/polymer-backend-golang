@@ -21,7 +21,6 @@ func UpdateUserTag(ctx any, id string, tag dto.SetPaymentTagDTO) error {
 	tag.Tag = strings.ToLower(tag.Tag)
 	tagExists, err := userRepo.CountDocs(map[string]interface{}{
 		"tag": tag.Tag,
-		
 	})
 	if err != nil {
 		apperrors.FatalServerError(ctx)
