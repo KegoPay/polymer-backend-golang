@@ -114,15 +114,21 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		apperrors.FatalServerError(ctx.Ctx)
 		return
 	}
-	pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("DeviceID"), "Your payment is on its way! 🚀",
-		fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.Name, utils.CountryCodeToCountryName(transaction.Recepient.Country)))
-	emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-		"FIRSTNAME": transaction.Sender.FirstName,
-		"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
-		"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-		"RECEPIENT_NAME": transaction.Recepient.Name,
-		"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(transaction.Recepient.Country),
-	})
+
+	if ctx.GetBoolContextData("PushNotifOptions") {
+		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("DeviceID"), "Your payment is on its way! 🚀",
+			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.Name, utils.CountryCodeToCountryName(transaction.Recepient.Country)))
+	}
+
+	if ctx.GetBoolContextData("EmailOptions") {
+		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
+			"FIRSTNAME": transaction.Sender.FirstName,
+			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
+			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+			"RECEPIENT_NAME": transaction.Recepient.Name,
+			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(transaction.Recepient.Country),
+		})
+	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
 }
 
@@ -221,15 +227,20 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		apperrors.FatalServerError(ctx.Ctx)
 		return
 	}
-	pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("DeviceID"), "Your payment is on its way! 🚀",
-		fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.Name, utils.CountryCodeToCountryName(transaction.Recepient.Country)))
-	emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-		"FIRSTNAME": transaction.Sender.FirstName,
-		"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol("NGN"),
-		"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-		"RECEPIENT_NAME": transaction.Recepient.Name,
-		"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(transaction.Recepient.Country),
-	})
+	if ctx.GetBoolContextData("PushNotifOptions") {
+		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("DeviceID"), "Your payment is on its way! 🚀",
+			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.Name, utils.CountryCodeToCountryName(transaction.Recepient.Country)))
+	}
+
+	if ctx.GetBoolContextData("EmailOptions") {
+		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
+			"FIRSTNAME": transaction.Sender.FirstName,
+			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol("NGN"),
+			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+			"RECEPIENT_NAME": transaction.Recepient.Name,
+			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(transaction.Recepient.Country),
+		})
+	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
 }
 

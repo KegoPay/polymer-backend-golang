@@ -66,3 +66,19 @@ func SetPaymentTag(ctx *interfaces.ApplicationContext[dto.SetPaymentTagDTO]){
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Your payment tag has been set successfully", nil, nil)
 }
+
+
+func ToggleNotificationOptions(ctx *interfaces.ApplicationContext[dto.ToggleNotificationOptionsDTO]){
+	userRepo := repository.UserRepo()
+	affected, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]any{
+		"notificationOptions": ctx.Body,
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx)
+		return
+	}
+	if affected == 0 {
+		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("Notification setting could not be updated because profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL))
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Notification setting updated", nil, nil)
+}

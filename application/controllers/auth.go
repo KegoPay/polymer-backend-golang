@@ -48,10 +48,10 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 		return
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), 2, time.Hour * 24 * 365 ) // keep data cached for a year
-	emails.EmailService.SendEmail(account.Email, "Welcome to Kego! Verify your account to continue", "otp", map[string]interface{}{
-		"FIRSTNAME": account.FirstName,
-		"OTP":      otp,
-	},)
+		emails.EmailService.SendEmail(account.Email, "Welcome to Kego! Verify your account to continue", "otp", map[string]interface{}{
+			"FIRSTNAME": account.FirstName,
+			"OTP":      otp,
+		},)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "account created", nil, nil)
 }
 
@@ -194,10 +194,11 @@ func ResendOTP(ctx *interfaces.ApplicationContext[any]) {
 		server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil)
 		return
 	}
-	emails.EmailService.SendEmail(email, "An OTP was requested for your account", "otp", map[string]interface{}{
-		"FIRSTNAME": account.FirstName,
-		"OTP":      otp,
-	},)
+
+		emails.EmailService.SendEmail(email, "An OTP was requested for your account", "otp", map[string]interface{}{
+			"FIRSTNAME": account.FirstName,
+			"OTP":      otp,
+		},)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil)
 }
 

@@ -47,5 +47,20 @@ func UserRouter(router *gin.RouterGroup) {
 			}
 			controllers.SetPaymentTag(&appContext)
 		})
+
+		userRouter.PATCH("/notification/toggle", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.ToggleNotificationOptionsDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.ToggleNotificationOptionsDTO]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.ToggleNotificationOptions(&appContext)
+		})
 	}
 }

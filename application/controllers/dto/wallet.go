@@ -20,3 +20,8 @@ type NameVerificationDTO struct {
 type SetPaymentTagDTO struct {
 	Tag  string       `bson:"tag" json:"tag" validate:"required,alphanum,string_min_length_3"`
 }
+
+type ToggleNotificationOptionsDTO struct {
+	Emails 			 *bool `bson:"emails" json:"emails"`
+	PushNotification *bool `bson:"pushNotification" json:"pushNotification"`
+}

@@ -105,5 +105,7 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any]) (*interfa
 		ctx.SetContextData("DeviceID", auth_token_claims["deviceID"])
 		ctx.SetContextData("UserAgent", auth_token_claims["userAgent"])
 		ctx.SetContextData("AppVersion", auth_token_claims["appVersion"])
+		ctx.SetContextData("EmailOptions", account.NotificationOptions.Emails)
+		ctx.SetContextData("PushNotifOptions", account.NotificationOptions.PushNotification)
 		return ctx, true
 }
