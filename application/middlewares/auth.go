@@ -49,6 +49,7 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any]) (*interfa
 			"userAgent": 1,
 			"deviceID": 1,
 			"appVersion": 1,
+			"notificationOptions": 1,
 		}))
 		if account == nil {
 			apperrors.NotFoundError(ctx.Ctx, "this account no longer exists")
