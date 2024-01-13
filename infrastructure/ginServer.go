@@ -21,12 +21,12 @@ type ginServer struct {}
 func (s *ginServer)Start(){
 	err := godotenv.Load()
 
+	startup.StartServices()
+	defer startup.CleanUpServices()
+	
 	if err != nil {
 		logger.Warning("could not find .env file")
 	}
-
-	startup.StartServices()
-	defer startup.CleanUpServices()
 
 	server := gin.Default()
 	server.MaxMultipartMemory =  15 << 20  // 8 MiB
