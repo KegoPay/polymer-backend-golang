@@ -18,6 +18,18 @@ func validatePasswordStrength(fl validator.FieldLevel) bool {
 			digitCount++
 		}
 	}
+	return digitCount >= 5
+}
+
+func validateTrxPinStrength(fl validator.FieldLevel) bool {
+	password := fl.Field().String()
+	digitCount := 0
+
+	for _, char := range password {
+		if unicode.IsDigit(char) {
+			digitCount++
+		}
+	}
 	return digitCount >= 4
 }
 
