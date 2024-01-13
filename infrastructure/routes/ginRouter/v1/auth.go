@@ -89,7 +89,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			var body dto.VerifyAccountData
 			file, err := ctx.FormFile("profile_image")
 			if err != nil {
-				apperrors.FatalServerError(ctx)
+				apperrors.FatalServerError(ctx, err)
 				return
 			}
 			if file == nil {

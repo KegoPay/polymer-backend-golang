@@ -19,7 +19,7 @@ func DeleteWallet(ctx any, transactionCtx context.Context, businessID string) er
 			Key: "error",
 			Data: err,
 		})
-		apperrors.FatalServerError(ctx)
+		apperrors.FatalServerError(ctx, err)
 		return err
 	}
 	if deleted == 0 {

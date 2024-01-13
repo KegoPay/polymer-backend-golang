@@ -21,7 +21,7 @@ func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 	userRepo := repository.UserRepo()
 	user, err := userRepo.FindByID(ctx.GetStringContextData("UserID"))
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	if user == nil {
@@ -38,7 +38,7 @@ func UpdateUserProfile(ctx *interfaces.ApplicationContext[dto.UpdateUserDTO]){us
 			Key: "error",
 			Data: err,
 		})
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	if ctx.Body.FirstName != nil {
@@ -74,7 +74,7 @@ func ToggleNotificationOptions(ctx *interfaces.ApplicationContext[dto.ToggleNoti
 		"notificationOptions": ctx.Body,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	if affected == 0 {

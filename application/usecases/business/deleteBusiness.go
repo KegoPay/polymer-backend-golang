@@ -26,7 +26,7 @@ func DeleteBusiness(ctx any, id string) error {
 				Key: "id",
 				Data: id,
 			})
-			apperrors.FatalServerError(ctx)
+			apperrors.FatalServerError(ctx, err)
 			return err
 		}
 		if deleted == 0 {

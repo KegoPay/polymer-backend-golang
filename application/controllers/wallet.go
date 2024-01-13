@@ -38,7 +38,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		return
 	}
 	if statusCode != 200 {
-		apperrors.UnknownError(ctx.Ctx)
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney internatinoal payment returned with status code %d", statusCode))
 		return
 	}
 	amountInNGN := utils.Float32ToUint64Currency((*rates)["convertedValue"])
@@ -111,7 +111,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	trxRepository := repository.TransactionRepo()
 	trx, err := trxRepository.CreateOne(context.TODO(), transaction)
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 
@@ -224,7 +224,7 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	trxRepository := repository.TransactionRepo()
 	trx, err := trxRepository.CreateOne(context.TODO(), transaction)
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	if ctx.GetBoolContextData("PushNotifOptions") {
@@ -308,7 +308,7 @@ func FetchPastTransactions(ctx *interfaces.ApplicationContext[any]){
 		},
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil)

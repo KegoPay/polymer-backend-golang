@@ -30,6 +30,8 @@ func ExternalDependencyError(ctx interface{}, serviceName string, statusCode str
 	logger.Error(err, logger.LoggerOptions{
 		Key: fmt.Sprintf("error with %s. status code %s", serviceName, statusCode),
 	})
+	metrics.MetricMonitor.ReportError(ctx, fmt.Errorf(fmt.Sprintf("error with %s. status code %s", serviceName, statusCode)))
+	metrics.MetricMonitor.ReportError(ctx, err)
 	server_response.Responder.Respond(ctx, http.StatusServiceUnavailable,
 		"Omo! Our service is temporarily down 😢. Our team is working to fix it. Please check back later.", nil, nil)
 }
@@ -38,14 +40,14 @@ func ErrorProcessingPayload(ctx interface{}){
 	server_response.Responder.Respond(ctx, http.StatusBadRequest, "Abnormal payload passed 🤨", nil, nil)
 }
 
-func FatalServerError(ctx interface{}){
-	metrics.MetricMonitor.ReportError(ctx, errors.New("fatal server error"))
+func FatalServerError(ctx interface{}, err error){
+	metrics.MetricMonitor.ReportError(ctx, err)
 	server_response.Responder.Respond(ctx, http.StatusInternalServerError,
 		"Omo! Our service is temporarily down 😢. Our team is working to fix it. Please check back later.", nil, nil)
 }
 
-func UnknownError(ctx interface{}){
-	metrics.MetricMonitor.ReportError(ctx, errors.New("an unknown error occured"))
+func UnknownError(ctx interface{}, err error){
+	metrics.MetricMonitor.ReportError(ctx, err)
 	server_response.Responder.Respond(ctx, http.StatusBadRequest,
 		"Omo! Something went wrong somewhere 😭. Please check back later.", nil, nil)
 }

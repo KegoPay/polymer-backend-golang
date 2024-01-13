@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 
 	apperrors "kego.com/application/appErrors"
@@ -33,11 +34,11 @@ func InitiateInternationalPayment(ctx any, payload *international_payment_proces
 		return nil
 	}
 	if response == nil {
-		apperrors.UnknownError(ctx)
+		apperrors.UnknownError(ctx, errors.New("chimoney initiate international payment returned a nil response"))
 		return nil
 	}
 	if statusCode >= 400 {
-		apperrors.UnknownError(ctx)
+		apperrors.UnknownError(ctx, fmt.Errorf("chimoney initiate international payment returned with status code %s", statusCode))
 		return nil
 	}
 	return response

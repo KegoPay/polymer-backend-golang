@@ -31,7 +31,7 @@ func GetWalletByBusinessID(ctx any, id string, userID string) (*entities.Wallet,
 			Key: "businessID",
 			Data: id,
 		})
-		apperrors.FatalServerError(ctx)
+		apperrors.FatalServerError(ctx, err)
 		return nil, err
 	}
 	if wallet == nil {
@@ -55,7 +55,7 @@ func GetWalletByUserID(ctx any, id string) (*entities.Wallet, error) {
 			Key: "userID",
 			Data: id,
 		})
-		apperrors.FatalServerError(ctx)
+		apperrors.FatalServerError(ctx, err)
 		return nil, err
 	}
 	if wallet == nil {
@@ -72,7 +72,7 @@ func FreezeWallet(ctx any, walletID string, userID string, reason wallet_constan
 	affected, err := walletRepository.UpdatePartialByID(walletID, map[string]any{
 		"frozen": true,
 	})
-	if err != nil || affected == 0 {
+	if err != nil {
 		logger.Error(errors.New("could not freeze wallet"), logger.LoggerOptions{
 			Key: "reason",
 			Data: reason,
@@ -86,8 +86,23 @@ func FreezeWallet(ctx any, walletID string, userID string, reason wallet_constan
 			Key: "error",
 			Data: err,
 		})
-		apperrors.UnknownError(ctx)
+		apperrors.UnknownError(ctx, err)
 		return false, err
+	}
+	if affected == 0 {
+		logger.Error(errors.New("could not freeze wallet"), logger.LoggerOptions{
+			Key: "reason",
+			Data: reason,
+		}, logger.LoggerOptions{
+			Key: "walletID",
+			Data: walletID,
+		},logger.LoggerOptions{
+			Key: "userID",
+			Data: userID,
+		})
+		apperrors.UnknownError(ctx, fmt.Errorf("could not freeze walletID %s | userID %s | reason %s", walletID, userID, reason))
+		return false, err
+
 	}
 	_, err = frozenWalletLogRepository.CreateOne(nil, entities.FrozenWalletLog{
 		Unfrozen: false,
@@ -110,7 +125,7 @@ func FreezeWallet(ctx any, walletID string, userID string, reason wallet_constan
 			Key: "error",
 			Data: err,
 		})
-		apperrors.UnknownError(ctx)
+		apperrors.UnknownError(ctx, err)
 		return false, err
 	}
 	return true, nil
@@ -134,7 +149,7 @@ func verifyTransactionPinByUserID(ctx any, userID string, pin string) (bool, err
 			Key: "data",
 			Data: currentTries,
 		})
-		apperrors.FatalServerError(ctx)
+		apperrors.FatalServerError(ctx, err)
 		return false, err
 	}
 	if currentTriesInt == constants.MAX_TRANSACTION_PIN_TRIES {
@@ -219,7 +234,7 @@ func LockFunds(ctx any, wallet *entities.Wallet, amount uint64, intent entities.
 			"balance": int64(-amount),
 		},
 	})
-	if err != nil || affected == 0 {
+	if err != nil {
 		logger.Error(errors.New("could not lock funds"), logger.LoggerOptions{
 			Key: "intent",
 			Data: intent,
@@ -230,7 +245,18 @@ func LockFunds(ctx any, wallet *entities.Wallet, amount uint64, intent entities.
 			Key: "error",
 			Data: err,
 		})
-		apperrors.UnknownError(ctx)
+		apperrors.UnknownError(ctx, err)
+		return err
+	}
+	if affected == 0 {
+		logger.Error(errors.New("could not lock funds"), logger.LoggerOptions{
+			Key: "intent",
+			Data: intent,
+		}, logger.LoggerOptions{
+			Key: "wallet",
+			Data: wallet,
+		})
+		apperrors.UnknownError(ctx, fmt.Errorf("could not lock funds for walletID %s | intent %s", wallet.ID, intent))
 		return err
 	}
 	return nil

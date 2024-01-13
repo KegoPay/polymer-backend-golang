@@ -26,7 +26,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		})
 	}
 	if err != nil {
-		apperrors.FatalServerError(ctx)
+		apperrors.FatalServerError(ctx, err)
 		return nil, nil
 	}
 	if account == nil {

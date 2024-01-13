@@ -50,7 +50,7 @@ func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
 		"userID": ctx.GetStringContextData("UserID"),
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "businesses fetched", businesses, nil)

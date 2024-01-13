@@ -26,7 +26,7 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 		"bvn": payload.BVN,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx)
+		apperrors.FatalServerError(ctx, err)
 		return nil, nil, err
 	}
 	if bvnExists != 0 {

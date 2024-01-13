@@ -26,11 +26,11 @@ func InitiateLocalPayment(ctx any, payload *types.InitiateLocalTransferPayload) 
 		return nil
 	}
 	if response == nil {
-		apperrors.UnknownError(ctx)
+		apperrors.UnknownError(ctx, fmt.Errorf("nil response from %s initate local payment sttaus code - %d", os.Getenv("LOCAL_PAYMENT_PROCESSOR"), statusCode))
 		return nil
 	}
 	if *statusCode >= 400 {
-		apperrors.UnknownError(ctx)
+		apperrors.UnknownError(ctx, fmt.Errorf("%s initiate local payment returned status code %d", os.Getenv("LOCAL_PAYMENT_PROCESSOR"), statusCode))
 		return nil
 	}
 	return response

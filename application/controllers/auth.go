@@ -44,7 +44,7 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 	}
 	otp, err := auth.GenerateOTP(6, account.Email)
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), 2, time.Hour * 24 * 365 ) // keep data cached for a year
@@ -87,7 +87,7 @@ func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
 			Key: "error",
 			Data: err,
 		})
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	if account == nil {
@@ -102,7 +102,7 @@ func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
 	}
 	hashedPassword, err := cryptography.CryptoHahser.HashString(ctx.Body.NewPassword)
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	success, err = userRepo.UpdatePartialByFilter(map[string]interface{}{
@@ -110,8 +110,12 @@ func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
 	}, map[string]interface{}{
 		"password": string(hashedPassword),
 	})
-	if !success || err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+	}
+	
+	if err != nil {
+		apperrors.UnknownError(ctx.Ctx, err)
 	}
 	
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password reset", nil, nil)
@@ -127,7 +131,7 @@ func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
 			Key: "error",
 			Data: err,
 		})
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	if account == nil {
@@ -151,21 +155,25 @@ func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
 			Key: "error",
 			Data: err,
 		})
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	modified, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]interface{}{
 		"password": string(hashed_password),
 	})
-	if !success || err != nil {
+	if err != nil {
 		logger.Error(errors.New("error while updating user password"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,
-		},  logger.LoggerOptions{
+		})
+		apperrors.FatalServerError(ctx.Ctx, err)
+	}
+	if modified == 0 {
+		logger.Error(errors.New("error while updating user password"),  logger.LoggerOptions{
 			Key: "modified",
 			Data: modified,
 		}, )
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, fmt.Errorf("failed to update users password userID %s", ctx.GetStringContextData("UserID")))
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password updated", nil, nil)
 }
@@ -178,7 +186,7 @@ func ResendOTP(ctx *interfaces.ApplicationContext[any]) {
 	}
 	otp, err := auth.GenerateOTP(6, email)
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 	}
 	userRepo := repository.UserRepo()
 	account, err := userRepo.FindOneByFilter(map[string]interface{}{
@@ -187,7 +195,7 @@ func ResendOTP(ctx *interfaces.ApplicationContext[any]) {
 		"firstName": 1,
 	}))
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	if account == nil {
@@ -237,7 +245,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		"email": ctx.Body.Email,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	if account == nil {
@@ -261,7 +269,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 	}
 	url, err := fileupload.FileUploader.UploadSingleFile(ctx.Body.ProfileImage, &account.ID)
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	result, err := identityverification.IdentityVerifier.FaceMatch(*url, bvnDetails.Base64Image)
@@ -269,7 +277,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
 		cldErr := fileupload.FileUploader.DeleteSingleFile(account.ID)
 		if cldErr != nil {
-			apperrors.FatalServerError(ctx.Ctx)
+			apperrors.FatalServerError(ctx.Ctx, cldErr)
 			return
 		}
 		apperrors.ClientError(ctx.Ctx, err.Error(), nil)
@@ -279,7 +287,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
 		err = fileupload.FileUploader.DeleteSingleFile(account.ID)
 		if err != nil {
-			apperrors.FatalServerError(ctx.Ctx)
+			apperrors.FatalServerError(ctx.Ctx, err)
 			return
 		}
 		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("Your picture does not match with your Image on the BVN provided. If you think this is a mistake please contact support on %s", constants.SUPPORT_EMAIL), nil)
@@ -322,7 +330,7 @@ func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 		"kycCompleted": 1,
 	}))
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	response := map[string]any{}
@@ -348,7 +356,7 @@ func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){
 			Key: "error",
 			Data: err,
 		})
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
 	if account == nil {
@@ -368,7 +376,7 @@ func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){
 	success, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]interface{}{
 		"deactivated": true,
 	})
-	if success == 0 || err != nil {
+	if err != nil {
 		logger.Error(errors.New("error while deactivating user account"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,
@@ -376,7 +384,17 @@ func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){
 			Key: "success",
 			Data: success,
 		}, )
-		apperrors.FatalServerError(ctx.Ctx)
+		apperrors.FatalServerError(ctx.Ctx, err)
+	}
+	if success == 0 {
+		logger.Error(errors.New("error while deactivating user account"), logger.LoggerOptions{
+			Key: "userID",
+			Data: ctx.GetStringContextData("UserID"),
+		},  logger.LoggerOptions{
+			Key: "success",
+			Data: success,
+		},)
+		apperrors.FatalServerError(ctx.Ctx, fmt.Errorf("error while deactivating user account userID - %s", ctx.GetStringContextData("UserID")))
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "deactivated", nil, nil)
 }

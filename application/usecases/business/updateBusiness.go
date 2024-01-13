@@ -21,7 +21,7 @@ func UpdateBusiness(ctx any, payload *dto.UpdateBusinessDTO) error {
 		"name": payload.Name,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx)
+		apperrors.FatalServerError(ctx, err)
 		return err
 	}
 	if success == 0 {

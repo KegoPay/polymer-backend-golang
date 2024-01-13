@@ -23,7 +23,7 @@ func UpdateUserTag(ctx any, id string, tag dto.SetPaymentTagDTO) error {
 		"tag": tag.Tag,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx)
+		apperrors.FatalServerError(ctx, err)
 		return err
 	}
 	if tagExists != 0 {
@@ -35,11 +35,11 @@ func UpdateUserTag(ctx any, id string, tag dto.SetPaymentTagDTO) error {
 		"tag": tag.Tag,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx)
+		apperrors.FatalServerError(ctx, err)
 		return err
 	}
 	if count != 1 {
-		apperrors.UnknownError(ctx)
+		apperrors.UnknownError(ctx, fmt.Errorf(`could not update user tag "%s" id - %s`, tag.Tag, id))
 		return errors.New("")
 	}
 	return nil

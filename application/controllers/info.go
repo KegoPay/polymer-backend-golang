@@ -53,7 +53,7 @@ func FetchExchangeRates(ctx *interfaces.ApplicationContext[any]){
 		return
 	}
 	if statusCode != 200 {
-		apperrors.UnknownError(ctx.Ctx)
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney failed to return 200 response code"))
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rates fetched", rates, nil)
