@@ -7,5 +7,6 @@ RUN go build -o main -ldflags="-s -w"
 FROM alpine
 WORKDIR /app
 COPY --from=builder /app/main .
+ADD /infrastructure/messaging/emails/templates /app/infrastructure/messaging/emails/templates
 EXPOSE 8080
 CMD ["./main"]
