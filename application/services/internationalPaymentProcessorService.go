@@ -38,7 +38,7 @@ func InitiateInternationalPayment(ctx any, payload *international_payment_proces
 		return nil
 	}
 	if statusCode >= 400 {
-		apperrors.UnknownError(ctx, fmt.Errorf("chimoney initiate international payment returned with status code %s", statusCode))
+		apperrors.UnknownError(ctx, fmt.Errorf("chimoney initiate international payment returned with status code %d", statusCode))
 		return nil
 	}
 	return response
