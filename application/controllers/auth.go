@@ -61,12 +61,13 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 		apperrors.UnsupportedAppVersion(ctx.Ctx)
 		return
 	}
-	account, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password, *appVersion, ctx.GetHeader("User-Agent").(string), ctx.Body.DeviceID)
+	account, wallet, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password, *appVersion, ctx.GetHeader("User-Agent").(string), ctx.Body.DeviceID)
 	if account == nil || token == nil {
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "login successful", map[string]interface{}{
 		"account": account,
+		"wallet": wallet,
 		"token":   token,
 	}, nil)
 }
