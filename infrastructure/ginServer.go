@@ -23,7 +23,7 @@ func (s *ginServer)Start(){
 
 	startup.StartServices()
 	defer startup.CleanUpServices()
-	
+
 	if err != nil {
 		logger.Warning("could not find .env file")
 	}
@@ -60,7 +60,7 @@ func (s *ginServer)Start(){
 	port := os.Getenv("PORT")
 	if gin_mode == "debug" || gin_mode == "release"{
 		logger.Info(fmt.Sprintf("Server starting on PORT %s", port))
-		server.Run(port)
+		server.Run(fmt.Sprintf(":%s", port))
 	} else {
 		panic("invalid gin mode used")
 	}
