@@ -1,8 +1,10 @@
 package rabbitmq
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -12,11 +14,6 @@ import (
 type RabbitMQ struct {
 	QueueChannel *amqp.Channel
 }
-
-var (
-	QueueChannel *amqp.Channel
-)
-
 
 func (rmq *RabbitMQ) Connect() {
 	rabbitMQURL := os.Getenv("RABBITMQ_URL")
@@ -33,8 +30,10 @@ func (rmq *RabbitMQ) Connect() {
 		return
 	}
 	logger.Info("connected to RabbitMQ")
+	defer conn.Close()
 
-	QueueChannel, err = conn.Channel()
+	rmq.QueueChannel, err = conn.Channel()
+	defer rmq.QueueChannel.Close()
 	if err != nil {
 		logger.Error(errors.New("could not open channel on rabbitmq"), logger.LoggerOptions{
 			Key: "error",
@@ -42,11 +41,29 @@ func (rmq *RabbitMQ) Connect() {
 		})
 		return
 	}
+	rmq.CreateQueue(fmt.Sprintf("%s_queue", os.Getenv("ENV")))
+
+	// var wg sync.WaitGroup
+	// wg.Add(1)
+	
+	returned := make(chan amqp.Return)
+	rmq.QueueChannel.NotifyReturn(returned)
+	go func() {
+		// defer wg.Done()
+		for returnedMsg := range returned {
+			logger.Error(errors.New("could not publish message"), logger.LoggerOptions{
+				Key: "data",
+				Data: returnedMsg,
+			})
+		}
+	}()
+
+	// wg.Wait()
 	return
 }
 
 func (rmq *RabbitMQ) CreateQueue(name string) error {
-	_, err := QueueChannel.QueueDeclare(name, true, false, false, false, nil)
+	_, err := rmq.QueueChannel.QueueDeclare(name, true, false, false, false, nil)
 	if err != nil {
 		logger.Error(errors.New("could not open channel on rabbitmq"), logger.LoggerOptions{
 			Key: "error",
@@ -54,25 +71,32 @@ func (rmq *RabbitMQ) CreateQueue(name string) error {
 		})
 		return err
 	}
+	logger.Info("opened channel on rabbitmq", logger.LoggerOptions{
+		Key: "name",
+		Data: name,
+	})
 	return nil
 }
 
-func (rmq *RabbitMQ) PublishMessage(exchange string, name string, payload interface{}) error {
-	body, err := json.Marshal(payload)
+func (rmq *RabbitMQ) PublishMessage(key string, payload any) {
+	body, err := json.Marshal(map[string]any{
+		"action": key,
+		"payload": payload,
+	})
 	if err != nil {
 		logger.Error(errors.New("could not marshal payload"),  logger.LoggerOptions{
 			Key: "error",
 			Data: err,
 		})
-		return err
+		return
 	}
-	QueueChannel.Publish(exchange, name, false, false, amqp.Publishing{
+	rmq.QueueChannel.PublishWithContext(context.Background(), "", key, true, false, amqp.Publishing{
 		ContentType: "application/json",
 		Body:        body,
 	})
 	logger.Info("published to queue", logger.LoggerOptions{
 		Key: "queue_name",
-		Data: name,
+		Data: key,
 	})
-	return nil
+	return
 }

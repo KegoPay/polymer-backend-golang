@@ -1,8 +1,6 @@
 package validator
 
 import (
-	"os"
-	"strings"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
@@ -31,17 +29,6 @@ func validateTrxPinStrength(fl validator.FieldLevel) bool {
 		}
 	}
 	return digitCount >= 4
-}
-
-func userAgentConditionalValidator(fl validator.FieldLevel) bool {
-	agent := fl.Field().String()
-	if os.Getenv("GIN_MODE") != "release" {
-		return true
-	}
-	if !strings.Contains(agent, "Android") ||  !strings.Contains(agent, "iOS") {
-		return false
-	}
-	return true
 }
 
 func exclusiveEmailAndPhone(fl validator.FieldLevel) bool {

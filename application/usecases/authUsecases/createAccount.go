@@ -3,6 +3,7 @@ package authusecases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,6 +17,8 @@ import (
 )
 
 func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wallet, error){
+	fmt.Println(payload.UserAgent)
+	fmt.Println(payload)
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(*payload)
 	if valiedationErr != nil {
 		apperrors.ValidationFailedError(ctx, valiedationErr)

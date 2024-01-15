@@ -20,7 +20,7 @@ type User struct {
 	Phone             				PhoneNumber  			`bson:"phone" json:"phone"`
 	Password          				string       			`bson:"password" json:"-" validate:"password"`
 	TransactionPin    				string       			`bson:"transactionPin" json:"-" validate:"trx_pin"`
-	UserAgent        				string    	 			`bson:"userAgent" json:"userAgent" validate:"user_agent,required"`
+	UserAgent        				string    	 			`bson:"userAgent" json:"userAgent" validate:"required"`
 	DeviceID          				string       			`bson:"deviceID" json:"deviceID"`
 	AppVersion          			string       			`bson:"appVersion" json:"appVersion"`
 	WalletID  						string    				`bson:"walletID" json:"walletID"`

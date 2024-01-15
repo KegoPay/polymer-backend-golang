@@ -2,6 +2,6 @@ package types
 
 type MessagingQueueType interface {
 	Connect()
-	PublishMessage(exchange string, name string, payload interface{}) error
+	PublishMessage(name string, payload any)
 	CreateQueue(name string) error
 }

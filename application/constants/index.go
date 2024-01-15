@@ -1,7 +1,7 @@
 package constants
 
 const (
-	SUPPORT_EMAIL string = "support@kego.com"
+	SUPPORT_EMAIL string = "support@polymerpay.com"
 	BUSINESS_WALLET_LIMIT int = 11
 	MAX_TRANSACTION_PIN_TRIES  int = 3
 	INTERNATIONAL_TRANSACTION_FEE_RATE float32 = 0.01
