@@ -17,6 +17,7 @@ func CreateBusiness(ctx *interfaces.ApplicationContext[dto.BusinessDTO]){
 	business, wallet, err := business.CreateBusiness(ctx.Ctx, &entities.Business{
 		Name: ctx.Body.Name,
 		UserID: ctx.GetStringContextData("UserID"),
+		Email: ctx.Body.Email,
 	})
 	if err != nil {
 		return

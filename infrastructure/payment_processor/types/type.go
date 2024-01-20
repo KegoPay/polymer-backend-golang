@@ -4,7 +4,7 @@ type LocalPaymentProcessorType interface {
 	InitialisePaymentProcessor()
 	NameVerification(accountNumber string, bankCode string) (*NameVerificationResponseField, *int, error)
 	InitiateLocalTransfer(payload *InitiateLocalTransferPayload) (*InitiateLocalTransferDataField, *int, error)
-	GenerateDVA(payload *CreateVirtualAccountPayload) (*VirtualAccountPayload, error)
+	GenerateDVA(payload *CreateVirtualAccountPayload) (*VirtualAccountPayload, *int, error)
 }
 
 type NameVerificationResponseDTO struct {

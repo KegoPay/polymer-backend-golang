@@ -10,6 +10,7 @@ type Business struct {
 	Name      	string    `bson:"name" json:"name" validate:"required"`
 	UserID    	string    `bson:"userID" json:"userID" validate:"required"`
 	WalletID  	string    `bson:"walletID" json:"walletID"`
+	Email	  	string    `bson:"email" json:"email" validate:"required,email"`
 
 	ID        string    `bson:"_id" json:"id"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`

@@ -28,7 +28,7 @@ func CreateWallet(ctx any, trxCtx context.Context, payload *entities.Wallet) (*e
 		})
 		return nil, err
 	}
-	if walletCount == int64(constants.BUSINESS_WALLET_LIMIT) {
+	if walletCount == int64(constants.BUSINESS_WALLET_LIMIT + 1) { // +1 representing the wallet attached to users account
 		err = fmt.Errorf("You have reached your wallet limit. If you think this is an error contact %s.", constants.SUPPORT_EMAIL)
 		return nil, err
 	}

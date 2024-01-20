@@ -27,7 +27,7 @@ func (fpp *FlutterwavePaymentProcessor) InitialisePaymentProcessor() {
 	LocalPaymentProcessor.AuthToken =  os.Getenv("FLUTTERWAVE_ACCESS_TOKEN")
 }
 
-func (fpp *FlutterwavePaymentProcessor) GenerateDVA(payload *types.CreateVirtualAccountPayload) (*types.VirtualAccountPayload, error) {
+func (fpp *FlutterwavePaymentProcessor) GenerateDVA(payload *types.CreateVirtualAccountPayload) (*types.VirtualAccountPayload, *int,  error) {
 	response, statusCode, err := fpp.Network.Post("/virtual-account-numbers", &map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", fpp.AuthToken),
 		"Content-Type": "application/json",
@@ -37,11 +37,12 @@ func (fpp *FlutterwavePaymentProcessor) GenerateDVA(payload *types.CreateVirtual
 			Key: "error",
 			Data: err,
 		})
-		return nil, errors.New("an error occured while generating account number")
+		return nil, statusCode, errors.New("an error occured while generating account number")
 	}
 
 	var flwResponse types.CreateVirtualAccountResponse
 	json.Unmarshal(*response, &flwResponse)
+
 	if *statusCode != 200 {
 		err = errors.New("failed to generate account number")
 		logger.Error(err, logger.LoggerOptions{
@@ -51,9 +52,10 @@ func (fpp *FlutterwavePaymentProcessor) GenerateDVA(payload *types.CreateVirtual
 			Key: "body",
 			Data: flwResponse,
 		})
-		return nil, err
+		return nil, statusCode, err
 	}
-	return &flwResponse.Data, nil
+	logger.Info(fmt.Sprintf("generated dva for %s", payload.TransactionReference))
+	return &flwResponse.Data, statusCode, nil
 }
 
 

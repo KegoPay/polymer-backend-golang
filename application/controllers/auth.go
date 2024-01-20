@@ -16,6 +16,7 @@ import (
 	"kego.com/application/services"
 	"kego.com/application/services/types"
 	authusecases "kego.com/application/usecases/authUsecases"
+	"kego.com/application/usecases/wallet"
 	"kego.com/application/utils"
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
@@ -313,6 +314,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 	userRepo.UpdatePartialByFilter(map[string]interface{}{
 		"email": ctx.Body.Email,
 	}, userUpdatedInfo)
+	wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID,  account.FirstName, account.LastName, account.Email, account.BVN)
 	cache.Cache.DeleteOne(fmt.Sprintf("%s-kyc-attempts-left", account.Email))
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "kyc completed", nil, nil)
 }

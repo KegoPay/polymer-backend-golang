@@ -35,3 +35,12 @@ func InitiateLocalPayment(ctx any, payload *types.InitiateLocalTransferPayload) 
 	}
 	return response
 }
+
+func GenerateDVA(ctx any, payload *types.CreateVirtualAccountPayload) *types.VirtualAccountPayload {
+	response, statusCode, err :=  paymentprocessor.LocalPaymentProcessor.GenerateDVA(payload)
+	if err != nil {
+		apperrors.ExternalDependencyError(ctx, "flutterwave", fmt.Sprintf("%d", *statusCode), err)
+		return nil
+	}
+	return response
+}

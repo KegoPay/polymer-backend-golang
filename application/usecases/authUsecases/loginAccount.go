@@ -42,7 +42,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		apperrors.ClientError(ctx, "this account has been deactivated", nil)
 		return nil, nil, nil
 	}
-	if account.KYCCompleted {
+	if !account.KYCCompleted {
 		apperrors.ClientError(ctx, "complete kyc verification before login", nil)
 		return nil, nil, nil
 	}

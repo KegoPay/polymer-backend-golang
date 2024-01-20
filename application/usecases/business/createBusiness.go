@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	apperrors "kego.com/application/appErrors"
 	"kego.com/application/repository"
 	walletUsecases "kego.com/application/usecases/wallet"
@@ -77,6 +78,24 @@ func CreateBusiness(ctx any, payload *entities.Business) (*entities.Business, *e
 			apperrors.ClientError(ctx, err.Error(), nil)
 			return nil, nil, err
 		}
+	}
+	userRepo := repository.UserRepo()
+	user, err := userRepo.FindByID(payload.UserID, options.FindOne().SetProjection(map[string]any{
+		"bvn": 1,
+	}))
+	if err != nil {
+		logger.Error(errors.New("error fetching user bvn to create business account dva"), logger.LoggerOptions{
+		Key: "error",
+		Data: err,
+	}, logger.LoggerOptions{
+		Key: "payload",
+		Data: payload,
+	})
+	return nil, nil, err
+	}
+	wallet.AccountNumber, wallet.BankName, err = walletUsecases.GenerateNGNDVA(ctx, business.WalletID,  business.Name, "Polymer Software", business.Email, user.BVN)
+	if err != nil {
+		return business, wallet, nil
 	}
 	return business, wallet, nil
 }
