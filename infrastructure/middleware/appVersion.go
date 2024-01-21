@@ -12,7 +12,7 @@ func UserAgentMiddleware() gin.HandlerFunc {
 			Ctx:    ctx,
 			Keys:   ctx.Keys,
 			Header: ctx.Request.Header,
-		}, "0.0.1")
+		}, "0.0.1", ctx.ClientIP())
 		if next {
 			ctx.Set("AppContext", appContext)
 			ctx.Next()
