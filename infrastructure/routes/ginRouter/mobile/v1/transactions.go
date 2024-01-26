@@ -1,4 +1,4 @@
-package authroutev1
+package routev1
 
 import (
 	"github.com/gin-gonic/gin"

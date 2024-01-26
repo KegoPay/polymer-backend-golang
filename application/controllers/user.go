@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"kego.com/application/interfaces"
 	"kego.com/application/repository"
 	userusecases "kego.com/application/usecases/userUseCases"
+	"kego.com/entities"
 	"kego.com/infrastructure/logger"
 	server_response "kego.com/infrastructure/serverResponse"
 	"kego.com/infrastructure/validator"
@@ -81,4 +83,31 @@ func ToggleNotificationOptions(ctx *interfaces.ApplicationContext[dto.ToggleNoti
 		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("Notification setting could not be updated because profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL))
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Notification setting updated", nil, nil)
+}
+
+func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionDTO]) {
+	emailSubRepo := repository.EmailSubRepo()
+	exists, err := emailSubRepo.CountDocs(map[string]interface{}{
+		"email": ctx.Body.Email,
+		"channel": ctx.Body.Channel,
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	if exists != 0 {
+		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "already subscribed to this channel", nil, nil)
+		return
+	}
+	payload := entities.Subscriptions{
+		Email: ctx.Body.Email,
+		Channel: ctx.Body.Channel,
+	}
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(payload)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		return
+	}
+	emailSubRepo.CreateOne(context.TODO(), payload)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "subscribed to channel", nil, nil)
 }

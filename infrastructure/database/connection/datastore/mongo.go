@@ -18,6 +18,7 @@ var (
 	WalletModel *mongo.Collection
 	FrozenWalletLogModel *mongo.Collection
 	BusinessModel *mongo.Collection
+	EmailSubs *mongo.Collection
 )
 
 func connectMongo() *context.CancelFunc {
@@ -76,6 +77,8 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 	FrozenWalletLogModel = db.Collection("FrozenWalletLogs")
 
 	TransactionModel = db.Collection("Transactions")
+
+	EmailSubs = db.Collection("EmailSubs")
 	
 	logger.Info("mongodb indexes set up successfully")
 }

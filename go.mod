@@ -20,9 +20,11 @@ require (
 	cloud.google.com/go/pubsub v1.33.0 // indirect
 	cloud.google.com/go/storage v1.30.1 // indirect
 	github.com/AsaiYusuke/jsonpath v1.6.0 // indirect
+	github.com/RussellLuo/slidingwindow v0.0.0-20200528002341-535bb99d338b // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/antlabs/strsim v0.0.2 // indirect
 	github.com/axiaoxin-com/goutils v1.0.35 // indirect
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/creasty/defaults v1.5.1 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
@@ -65,6 +67,7 @@ require (
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
+	go.uber.org/ratelimit v0.3.0 // indirect
 	golang.org/x/oauth2 v0.13.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

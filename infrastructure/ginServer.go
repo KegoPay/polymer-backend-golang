@@ -11,7 +11,9 @@ import (
 	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/logger/metrics"
 	middlewares "kego.com/infrastructure/middleware"
-	authroutev1 "kego.com/infrastructure/routes/ginRouter/v1"
+	ratelimiter "kego.com/infrastructure/rateLimiter"
+	routev1 "kego.com/infrastructure/routes/ginRouter/mobile/v1"
+	webroutev1 "kego.com/infrastructure/routes/ginRouter/web/v1"
 	server_response "kego.com/infrastructure/serverResponse"
 	startup "kego.com/infrastructure/startUp"
 )
@@ -29,22 +31,28 @@ func (s *ginServer)Start(){
 	}
 
 	server := gin.Default()
+	server.Use(ratelimiter.LeakyBucket())
 	server.MaxMultipartMemory =  15 << 20  // 8 MiB
 
 	server.Use(metrics.MetricMonitor.MetricMiddleware().(func (*gin.Context)))
-	server.Use(middlewares.UserAgentMiddleware())
 
 	v1 := server.Group("/api",)
 
 	{
 		routerV1 := v1.Group("/v1")
+		routerV1.Use(middlewares.UserAgentMiddleware())
 		{
-			authroutev1.AuthRouter(routerV1)
-			authroutev1.InfoRouter(routerV1)
-			authroutev1.UserRouter(routerV1)
-			authroutev1.BusinessRouter(routerV1)
-			authroutev1.WalletRouter(routerV1)
-			authroutev1.TransactionRouter(routerV1)
+			routev1.AuthRouter(routerV1)
+			routev1.InfoRouter(routerV1)
+			routev1.UserRouter(routerV1)
+			routev1.BusinessRouter(routerV1)
+			routev1.WalletRouter(routerV1)
+			routev1.TransactionRouter(routerV1)
+		}
+
+		webRouterV1 := v1.Group("/v1/web")
+		{
+			webroutev1.EmailSubsRouter(webRouterV1)
 		}
 	}
 

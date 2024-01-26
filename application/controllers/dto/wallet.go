@@ -1,5 +1,7 @@
 package dto
 
+import "kego.com/entities"
+
 type SendPaymentDTO struct {
 	Pin         			string       	 `json:"pin"`
 	FullName         		*string      	 `json:"fullName"`
@@ -24,4 +26,9 @@ type SetPaymentTagDTO struct {
 type ToggleNotificationOptionsDTO struct {
 	Emails 			 *bool `bson:"emails" json:"emails"`
 	PushNotification *bool `bson:"pushNotification" json:"pushNotification"`
+}
+
+type EmailSubscriptionDTO struct {
+	Email 	 string 					   `json:"email"`
+	Channel	 entities.SubscriptionChannels `json:"channel"`
 }
