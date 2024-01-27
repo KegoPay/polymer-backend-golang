@@ -85,7 +85,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.POST("/account/verify", middlewares.AuthenticationMiddleware(false, false) ,func(ctx *gin.Context) {
+		authRouter.POST("/account/verify", middlewares.WebAgentMiddleware(), middlewares.AuthenticationMiddleware(false, false) ,func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.VerifyAccountData
 			if err := ctx.ShouldBindJSON(&body); err != nil {
