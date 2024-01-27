@@ -28,6 +28,7 @@ func (piv *PremblyIdentityVerification) FetchBVNDetails(bvn string) (*identity_v
 	}, nil)
 	var premblyResponse PremblyBVNResponse
 	json.Unmarshal(*response, &premblyResponse)
+	fmt.Println(premblyResponse)
 	if err != nil {
 		logger.Error(errors.New("error retireving bvn data from prembly"), logger.LoggerOptions{
 			Key: "error",

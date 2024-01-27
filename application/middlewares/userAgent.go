@@ -58,7 +58,6 @@ func UserAgentMiddleware(ctx *interfaces.ApplicationContext[any], minAppVersion 
 		apperrors.UnsupportedAppVersion(ctx.Ctx)
 		return nil, false
 	}
-	fmt.Println("here p")
 	ipLookupRes, err  := ipresolver.IPResolverInstance.LookUp("102.89.32.54")
 	if err != nil {
 		fmt.Println(err)

@@ -10,13 +10,14 @@ import (
 func validatePasswordStrength(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
 	digitCount := 0
-
 	for _, char := range password {
 		if unicode.IsDigit(char) {
 			digitCount++
+		}else {
+			return false
 		}
 	}
-	return digitCount >= 5
+	return digitCount == 6
 }
 
 func validateTrxPinStrength(fl validator.FieldLevel) bool {
@@ -27,8 +28,9 @@ func validateTrxPinStrength(fl validator.FieldLevel) bool {
 		if unicode.IsDigit(char) {
 			digitCount++
 		}
+		return false
 	}
-	return digitCount >= 4
+	return digitCount == 4
 }
 
 func exclusiveEmailAndPhone(fl validator.FieldLevel) bool {

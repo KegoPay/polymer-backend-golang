@@ -18,8 +18,8 @@ type User struct {
 	MiddleName          			*string      			`bson:"middleName" json:"middleName"`
 	Email            				string       			`bson:"email" json:"email" validate:"required,email"`
 	Phone             				PhoneNumber  			`bson:"phone" json:"phone"`
-	Password          				string       			`bson:"password" json:"-" validate:"password"`
-	TransactionPin    				string       			`bson:"transactionPin" json:"-" validate:"trx_pin"`
+	Password          				string       			`bson:"password" json:"-" validate:"required,password"`
+	TransactionPin    				string       			`bson:"transactionPin" json:"-"`
 	UserAgent        				string    	 			`bson:"userAgent" json:"userAgent" validate:"required"`
 	DeviceID          				string       			`bson:"deviceID" json:"deviceID"`
 	AppVersion          			string       			`bson:"appVersion" json:"appVersion"`
@@ -28,7 +28,7 @@ type User struct {
 	EmailVerified     				bool         			`bson:"emailVerified" json:"emailVerified"`
 	AccountRestricted 				bool         			`bson:"accountRestricted" json:"accountRestricted"`
 	Deactivated 					bool         			`bson:"deactivated" json:"deactivated"`
-	BVN		  		  				string 	  	 			`bson:"bvn" json:"bvn" validate:"required"`
+	BVN		  		  				string 	  	 			`bson:"bvn" json:"bvn"`
 	Gender		  		  			string 	  	 			`bson:"gender" json:"gender"`
 	DOB		  		  				string 	  	 			`bson:"dob" json:"dob"`
 	WatchListed		  		  		string 	  	 			`bson:"watchListed" json:"watchListed"`

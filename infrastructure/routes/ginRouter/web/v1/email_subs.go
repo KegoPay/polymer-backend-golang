@@ -1,4 +1,4 @@
-package routev1
+package webroutev1
 
 import (
 	"github.com/gin-gonic/gin"

@@ -11,10 +11,10 @@ func fieldErrorMap(tag string, field string, value interface{}, param interface{
 		"email":      				fmt.Sprintf("%s is not a valid email", value),
 		"iso3166_1_alpha2": 		fmt.Sprintf("%s should be a 2 letter country code (ISO 3166-1 alpha-2)", field),
 		"oneof": 					fmt.Sprintf("%s must be one of %s", field, param),
+		"url": 						fmt.Sprintf("%s must be a valid url", field),
 		// custom
-		"password":      			fmt.Sprintf("%s should be a secret 4 digit number", field),
+		"password":      			fmt.Sprintf("%s should be a secret 6 digit number", field),
 		"exclusive_email_phone": 	"An email or phone number must be provided to sign up",
-		"user_agent": 				"Unsupported UserAgent",
 		"string_min_length_3": 		fmt.Sprintf("%s cannot be less than 3 letters", field),
 	}
 	return err_map[tag]

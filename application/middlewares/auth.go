@@ -15,8 +15,7 @@ import (
 	"kego.com/infrastructure/logger"
 )
 
-
-func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any]) (*interfaces.ApplicationContext[any], bool) {
+func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricted bool) (*interfaces.ApplicationContext[any], bool) {
 	auth_token_header := ctx.GetHeader("Authorization")
 		if auth_token_header == "" || auth_token_header == nil {
 			apperrors.AuthenticationError(ctx.Ctx, "provide an auth token")
@@ -50,6 +49,7 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any]) (*interfa
 			"deviceID": 1,
 			"appVersion": 1,
 			"notificationOptions": 1,
+			"kycCompleted": 1,
 		}))
 		if account == nil {
 			apperrors.NotFoundError(ctx.Ctx, "this account no longer exists")
@@ -57,6 +57,11 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any]) (*interfa
 		}
 		if account.Deactivated {
 			apperrors.AuthenticationError(ctx.Ctx, "account has been deactivated")
+			return nil, false
+		}
+
+		if restricted && !account.KYCCompleted {
+			apperrors.AuthenticationError(ctx.Ctx, "verify your bvn before attempting this action")
 			return nil, false
 		}
 

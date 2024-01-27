@@ -13,7 +13,7 @@ import (
 func BusinessRouter(router *gin.RouterGroup) {
 	businessRouter := router.Group("/business")
 	{
-		businessRouter.POST("/create", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		businessRouter.POST("/create", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.BusinessDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -28,7 +28,7 @@ func BusinessRouter(router *gin.RouterGroup) {
 			controllers.CreateBusiness(&appContext)
 		})
 
-		businessRouter.PATCH("/:businessID/update", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		businessRouter.PATCH("/:businessID/update", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.UpdateBusinessDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -46,7 +46,7 @@ func BusinessRouter(router *gin.RouterGroup) {
 			controllers.UpdateBusiness(&appContext)
 		})
 
-		businessRouter.GET("/fetch", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		businessRouter.GET("/fetch", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			appContext := interfaces.ApplicationContext[any]{
 				Keys: appContextAny.Keys,
@@ -55,7 +55,7 @@ func BusinessRouter(router *gin.RouterGroup) {
 			controllers.FetchBusinesses(&appContext)
 		})
 
-		businessRouter.DELETE("/:businessID/delete", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		businessRouter.DELETE("/:businessID/delete", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			appContext := interfaces.ApplicationContext[any]{
 				Keys: appContextAny.Keys,

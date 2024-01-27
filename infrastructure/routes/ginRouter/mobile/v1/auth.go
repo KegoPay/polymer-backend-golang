@@ -85,22 +85,17 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.POST("/account/verify", func(ctx *gin.Context) {
+		authRouter.POST("/account/verify", middlewares.AuthenticationMiddleware(false, false) ,func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.VerifyAccountData
-			file, err := ctx.FormFile("profile_image")
-			if err != nil {
-				apperrors.FatalServerError(ctx, err)
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
 				return
 			}
-			if file == nil {
-				apperrors.NotFoundError(ctx, "pass in a picture for identity verification")
-				return
-			}
-			body.ProfileImage = file
-			body.Email = ctx.Query("email")
 			controllers.VerifyAccount(&interfaces.ApplicationContext[dto.VerifyAccountData]{
 				Ctx: ctx,
 				Body: &body,
+				Keys: appContextAny.Keys,
 			})
 		})
 
@@ -116,7 +111,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.POST("/account/password/update", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		authRouter.POST("/account/password/update", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.UpdatePassword
 			if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -131,7 +126,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			controllers.UpdatePassword(&appContext)
 		})
 
-		authRouter.POST("/account/deactivate", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		authRouter.POST("/account/deactivate", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.ConfirmPin
 			if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -144,6 +139,21 @@ func AuthRouter(router *gin.RouterGroup) {
 				Ctx: appContextAny.Ctx,
 			}
 			controllers.DeactivateAccount(&appContext)
+		})
+
+		authRouter.POST("/account/transaction-pin/set", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.SetTransactionPinDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.SetTransactionPinDTO]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.SetTransactionPin(&appContext)
 		})
 	}
 }

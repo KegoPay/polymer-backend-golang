@@ -13,7 +13,7 @@ import (
 func InfoRouter(router *gin.RouterGroup) {
 	infoRouter := router.Group("/info")
 	{
-		infoRouter.POST("/countries", middlewares.AuthenticationMiddleware(false),  func(ctx *gin.Context) {
+		infoRouter.POST("/countries", middlewares.AuthenticationMiddleware(false, true),  func(ctx *gin.Context) {
 			var body dto.CountryFilter
 			if err := ctx.ShouldBindJSON(&body); err != nil {
 				apperrors.ErrorProcessingPayload(ctx)
@@ -26,13 +26,13 @@ func InfoRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		infoRouter.GET("/banks/local", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		infoRouter.GET("/banks/local", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			controllers.FetchLocalBanks(&interfaces.ApplicationContext[any]{
 				Ctx: ctx,
 			})
 		})
 
-		infoRouter.POST("/banks/international", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		infoRouter.POST("/banks/international", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.CountryCode
 			if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -47,7 +47,7 @@ func InfoRouter(router *gin.RouterGroup) {
 			controllers.FetchInternationalBanks(&appContext)
 		})
 
-		infoRouter.GET("/exchange-rates", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		infoRouter.GET("/exchange-rates", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			query := map[string]any{
 				"currency": ctx.Query("currency"),
 				"amount": ctx.Query("amount"),

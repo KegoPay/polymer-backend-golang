@@ -12,7 +12,7 @@ import (
 func WalletRouter(router *gin.RouterGroup) {
 	walletRouter := router.Group("/wallet")
 	{
-		walletRouter.POST("/:businessID/payment/international/send", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		walletRouter.POST("/:businessID/payment/international/send", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SendPaymentDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -31,7 +31,7 @@ func WalletRouter(router *gin.RouterGroup) {
 			controllers.InitiateBusinessInternationalPayment(&appContext)
 		})
 
-		walletRouter.POST("/:businessID/payment/local/send", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		walletRouter.POST("/:businessID/payment/local/send", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SendPaymentDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -50,7 +50,7 @@ func WalletRouter(router *gin.RouterGroup) {
 			controllers.InitiateBusinessLocalPayment(&appContext)
 		})
 
-		walletRouter.POST("/:businessID/payment/local/fee", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		walletRouter.POST("/:businessID/payment/local/fee", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SendPaymentDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -69,7 +69,7 @@ func WalletRouter(router *gin.RouterGroup) {
 			controllers.BusinessLocalPaymentFee(&appContext)
 		})
 
-		walletRouter.POST("/:businessID/payment/international/fee", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		walletRouter.POST("/:businessID/payment/international/fee", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SendPaymentDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -88,7 +88,7 @@ func WalletRouter(router *gin.RouterGroup) {
 			controllers.BusinessInternationalPaymentFee(&appContext)
 		})
 		
-		walletRouter.POST("/:businessID/payment/local/verify-name", middlewares.AuthenticationMiddleware(false), func(ctx *gin.Context) {
+		walletRouter.POST("/:businessID/payment/local/verify-name", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.NameVerificationDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {

@@ -42,10 +42,6 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		apperrors.ClientError(ctx, "this account has been deactivated", nil)
 		return nil, nil, nil
 	}
-	if !account.KYCCompleted {
-		apperrors.ClientError(ctx, "complete kyc verification before login", nil)
-		return nil, nil, nil
-	}
 	passwordMatch := cryptography.CryptoHahser.VerifyData(account.Password, *password)
 	if !passwordMatch {
 		apperrors.AuthenticationError(ctx, "wrong password")
@@ -56,7 +52,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		Phone:     &account.Phone,
 		UserID:    account.ID,
 		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(10)).Unix(), //lasts for 10 mins
+		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
 		UserAgent: account.UserAgent,
 		FirstName: account.FirstName,
 		LastName: account.LastName,

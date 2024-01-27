@@ -22,18 +22,6 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 		return nil, nil, errors.New("")
 	}
 	userRepo := repository.UserRepo()
-	bvnExists, err := userRepo.CountDocs(map[string]any{
-		"bvn": payload.BVN,
-	})
-	if err != nil {
-		apperrors.FatalServerError(ctx, err)
-		return nil, nil, err
-	}
-	if bvnExists != 0 {
-		err = errors.New("bvn is already registered to another account")
-		apperrors.EntityAlreadyExistsError(ctx, err.Error())
-		return nil, nil, err
-	}
 	passwordHash, err := cryptography.CryptoHahser.HashString(payload.Password)
 	if err != nil {
 		apperrors.ValidationFailedError(ctx, &[]error{err})

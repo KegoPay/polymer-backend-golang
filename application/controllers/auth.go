@@ -34,11 +34,9 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 	account, _, err := authusecases.CreateAccount(ctx.Ctx, &entities.User{
 		Email:          ctx.Body.Email,
 		Password: 		ctx.Body.Password,
-		TransactionPin: ctx.Body.TransactionPin,
 		UserAgent:      ctx.Body.UserAgent,
 		DeviceID:       ctx.Body.DeviceID,
-		BVN: 			ctx.Body.BVN,
-		AppVersion: ctx.Body.AppVersion,
+		AppVersion: 	ctx.Body.AppVersion,
 	})
 	if err != nil {
 		return
@@ -219,30 +217,6 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[dto.VerifyEmailData]) {
 		return
 	}
 	userRepo := repository.UserRepo()
-	userRepo.UpdatePartialByFilter(map[string]interface{}{
-		"email": ctx.Body.Email,
-	}, map[string]bool{
-		"emailVerified": true,
-	})
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", nil, nil)
-}
-
-func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
-	attemptsLeft := cache.Cache.FindOne(fmt.Sprintf("%s-kyc-attempts-left", ctx.Body.Email))
-	if attemptsLeft == nil {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf( "You cannot perform kyc at this moment. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL), nil)
-		return
-	}
-	parsedAttemptsLeft, err := strconv.Atoi(*attemptsLeft)
-	if err != nil {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf( "You cannot perform kyc at this moment. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL), nil)
-		return
-	}
-	if parsedAttemptsLeft == 0 {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf( "You cannot perform kyc at this moment. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL), nil)
-		return
-	}
-	userRepo := repository.UserRepo()
 	account, err := userRepo.FindOneByFilter(map[string]interface{}{
 		"email": ctx.Body.Email,
 	})
@@ -250,8 +224,65 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
+	if account.EmailVerified {
+		apperrors.ClientError(ctx.Ctx, "this email has already been verified", nil)
+		return
+	}
+	token, err := auth.GenerateAuthToken(auth.ClaimsData{
+		Email:     &account.Email,
+		Phone:     &account.Phone,
+		UserID:    account.ID,
+		IssuedAt:  time.Now().Unix(),
+		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
+		UserAgent: account.UserAgent,
+		FirstName: account.FirstName,
+		LastName: account.LastName,
+		DeviceID:   account.DeviceID,
+		AppVersion: account.AppVersion,
+	})
+	account.EmailVerified = true
+	success, err = userRepo.UpdateByID(account.ID, account)
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	if !success {
+		apperrors.UnknownError(ctx.Ctx, err)
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", token, nil)
+}
+
+func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		return
+	}
+	attemptsLeft := cache.Cache.FindOne(fmt.Sprintf("%s-kyc-attempts-left", ctx.GetStringContextData("Email")))
+	if attemptsLeft == nil {
+		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		return
+	}
+	parsedAttemptsLeft, err := strconv.Atoi(*attemptsLeft)
+	if err != nil {
+		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		return
+	}
+	if parsedAttemptsLeft == 0 {
+		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		return
+	}
+	userRepo := repository.UserRepo()
+	account, err := userRepo.FindOneByFilter(map[string]interface{}{
+		"email": ctx.GetStringContextData("Email"),
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
 	if account == nil {
-		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("Account with email %s does not exist. Please contact support on %s to help resolve this issue.", ctx.Body.Email, constants.SUPPORT_EMAIL))
+		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("Account with email %s does not exist. Please contact support on %s to help resolve this issue.", ctx.GetStringContextData("Email"), constants.SUPPORT_EMAIL))
 		return
 	}
 	if !account.EmailVerified {
@@ -263,18 +294,13 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		apperrors.ClientError(ctx.Ctx, "you have completed your identity verification", nil)
 		return
 	}
-	bvnDetails, err := identityverification.IdentityVerifier.FetchBVNDetails(account.BVN)
+	bvnDetails, err := identityverification.IdentityVerifier.FetchBVNDetails(ctx.Body.BVN)
 	if err != nil {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
 		apperrors.CustomError(ctx.Ctx, err.Error())
 		return
 	}
-	url, err := fileupload.FileUploader.UploadSingleFile(ctx.Body.ProfileImage, &account.ID)
-	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
-		return
-	}
-	result, err := identityverification.IdentityVerifier.FaceMatch(*url, bvnDetails.Base64Image)
+	result, err := identityverification.IdentityVerifier.FaceMatch(*&ctx.Body.ProfileImage, bvnDetails.Base64Image)
 	if err != nil {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
 		cldErr := fileupload.FileUploader.DeleteSingleFile(account.ID)
@@ -308,15 +334,33 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 			ISOCode: "NG",
 			LocalNumber: bvnDetails.PhoneNumber,
 		},
-		"profileImage": *url,
+		"profileImage": ctx.Body.ProfileImage,
 		"kycCompleted": true,
+		"bvn": ctx.Body.BVN,
 	}
 	userRepo.UpdatePartialByFilter(map[string]interface{}{
-		"email": ctx.Body.Email,
+		"email": ctx.GetStringContextData("Email"),
 	}, userUpdatedInfo)
-	wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID,  account.FirstName, account.LastName, account.Email, account.BVN)
+	wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID,  account.FirstName, account.LastName, account.Email, ctx.Body.BVN)
 	cache.Cache.DeleteOne(fmt.Sprintf("%s-kyc-attempts-left", account.Email))
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "kyc completed", nil, nil)
+	now := time.Now()
+	token, err := auth.GenerateAuthToken(auth.ClaimsData{
+		Email:     &account.Email,
+		Phone:     &entities.PhoneNumber{
+			Prefix: "234",
+			ISOCode: "NG",
+			LocalNumber: bvnDetails.PhoneNumber,
+		},
+		UserID:    account.ID,
+		IssuedAt:  now.Unix(),
+		ExpiresAt: now.Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
+		UserAgent: account.UserAgent,
+		FirstName: bvnDetails.FirstName,
+		LastName: bvnDetails.LastName,
+		DeviceID:   account.DeviceID,
+		AppVersion: account.AppVersion,
+	})
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "kyc completed", token, nil)
 }
 
 func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
@@ -345,6 +389,47 @@ func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 		response["KYCCompleted"] = account.KYCCompleted
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "success", response, nil)
+}
+
+func SetTransactionPin(ctx *interfaces.ApplicationContext[dto.SetTransactionPinDTO]){
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		return
+	}
+	hashedPin, err := cryptography.CryptoHahser.HashString(ctx.Body.TransactionPin)
+	if err != nil {
+		logger.Error(errors.New("an error occured while hashing users transaction pin"), logger.LoggerOptions{
+			Key: "userID",
+			Data: ctx.GetStringContextData("UserID"),
+		})
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	userRepo := repository.UserRepo()
+	account, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
+		"transactionPin": 1,
+	}))
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	if account.TransactionPin != "" {
+		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transaction pin has already been set", nil, nil)
+		return
+	}
+	affected, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"),map[string]any{
+		"transactionPin": string(hashedPin),
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	if affected == 0 {
+		apperrors.UnknownError(ctx.Ctx, errors.New("failed to update users transaction pin"))
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "pin set", nil, nil)
 }
 
 func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){

@@ -1,15 +1,12 @@
 package dto
 
-import "mime/multipart"
-
 type CreateAccountDTO struct {
 	Email      		  string                 `json:"email"`
-	Password      		  string                 `json:"password"`
+	Password      		  string             `json:"password"`
 	UserAgent 		  string     			 `json:"deviceType"`
 	DeviceID  		  string                 `json:"deviceID"`
-	TransactionPin    string           		 `json:"transactionPin"`
+	// TransactionPin    string           		 `json:"transactionPin"`
 	AppVersion        string       			 `json:"appVersion"`
-	BVN    			  string           		 `json:"bvn"`
 }
 
 type LoginDTO struct {
@@ -24,9 +21,16 @@ type VerifyEmailData struct {
 	Email	string `json:"email"`
 }
 
+type SetBVNDTOO struct {
+}
+
 type VerifyAccountData struct {
-	ProfileImage     *multipart.FileHeader
-	Email 			 string
+	ProfileImage     string `json:"profileImage" validate:"required,url"`
+	BVN    			 string `json:"bvn" validate:"required,min=11,max=11"`
+}
+
+type SetTransactionPinDTO struct {
+	TransactionPin   string `json:"transactionPin" validate:"required,min=4,max=4"`
 }
 
 type VerifyPassword struct {
