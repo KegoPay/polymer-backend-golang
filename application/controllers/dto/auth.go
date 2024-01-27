@@ -59,6 +59,6 @@ type ConfirmPin struct {
 }
 
 type FileUploadOptions struct {
-	Type 		string					  `json:"type" validate:"oneof=biometric,profile_image"`
-	Permissions types.SignedURLPermission `json:"permissions" validate:"oneof=w,r"`
+	Type 		string					  `json:"type" validate:"required,oneof=biometric profile_image"`
+	Permissions types.SignedURLPermission `json:"permissions" validate:"required"`
 }

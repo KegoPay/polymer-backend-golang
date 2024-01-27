@@ -6,6 +6,6 @@ type FileUploaderType interface {
 }
 
 type SignedURLPermission struct {
-	Read bool
-	Write bool
+	Read bool `json:"read"`
+	Write bool `json:"write"`
 }

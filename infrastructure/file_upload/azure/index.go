@@ -1,6 +1,7 @@
 package azure
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -20,6 +21,9 @@ type AzureBlobSignedURLService struct {
 }
 
 func (azurlservice *AzureBlobSignedURLService) GeneratedSignedURL(file_name string, permission types.SignedURLPermission) (*string, error){
+	if permission.Read && permission.Write  || !permission.Read && !permission.Write{
+		return nil, errors.New("permission must be either read or write")
+	}
 	credential, err := azblob.NewSharedKeyCredential(azurlservice.AccountName, azurlservice.AccountKey)
 	if err != nil {
 		return nil, err

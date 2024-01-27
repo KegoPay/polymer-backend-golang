@@ -392,9 +392,14 @@ func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 }
 
 func GenerateFileURL(ctx *interfaces.ApplicationContext[dto.FileUploadOptions]){
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		return
+	}
 	url, err := fileupload.FileUploader.GeneratedSignedURL(ctx.Body.Type, ctx.Body.Permissions)
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.CustomError(ctx.Ctx, err.Error())
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "url geenraed", url, nil)
