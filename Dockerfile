@@ -8,5 +8,6 @@ FROM alpine
 WORKDIR /app
 COPY --from=builder /app/main .
 ADD /infrastructure/messaging/emails/templates /app/infrastructure/messaging/emails/templates
+ADD /infrastructure/ipresolver/maxmind /app/infrastructure/ipresolver/maxmind
 EXPOSE 8080
 CMD ["./main"]

@@ -1,5 +1,9 @@
 package dto
 
+import (
+	"kego.com/infrastructure/file_upload/types"
+)
+
 type CreateAccountDTO struct {
 	Email      		  string                 `json:"email"`
 	Password      		  string             `json:"password"`
@@ -31,6 +35,8 @@ type VerifyAccountData struct {
 
 type SetTransactionPinDTO struct {
 	TransactionPin   string `json:"transactionPin" validate:"required,min=4,max=4"`
+	UserImage     string
+	Email 			 string
 }
 
 type VerifyPassword struct {
@@ -50,4 +56,9 @@ type UpdatePassword struct {
 
 type ConfirmPin struct {
 	Pin    string           		 `json:"pin"`
+}
+
+type FileUploadOptions struct {
+	Type 		string					  `json:"type" validate:"oneof=biometric,profile_image"`
+	Permissions types.SignedURLPermission `json:"permissions" validate:"oneof=w,r"`
 }

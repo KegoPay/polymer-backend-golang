@@ -21,6 +21,9 @@ require (
 	cloud.google.com/go/storage v1.30.1 // indirect
 	github.com/AsaiYusuke/jsonpath v1.6.0 // indirect
 	github.com/RussellLuo/slidingwindow v0.0.0-20200528002341-535bb99d338b // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.1 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/antlabs/strsim v0.0.2 // indirect
 	github.com/axiaoxin-com/goutils v1.0.35 // indirect
@@ -81,6 +84,7 @@ require (
 )
 
 require (
+	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/apitoolkit/apitoolkit-go v0.0.0-20231207005449-8800ec83efb3
 	github.com/axiaoxin-com/logging v1.2.19 // indirect
 	github.com/axiaoxin-com/ratelimiter v1.0.3
@@ -131,7 +135,7 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

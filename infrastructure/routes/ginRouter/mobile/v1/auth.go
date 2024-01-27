@@ -141,6 +141,21 @@ func AuthRouter(router *gin.RouterGroup) {
 			controllers.DeactivateAccount(&appContext)
 		})
 
+		authRouter.POST("/file/generate-url", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.FileUploadOptions
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.FileUploadOptions]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.GenerateFileURL(&appContext)
+		})
+
 		authRouter.POST("/account/transaction-pin/set", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SetTransactionPinDTO
