@@ -20,9 +20,9 @@ type User struct {
 	Phone             				PhoneNumber  			`bson:"phone" json:"phone"`
 	Password          				string       			`bson:"password" json:"-" validate:"required,password"`
 	TransactionPin    				string       			`bson:"transactionPin" json:"-"`
-	UserAgent        				string    	 			`bson:"userAgent" json:"userAgent" validate:"required"`
-	DeviceID          				string       			`bson:"deviceID" json:"deviceID"`
-	AppVersion          			string       			`bson:"appVersion" json:"appVersion"`
+	UserAgent        				string    	 			`bson:"userAgent" json:"-" validate:"required"`
+	DeviceID          				string       			`bson:"deviceID" json:"-"`
+	AppVersion          			string       			`bson:"appVersion" json:"-"`
 	WalletID  						string    				`bson:"walletID" json:"walletID"`
 	KYCCompleted   					bool         			`bson:"kycCompleted" json:"kycCompleted"`
 	EmailVerified     				bool         			`bson:"emailVerified" json:"emailVerified"`
@@ -31,7 +31,7 @@ type User struct {
 	BVN		  		  				string 	  	 			`bson:"bvn" json:"bvn"`
 	Gender		  		  			string 	  	 			`bson:"gender" json:"gender"`
 	DOB		  		  				string 	  	 			`bson:"dob" json:"dob"`
-	WatchListed		  		  		string 	  	 			`bson:"watchListed" json:"watchListed"`
+	WatchListed		  		  		string 	  	 			`bson:"watchListed" json:"-"`
 	Nationality		  		  		string 	  	 			`bson:"nationality" json:"nationality"`
 	ProfileImage		  		  	string 	  	 			`bson:"profileImage" json:"profileImage"`
 	Tag		  		  				string 	  			 	`bson:"tag" json:"tag"`
