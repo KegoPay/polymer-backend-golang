@@ -28,7 +28,7 @@ type User struct {
 	EmailVerified     				bool         			`bson:"emailVerified" json:"emailVerified"`
 	AccountRestricted 				bool         			`bson:"accountRestricted" json:"accountRestricted"`
 	Deactivated 					bool         			`bson:"deactivated" json:"deactivated"`
-	BVN		  		  				string 	  	 			`bson:"bvn" json:"bvn"`
+	BVN		  		  				string 	  	 			`bson:"bvn" json:"-"`
 	Gender		  		  			string 	  	 			`bson:"gender" json:"gender"`
 	DOB		  		  				string 	  	 			`bson:"dob" json:"dob"`
 	WatchListed		  		  		string 	  	 			`bson:"watchListed" json:"-"`
