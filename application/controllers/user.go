@@ -30,7 +30,16 @@ func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("This user profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "profile fetched", user, nil)
+	walletRepo := repository.WalletRepo()
+	wallet, err := walletRepo.FindByID(user.WalletID)
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "profile fetched", map[string]any{
+		"account": user,
+		"wallet": wallet,
+	}, nil)
 }
 
 func UpdateUserProfile(ctx *interfaces.ApplicationContext[dto.UpdateUserDTO]){userRepo := repository.UserRepo()
