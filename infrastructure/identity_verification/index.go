@@ -13,9 +13,9 @@ var IdentityVerifier identity_verification_types.IdentityVerifierType
 func InitialiseIdentityVerifier(){
 	IdentityVerifier = &prembly_identity_verification.PremblyIdentityVerification{
 		Network: &network.NetworkController{
-			BaseUrl: os.Getenv("PREMBLY_BASE_URL"),
+			BaseUrl: os.Getenv("DOJAH_BASE_URL"),
 		},
-		API_KEY: os.Getenv("PREMBLY_API_KEY"),
-		APP_ID: os.Getenv("PREMBLY_APP_ID"),
+		API_KEY: os.Getenv("DOJAH_API_KEY"),
+		APP_ID: os.Getenv("DOJAH_APP_ID"),
 	}
 }
