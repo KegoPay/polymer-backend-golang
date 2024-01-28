@@ -105,7 +105,8 @@ func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionD
 		return
 	}
 	if exists != 0 {
-		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "already subscribed to this channel", nil, nil)
+		server_response.Responder.Respond(ctx.Ctx, http.StatusOK,
+			"Seems you have registered with this email previously.\nNot to worry, you will still get access to exclusive insights, updates, and special offers delivered straight to your inbox. Thanks for staying connected with us! ", nil, nil)
 		return
 	}
 	payload := entities.Subscriptions{
@@ -118,5 +119,5 @@ func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionD
 		return
 	}
 	emailSubRepo.CreateOne(context.TODO(), payload)
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "subscribed to channel", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "You're in! You now have access to exclusive insights, updates, and special offers delivered straight to your inbox.", nil, nil)
 }
