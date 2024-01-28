@@ -35,7 +35,7 @@ func (s *ginServer)Start(){
 	server := gin.Default()
 	origins := []string{}
 	if os.Getenv("GIN_MODE") == "debug" {
-		origins = append(origins, "http://localhost:3000")
+		origins = append(origins, "http://localhost:5173")
 	}else if os.Getenv("GIN_MODE") == "release" {
 		origins = append(origins, "https://usepolymer.co",  "https://www.usepolymer.co",  "www.usepolymer.co")
 	}
