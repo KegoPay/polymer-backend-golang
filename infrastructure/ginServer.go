@@ -57,7 +57,7 @@ func (s *ginServer)Start(){
 
 	{
 		routerV1 := v1.Group("/v1")
-		routerV1.Use(middlewares.UserAgentMiddleware())
+		routerV1.Use(middlewares.UserAgentMiddleware(true))
 		{
 			routev1.AuthRouter(routerV1)
 			routev1.InfoRouter(routerV1)
@@ -68,6 +68,7 @@ func (s *ginServer)Start(){
 		}
 
 		webRouterV1 := v1.Group("/v1/web")
+		webRouterV1.Use(middlewares.UserAgentMiddleware(false))
 		{
 			webroutev1.EmailSubsRouter(webRouterV1)
 		}

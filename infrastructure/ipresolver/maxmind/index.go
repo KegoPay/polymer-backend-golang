@@ -58,5 +58,6 @@ func (mmResolver *MaxMindIPResolver) LookUp(ipAddress string) (*types.IPResult, 
         City: result.City.Names["en"],
         CountryCode: result.Country.ISOCode,
 		AcuracyRadius: result.Location.AccuracyRadius,
+		IPAddress: ipAddress,
     }, nil
 }
