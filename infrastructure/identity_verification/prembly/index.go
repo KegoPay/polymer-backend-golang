@@ -87,3 +87,33 @@ func (piv *PremblyIdentityVerification) FaceMatch(img1 string, img2 string) (*fl
 	logger.Info("Face Match completed by Prembly")
 	return &premblyResponse.Confidence, nil
 }
+
+func (piv *PremblyIdentityVerification) ValidateEmail(bvn string) (*identity_verification_types.BVNData, error) {
+	response, _, err := piv.Network.Post("/identityradar/api/v1/email-intelligence", &map[string]string{
+		"api-key": piv.API_KEY,
+	}, map[string]string{
+		"number": bvn,
+	}, nil)
+	var premblyResponse PremblyBVNResponse
+	json.Unmarshal(*response, &premblyResponse)
+	fmt.Println(premblyResponse)
+	if err != nil {
+		logger.Error(errors.New("error retireving bvn data from prembly"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		return nil, errors.New("something went wrong while retireving bvn data from prembly")
+	}
+	if !premblyResponse.Status {
+		logger.Error(errors.New(premblyResponse.Message), logger.LoggerOptions{
+			Key: "error",
+			Data: errors.New(premblyResponse.Detail),
+		}, logger.LoggerOptions{
+			Key: "data",
+			Data: premblyResponse,
+		})
+		return nil, errors.New(premblyResponse.Message)
+	}
+	logger.Info("BVN information retireved by Prembly")
+	return &premblyResponse.Data, nil
+}

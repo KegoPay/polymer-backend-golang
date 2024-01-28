@@ -39,6 +39,7 @@ func UserAgentMiddleware(ctx *interfaces.ApplicationContext[any], minAppVersion 
 		return nil ,false
 	}
 
+	if mobileOnly {
 	reqSemVers  := strings.Split(userAgentData.BuildNumber, ".")
 	minAppVersionSemVers := strings.Split(minAppVersion, ".")
 	if minAppVersionSemVers[0] > reqSemVers[0] {
@@ -53,6 +54,9 @@ func UserAgentMiddleware(ctx *interfaces.ApplicationContext[any], minAppVersion 
 		apperrors.UnsupportedAppVersion(ctx.Ctx)
 		return nil, false
 	}
+	}
+
+	
 	ipLookupRes, err  := ipresolver.IPResolverInstance.LookUp(ipAddress)
 	if err != nil {
 		logger.Error(errors.New("error looking up ip"), logger.LoggerOptions{
