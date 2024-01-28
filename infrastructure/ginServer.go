@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	apperrors "kego.com/application/appErrors"
@@ -31,6 +33,21 @@ func (s *ginServer)Start(){
 	}
 
 	server := gin.Default()
+	origins := []string{}
+	if os.Getenv("GIN_MODE") == "debug" {
+		origins = append(origins, "http://localhost:3000")
+	}else if os.Getenv("GIN_MODE") == "release" {
+		origins = append(origins, "https://usepolymer.co",  "https://www.usepolymer.co",  "www.usepolymer.co")
+	}
+	corsConfig := cors.Config{
+		AllowOrigins:     origins,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "web-api-key", "polymer-device-id", "User-Agent"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
+	server.Use(cors.New(corsConfig))
 	server.Use(ratelimiter.LeakyBucket())
 	server.MaxMultipartMemory =  15 << 20  // 8 MiB
 
