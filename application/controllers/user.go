@@ -106,7 +106,7 @@ func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionD
 	}
 	if exists != 0 {
 		server_response.Responder.Respond(ctx.Ctx, http.StatusOK,
-			"Seems you have registered with this email previously.\nNot to worry, you will still get access to exclusive insights, updates, and special offers delivered straight to your inbox. Thanks for staying connected with us! ", nil, nil)
+			"Seems you have registered with this email previously.\nNot to worry, you still have access to exclusive insights, updates, and special offers delivered straight to your inbox. Thanks for staying connected with us! ", nil, nil)
 		return
 	}
 	payload := entities.Subscriptions{
