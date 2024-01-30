@@ -51,12 +51,23 @@ func DeleteBusiness(ctx *interfaces.ApplicationContext[any]){
 
 func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
 	businessRepo := repository.BusinessRepo()
-	businesses, err := businessRepo.FindMany(map[string]interface{}{
+	business, err := businessRepo.FindOneByFilter(map[string]interface{}{
 		"userID": ctx.GetStringContextData("UserID"),
 	})
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "businesses fetched", businesses, nil)
+	walletRepo := repository.WalletRepo()
+	wallet, err := walletRepo.FindOneByFilter(map[string]interface{}{
+		"businessID": business.ID,
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "businesses fetched", map[string]any{
+		"business": business,
+		"wallet": wallet,
+	}, nil)
 }
