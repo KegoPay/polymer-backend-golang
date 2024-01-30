@@ -1,7 +1,7 @@
 package constants
 
 const (
-	SUPPORT_EMAIL string = "support@polymerpay.com"
+	SUPPORT_EMAIL string = "support@usepolymer.co"
 	MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT = 20000 // 20k dollars
 	MAXIMUM_LOCAL_TRANSFER_LIMIT = 10000000 // 10M naira
 	MINIMUM_INTERNATIONAL_TRANSFER_LIMIT = 1 // 1 dollar
