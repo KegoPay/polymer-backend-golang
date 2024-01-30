@@ -1,12 +1,10 @@
 package apperrors
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
 	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/logger/metrics"
 	server_response "kego.com/infrastructure/serverResponse"
 )
 
@@ -30,8 +28,8 @@ func ExternalDependencyError(ctx interface{}, serviceName string, statusCode str
 	logger.Error(err, logger.LoggerOptions{
 		Key: fmt.Sprintf("error with %s. status code %s", serviceName, statusCode),
 	})
-	metrics.MetricMonitor.ReportError(ctx, fmt.Errorf(fmt.Sprintf("error with %s. status code %s", serviceName, statusCode)))
-	metrics.MetricMonitor.ReportError(ctx, err)
+	// metrics.MetricMonitor.ReportError(ctx, fmt.Errorf(fmt.Sprintf("error with %s. status code %s", serviceName, statusCode)))
+	// metrics.MetricMonitor.ReportError(ctx, err)
 	server_response.Responder.Respond(ctx, http.StatusServiceUnavailable,
 		"Omo! Our service is temporarily down 😢. Our team is working to fix it. Please check back later.", nil, nil)
 }
@@ -41,13 +39,13 @@ func ErrorProcessingPayload(ctx interface{}){
 }
 
 func FatalServerError(ctx interface{}, err error){
-	metrics.MetricMonitor.ReportError(ctx, err)
+	// metrics.MetricMonitor.ReportError(ctx, err)
 	server_response.Responder.Respond(ctx, http.StatusInternalServerError,
 		"Omo! Our service is temporarily down 😢. Our team is working to fix it. Please check back later.", nil, nil)
 }
 
 func UnknownError(ctx interface{}, err error){
-	metrics.MetricMonitor.ReportError(ctx, err)
+	// metrics.MetricMonitor.ReportError(ctx, err)
 	server_response.Responder.Respond(ctx, http.StatusBadRequest,
 		"Omo! Something went wrong somewhere 😭. Please check back later.", nil, nil)
 }
@@ -62,7 +60,7 @@ func UnsupportedAppVersion(ctx interface{}){
 }
 
 func UnsupportedUserAgent(ctx interface{}){
-	metrics.MetricMonitor.ReportError(ctx, errors.New("unspported user agent"))
+	// metrics.MetricMonitor.ReportError(ctx, errors.New("unspported user agent"))
 	server_response.Responder.Respond(ctx, http.StatusBadRequest,
 		"Unsupported user agent 👮🏻‍♂️", nil, nil)
 }

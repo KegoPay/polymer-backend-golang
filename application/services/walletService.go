@@ -204,10 +204,19 @@ func verifyWalletBalance(ctx any, wallet *entities.Wallet, amount uint64) (bool,
 	return true, nil
 }
 
-func InitiatePreAuth(ctx any, businessID string, userID string, amount uint64, pin string) (*entities.Wallet, error) {
-	wallet, err := GetWalletByBusinessID(ctx, businessID, userID)
-	if err != nil {
-		return nil, err
+func InitiatePreAuth(ctx any, businessID *string, userID string, amount uint64, pin string) (*entities.Wallet, error) {
+	var wallet *entities.Wallet
+	var err error
+	if businessID != nil {
+		wallet, err = GetWalletByBusinessID(ctx, *businessID, userID)
+		if err != nil {
+			return nil, err
+		}
+	}else {
+		wallet, err = GetWalletByUserID(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	success, err := verifyTransactionPinByUserID(ctx, userID, pin)
 	if err != nil  || !success{

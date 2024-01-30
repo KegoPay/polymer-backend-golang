@@ -31,6 +31,25 @@ func WalletRouter(router *gin.RouterGroup) {
 			controllers.InitiateBusinessInternationalPayment(&appContext)
 		})
 
+		walletRouter.POST("/payment/international/send", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.SendPaymentDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			body.IPAddress = ctx.ClientIP()
+			appContext := interfaces.ApplicationContext[dto.SendPaymentDTO]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			appContext.Param = map[string]any{
+				"businessID": ctx.Param("businessID"),
+			}
+			controllers.InitiatePersonalInternationalPayment(&appContext)
+		})
+
 		walletRouter.POST("/:businessID/payment/local/send", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SendPaymentDTO

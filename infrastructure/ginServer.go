@@ -11,7 +11,6 @@ import (
 	"github.com/joho/godotenv"
 	apperrors "kego.com/application/appErrors"
 	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/logger/metrics"
 	middlewares "kego.com/infrastructure/middleware"
 	ratelimiter "kego.com/infrastructure/rateLimiter"
 	routev1 "kego.com/infrastructure/routes/ginRouter/mobile/v1"
@@ -51,7 +50,7 @@ func (s *ginServer)Start(){
 	server.Use(ratelimiter.LeakyBucket())
 	server.MaxMultipartMemory =  15 << 20  // 8 MiB
 
-	server.Use(metrics.MetricMonitor.MetricMiddleware().(func (*gin.Context)))
+	// server.Use(metrics.MetricMonitor.MetricMiddleware().(func (*gin.Context)))
 
 	v1 := server.Group("/api",)
 

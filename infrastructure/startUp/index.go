@@ -7,7 +7,6 @@ import (
 	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/ipresolver"
 	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/logger/metrics"
 	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 	paymentprocessor "kego.com/infrastructure/payment_processor"
 )
@@ -16,7 +15,7 @@ import (
 func StartServices(){
 	logger.InitializeLogger()
 	database.SetUpDatabase()
-	metrics.MetricMonitor.Init()
+	// metrics.MetricMonitor.Init()
 	// pubsub.PubSub.Connect()
 	fileupload.InitialiseFileUploader()
 	pushnotification.InitialisePushNotificationService()
@@ -29,5 +28,5 @@ func StartServices(){
 // Used to clean up after services that have been shutdown.
 func CleanUpServices(){
 	datastore.CleanUp()
-	metrics.MetricMonitor.CleanUp()
+	// metrics.MetricMonitor.CleanUp()
 }
