@@ -134,8 +134,7 @@ func FreezeWallet(ctx any, walletID string, userID string, reason wallet_constan
 func verifyTransactionPinByUserID(ctx any, userID string, pin string) (bool, error){
 	currentTries := cache.Cache.FindOne(fmt.Sprintf("%s-transaction-pin-tries", userID))
 	if currentTries == nil {
-		defaultTries := "0"
-		currentTries = &defaultTries
+		currentTries = utils.GetStringPointer("0")
 	}
 	currentTriesInt, err := strconv.Atoi(*currentTries)
 	if err != nil {
@@ -174,6 +173,11 @@ func verifyTransactionPinByUserID(ctx any, userID string, pin string) (bool, err
 		apperrors.NotFoundError(ctx, err.Error())
 		return false, err
 	} 
+	// if user.TransactionPin == "" {
+	// 	err =  errors.New( "Set a transaction pin before attempting to send money")
+	// 	apperrors.ClientError(ctx, err.Error(), nil)
+	// 	return false, err
+	// }
 	pinMatch := cryptography.CryptoHahser.VerifyData(user.TransactionPin, pin)
 	if !pinMatch {
 		currentTriesInt =  currentTriesInt + 1
@@ -216,9 +220,9 @@ func InitiatePreAuth(ctx any, businessID string, userID string, amount uint64, p
 	return wallet, nil
 }
 
-func LockFunds(ctx any, wallet *entities.Wallet, amount uint64, intent entities.TransactionIntent) error {
+func LockFunds(ctx any, wallet *entities.Wallet, amount uint64, intent entities.TransactionIntent, reference string) error {
 	lockedFundsLog := entities.LockedFunds{
-		LockedFundsID: utils.GenerateUUIDString(),
+		LockedFundsID: reference,
 		Amount: amount,
 		LockedAt: time.Now(),
 		Reason: intent,
@@ -257,6 +261,97 @@ func LockFunds(ctx any, wallet *entities.Wallet, amount uint64, intent entities.
 			Data: wallet,
 		})
 		apperrors.UnknownError(ctx, fmt.Errorf("could not lock funds for walletID %s | intent %s", wallet.ID, intent))
+		return err
+	}
+	return nil
+}
+
+func ReverseLockFunds(ctx any, walletID string, lockedFundsReference string) error {
+	walletRepository := repository.WalletRepo()
+	wallet, err := walletRepository.FindByID(walletID)
+	if err != nil {
+		logger.Error(errors.New("could not reverse lock funds"), logger.LoggerOptions{
+			Key: "walletID",
+			Data: walletID,
+		}, logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		return err
+	}
+	if wallet == nil {
+		err := fmt.Errorf("This wallet was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL)
+		logger.Error(err, logger.LoggerOptions{
+			Key: "walletID",
+			Data: wallet,
+		})
+		return err
+	}
+	var lockedFund entities.LockedFunds
+	for i, lf := range wallet.LockedFundsLog {
+		if lf.LockedFundsID == lockedFundsReference {
+			lockedFund = lf
+			wallet.LockedFundsLog = append(wallet.LockedFundsLog[:i], wallet.LockedFundsLog[i+1:]...)
+			break
+		}
+	}
+	affected, err := walletRepository.UpdateManyWithOperator(map[string]interface{}{
+		"_id": walletID,
+	}, map[string]any{
+		"$set": map[string]any {
+			"lockedFundsLog": wallet.LockedFundsLog,
+		},
+		"$inc": map[string]any {
+			"balance": int64(lockedFund.Amount),
+		},
+	})
+
+	if affected == 0 {
+		logger.Error(errors.New("could not reverse lock funds"), logger.LoggerOptions{
+			Key: "walletID",
+			Data: walletID,
+		})
+		return err
+	}
+	return nil
+}
+
+func RemoveLockFunds(ctx any, walletID string, lockedFundsReference string) error {
+	walletRepository := repository.WalletRepo()
+	wallet, err := walletRepository.FindByID(walletID)
+	if err != nil {
+		logger.Error(errors.New("could not remove lock funds"), logger.LoggerOptions{
+			Key: "walletID",
+			Data: walletID,
+		}, logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		return err
+	}
+	if wallet == nil {
+		err := fmt.Errorf("This wallet was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL)
+		logger.Error(err, logger.LoggerOptions{
+			Key: "walletID",
+			Data: wallet,
+		})
+		return err
+	}
+	for i, lf := range wallet.LockedFundsLog {
+		if lf.LockedFundsID == lockedFundsReference {
+			wallet.LockedFundsLog = append(wallet.LockedFundsLog[:i], wallet.LockedFundsLog[i+1:]...)
+			break
+		}
+	}
+	affected, err := walletRepository.UpdatePartialByID(walletID, map[string]any{
+		"lockedFundsLog": wallet.LockedFundsLog,
+	})
+
+	if affected == 0 {
+		logger.Error(errors.New("could not remove lock funds"), logger.LoggerOptions{
+			Key: "walletID",
+			Data: walletID,
+		})
 		return err
 	}
 	return nil

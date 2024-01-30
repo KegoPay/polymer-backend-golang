@@ -12,6 +12,7 @@ import (
 	"kego.com/application/interfaces"
 	"kego.com/application/services"
 	"kego.com/entities"
+	currencyformatter "kego.com/infrastructure/currency_formatter"
 	international_payment_processor "kego.com/infrastructure/payment_processor/chimoney"
 	server_response "kego.com/infrastructure/serverResponse"
 )
@@ -42,12 +43,12 @@ func FetchInternationalBanks(ctx *interfaces.ApplicationContext[dto.CountryCode]
 }
 
 func FetchExchangeRates(ctx *interfaces.ApplicationContext[any]){
-	amountAsInt, err := strconv.Atoi(ctx.Query["amount"].(string))
+	amountAsUInt, err := strconv.ParseUint(ctx.Query["amount"].(string), 10, 64)
 	if err != nil {
-		apperrors.ClientError(ctx, fmt.Sprintf("The amount %d is not a valid amount. Put in a valid amount", amountAsInt), nil)
+		apperrors.ClientError(ctx, fmt.Sprintf("The amount %d is not a valid amount. Put in a valid amount", amountAsUInt), nil)
 		return
 	}
-	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Query["currency"], uint64(amountAsInt))
+	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Query["currency"], &amountAsUInt)
 	if err != nil {
 		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
 		return
@@ -56,5 +57,9 @@ func FetchExchangeRates(ctx *interfaces.ApplicationContext[any]){
 		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney failed to return 200 response code"))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rates fetched", rates, nil)
+	var formattedRates = map[string]string{}
+	for i, r := range *rates {
+		formattedRates[i] = currencyformatter.HumanReadableFloat32Currency(r)
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rates fetched", formattedRates, nil)
 }

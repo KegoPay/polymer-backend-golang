@@ -29,7 +29,7 @@ func (chimoneyPP *ChimoneyPaymentProcessor) InitialisePaymentProcessor() {
 }
 
 
-func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(currency any, amount any) (*map[string]float32, int, error){
+func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(currency any, amount *uint64) (*map[string]float32, int, error){
 	response, statusCode, err := chimoneyPP.Network.Get("/info/exchange-rates", &map[string]string{
 		"X-API-KEY": chimoneyPP.AuthToken,
 		"Content-Type": "application/json",
@@ -66,12 +66,13 @@ func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(currency any, amount
 			}
 		}
 		if rateResponse["rate"] == 0 {
-			return nil, *statusCode, fmt.Errorf("Currency %s is not supported", currency)
+			return nil, *statusCode, fmt.Errorf("Country %s is not supported", currency)
 		}
 
-		if amount != "" {
-				rateResponse["convertToUSD"] = (rateResponse["rate"] * float32(amount.(uint64))) / chimoneyResponse.Data.USDNGN
-				rateResponse["convertedValue"] = rateResponse["rate"] * float32(amount.(uint64))
+		if amount != nil {
+				rateResponse["convertToUSD"] = (rateResponse["rate"] * float32(*amount)) / chimoneyResponse.Data.USDNGN
+				rateResponse["convertedValue"] = rateResponse["rate"] * float32(*amount)
+				rateResponse["USDRate"] = chimoneyResponse.Data.USDNGN
 		}
 	}else {
 		rateResponse = formattedRates

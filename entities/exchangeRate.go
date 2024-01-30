@@ -1,5 +1,10 @@
 package entities
 
+import (
+	"fmt"
+	"strconv"
+)
+
 type ExchangeRates struct{
 	USDNGN 		 float32		`json:"USDNGN"`
 	USDCAD 		 float32		`json:"USDCAD"`
@@ -24,5 +29,8 @@ func (er *ExchangeRates) FormatAllRates() map[string]float32 {
 }
 
 func (er *ExchangeRates) FormatAgainstNGN(ngnusdRate float32, usdotherRate float32) float32 {
-	return ngnusdRate * (1 / usdotherRate)
+	rate := ngnusdRate * (1 / usdotherRate)
+	stringRate := fmt.Sprintf("%.2f", rate)
+	parsedRate, _ := strconv.ParseFloat(stringRate, 32)
+	return float32(parsedRate)
 }

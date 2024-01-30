@@ -1,10 +1,12 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	apperrors "kego.com/application/appErrors"
+	"kego.com/infrastructure/logger"
 	paymentprocessor "kego.com/infrastructure/payment_processor"
 	"kego.com/infrastructure/payment_processor/types"
 )
@@ -26,11 +28,15 @@ func InitiateLocalPayment(ctx any, payload *types.InitiateLocalTransferPayload) 
 		return nil
 	}
 	if response == nil {
-		apperrors.UnknownError(ctx, fmt.Errorf("nil response from %s initate local payment sttaus code - %d", os.Getenv("LOCAL_PAYMENT_PROCESSOR"), statusCode))
+		apperrors.UnknownError(ctx, fmt.Errorf("nil response from %s initate local payment staus code - %d", os.Getenv("LOCAL_PAYMENT_PROCESSOR"), *statusCode))
 		return nil
 	}
 	if *statusCode >= 400 {
-		apperrors.UnknownError(ctx, fmt.Errorf("%s initiate local payment returned status code %d", os.Getenv("LOCAL_PAYMENT_PROCESSOR"), statusCode))
+		logger.Error(errors.New("flutterwave failed to initate local transfer"), logger.LoggerOptions{
+			Key: "response",
+			Data: response,
+		})
+		apperrors.UnknownError(ctx, fmt.Errorf("%s initiate local payment returned status code %d", os.Getenv("LOCAL_PAYMENT_PROCESSOR"), *statusCode))
 		return nil
 	}
 	return response

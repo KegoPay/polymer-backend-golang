@@ -22,7 +22,7 @@ type NameVerificationResponseField struct {
 type InitiateLocalTransferPayload struct {
 	AccountBank 	string		`json:"account_bank"`
 	AccountNumber 	string		`json:"account_number"`
-	Amount 			uint64		`json:"amount"`
+	Amount 			float32		`json:"amount"`
 	Narration 		string		`json:"narration"`
 	Currency 		string		`json:"currency"`
 	Reference 		string		`json:"reference"`

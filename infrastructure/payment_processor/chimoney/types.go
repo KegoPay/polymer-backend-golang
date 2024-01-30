@@ -25,6 +25,7 @@ type InternationalPaymentRequestPayload struct {
 	DestinationCountry string `json:"countryToSend"`
 	BankCode string `json:"account_bank"`
 	AccountNumber string `json:"account_number"`
+	Reference string `json:"reference"`
 	ValueInUSD float32 `json:"valueInUSD"`
 }
 

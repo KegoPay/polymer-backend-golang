@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,12 +10,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	apperrors "kego.com/application/appErrors"
 	bankssupported "kego.com/application/banksSupported"
+	"kego.com/application/constants"
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
 	"kego.com/application/repository"
 	"kego.com/application/services"
 	"kego.com/application/utils"
 	"kego.com/entities"
+	currencyformatter "kego.com/infrastructure/currency_formatter"
+	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/messaging/emails"
 	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 	international_payment_processor "kego.com/infrastructure/payment_processor/chimoney"
@@ -23,32 +27,34 @@ import (
 )
 
 func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
-	if ctx.Body.Amount < 1000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil)
+	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Body.DestinationCountryCode, &ctx.Body.Amount)
+	if statusCode < 500 && statusCode >= 400 {
+		apperrors.ClientError(ctx.Ctx, err.Error(), nil)
 		return
 	}
-	if ctx.Body.Amount >= 30000000000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil)
-		return
-	}
-	businessID := ctx.GetStringParameter("businessID") 
-	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Body.DestinationCountryCode, ctx.Body.Amount)
 	if err != nil {
 		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
 		return
 	}
 	if statusCode != 200 {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney internatinoal payment returned with status code %d", statusCode))
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney international payment returned with status code %d", statusCode))
+		return
+	}
+	minLimit := (*rates)["USDRate"] * constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT
+	if ctx.Body.Amount < utils.Float32ToUint64Currency(minLimit) {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(minLimit)), nil)
+		return
+	}
+	maxLimit := (*rates)["USDRate"] * 20000.00
+	if ctx.Body.Amount > utils.Float32ToUint64Currency(maxLimit) {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(maxLimit)), nil)
 		return
 	}
 	amountInNGN := utils.Float32ToUint64Currency((*rates)["convertedValue"])
 	internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(amountInNGN)
 	totalAmount := internationalProcessorFee + transactionFee + amountInNGN
+	businessID := ctx.GetStringParameter("businessID") 
 	wallet , err := services.InitiatePreAuth(ctx.Ctx, businessID, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin)
-	if err != nil {
-		return
-	}
-	err = services.LockFunds(ctx.Ctx, wallet, totalAmount, entities.ChimoneyDebitInternational)
 	if err != nil {
 		return
 	}
@@ -56,15 +62,27 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	if os.Getenv("GIN_MODE") != "release" {
 		destinationCountry = utils.CountryCodeToCountryName("NG")
 	}
+	if destinationCountry == "" {
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("Unsupported country code used %s", ctx.Body.DestinationCountryCode))
+		return
+	}
+	trxRef := utils.GenerateUUIDString()
+	err = services.LockFunds(ctx.Ctx, wallet, totalAmount, entities.ChimoneyDebitInternational, trxRef)
+	if err != nil {
+		return
+	}
 	response := services.InitiateInternationalPayment(ctx.Ctx, &international_payment_processor.InternationalPaymentRequestPayload{
 		DestinationCountry: destinationCountry,
 		AccountNumber: ctx.Body.AccountNumber,
 		BankCode: ctx.Body.BankCode,
 		ValueInUSD: (*rates)["convertToUSD"],
+		Reference: trxRef,
 	})
 	if response == nil {
+		services.ReverseLockFunds(ctx.Ctx, wallet.ID, trxRef)
 		return
 	}
+	services.RemoveLockFunds(ctx.Ctx, wallet.ID, trxRef)
 	transaction := entities.Transaction{
 		TransactionReference: response.Chimoneys[0].ChiRef,
 		MetaData: response.Chimoneys[0],
@@ -111,6 +129,10 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	trxRepository := repository.TransactionRepo()
 	trx, err := trxRepository.CreateOne(context.TODO(), transaction)
 	if err != nil {
+		logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
+			Key: "payload",
+			Data: transaction,
+		})
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
@@ -133,25 +155,16 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 }
 
 func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
-	if ctx.Body.Amount < 1000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil)
+	if ctx.Body.Amount < constants.MINIMUM_LOCAL_TRANSFER_LIMIT {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than ₦%s", currencyformatter.HumanReadableIntCurrency(constants.MINIMUM_LOCAL_TRANSFER_LIMIT)), nil)
 		return
 	}
-	if ctx.Body.Amount >= 30000000000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil)
+	if ctx.Body.Amount >= constants.MAXIMUM_LOCAL_TRANSFER_LIMIT {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than ₦%s at a time", currencyformatter.HumanReadableIntCurrency(constants.MAXIMUM_LOCAL_TRANSFER_LIMIT)), nil)
 		return
 	}
-	businessID := ctx.GetStringParameter("businessID") 
 	localProcessorFee, polymerFee := utils.GetLocalTransactionFee(ctx.Body.Amount)
 	totalAmount := ctx.Body.Amount + utils.Float32ToUint64Currency(localProcessorFee) + utils.Float32ToUint64Currency(polymerFee)
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, businessID, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin)
-	if err != nil {
-		return
-	}
-	err = services.LockFunds(ctx.Ctx, wallet, totalAmount, entities.FlutterwaveDebitLocal)
-	if err != nil {
-		return
-	}
 	bankName := ""
 	for _, bank := range bankssupported.SupportedLocalBanks {
 		if bank.Code == ctx.Body.BankCode {
@@ -163,6 +176,11 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		apperrors.NotFoundError(ctx.Ctx, "Selected bank is not currently supported")
 		return
 	}
+	businessID := ctx.GetStringParameter("businessID") 
+	wallet , err := services.InitiatePreAuth(ctx.Ctx, businessID, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin)
+	if err != nil {
+		return
+	}
 	narration := func () string {
 		if	ctx.Body.Description == nil {
 			des := fmt.Sprintf("NGN Transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), bankName)
@@ -171,17 +189,22 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		return *ctx.Body.Description
 	}()
 	reference := utils.GenerateUUIDString()
+	err = services.LockFunds(ctx.Ctx, wallet, totalAmount, entities.FlutterwaveDebitLocal, reference)
+	if err != nil {
+		return
+	}
 	response := services.InitiateLocalPayment(ctx.Ctx, &types.InitiateLocalTransferPayload{
 		AccountNumber: ctx.Body.AccountNumber,
 		AccountBank: ctx.Body.BankCode,
 		Currency: "NGN",
-		Amount: totalAmount,
+		Amount: utils.UInt64ToFloat32Currency(totalAmount),
 		Narration: narration ,
 		Reference: reference,
 		DebitCurrency: "NGN",
-		CallbackURL: "https://webhook.site/e5cf956e-63a9-4beb-8960-1b45f61fc42c",
+		CallbackURL: "https://webhook.site/a7d17c08-85c9-44f8-a246-67b8718e9571",
 	})
 	if response == nil {
+		services.ReverseLockFunds(ctx.Ctx, wallet.ID, reference)
 		return
 	}
 	transaction := entities.Transaction{
@@ -224,6 +247,10 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	trxRepository := repository.TransactionRepo()
 	trx, err := trxRepository.CreateOne(context.TODO(), transaction)
 	if err != nil {
+		logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
+			Key: "payload",
+			Data: transaction,
+		})
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
