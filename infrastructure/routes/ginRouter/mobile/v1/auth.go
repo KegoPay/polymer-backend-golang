@@ -85,7 +85,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.POST("/account/verify", middlewares.WebAgentMiddleware(), middlewares.AuthenticationMiddleware(false, false) ,func(ctx *gin.Context) {
+		authRouter.POST("/account/verify", middlewares.AuthenticationMiddleware(false, false) ,func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.VerifyAccountData
 			if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -139,21 +139,6 @@ func AuthRouter(router *gin.RouterGroup) {
 				Ctx: appContextAny.Ctx,
 			}
 			controllers.DeactivateAccount(&appContext)
-		})
-
-		authRouter.POST("/file/generate-url", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
-			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
-			var body dto.FileUploadOptions
-			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
-				return
-			}
-			appContext := interfaces.ApplicationContext[dto.FileUploadOptions]{
-				Keys: appContextAny.Keys,
-				Body: &body,
-				Ctx: appContextAny.Ctx,
-			}
-			controllers.GenerateFileURL(&appContext)
 		})
 
 		authRouter.POST("/account/transaction-pin/set", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {

@@ -62,5 +62,20 @@ func UserRouter(router *gin.RouterGroup) {
 			}
 			controllers.ToggleNotificationOptions(&appContext)
 		})
+
+		userRouter.POST("/file/generate-url", middlewares.AuthenticationMiddleware(false, false), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.FileUploadOptions
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.FileUploadOptions]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.GenerateFileURL(&appContext)
+		})
 	}
 }
