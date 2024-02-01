@@ -318,6 +318,9 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	if err != nil {
 		return
 	}
+	if os.Getenv("GIN_MODE") != "release" {
+		reference = fmt.Sprintf("%s_PMCKDU_1", reference)
+	}
 	response := services.InitiateLocalPayment(ctx.Ctx, &types.InitiateLocalTransferPayload{
 		AccountNumber: ctx.Body.AccountNumber,
 		AccountBank: ctx.Body.BankCode,
@@ -326,7 +329,7 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		Narration: narration ,
 		Reference: reference,
 		DebitCurrency: "NGN",
-		CallbackURL: "https://webhook.site/a7d17c08-85c9-44f8-a246-67b8718e9571",
+		CallbackURL: os.Getenv("LOCAL_TRANSFER_WEBHOOK_URL"),
 	})
 	if response == nil {
 		services.ReverseLockFunds(ctx.Ctx, wallet.ID, reference)
