@@ -58,6 +58,10 @@ func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
+	if business ==  nil {
+		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business fetched", nil, nil)
+		return
+	}
 	walletRepo := repository.WalletRepo()
 	wallet, err := walletRepo.FindOneByFilter(map[string]interface{}{
 		"businessID": business.ID,
@@ -66,7 +70,7 @@ func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "businesses fetched", map[string]any{
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business fetched", map[string]any{
 		"business": business,
 		"wallet": wallet,
 	}, nil)

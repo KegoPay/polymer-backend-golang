@@ -28,7 +28,6 @@ func (s *ginServer)Start(){
 	defer startup.CleanUpServices()
 
 	if err != nil {
-		logger.Warning("could not find .env file")
 	}
 
 	server := gin.Default()
@@ -50,7 +49,7 @@ func (s *ginServer)Start(){
 	server.Use(ratelimiter.LeakyBucket())
 	server.MaxMultipartMemory =  15 << 20  // 8 MiB
 
-	// server.Use(metrics.MetricMonitor.MetricMiddleware().(func (*gin.Context)))
+	server.Use(logger.MetricMonitor.MetricMiddleware().(gin.HandlerFunc))
 
 	v1 := server.Group("/api",)
 
@@ -88,6 +87,6 @@ func (s *ginServer)Start(){
 		logger.Info(fmt.Sprintf("Server starting on PORT %s", port))
 		server.Run(fmt.Sprintf(":%s", port))
 	} else {
-		panic("invalid gin mode used")
+		panic(fmt.Sprintf("invalid gin mode used - %s", gin_mode))
 	}
 }

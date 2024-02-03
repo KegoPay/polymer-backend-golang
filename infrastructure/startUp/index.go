@@ -15,6 +15,7 @@ import (
 func StartServices(){
 	logger.InitializeLogger()
 	database.SetUpDatabase()
+	logger.MetricMonitor.Init()
 	// metrics.MetricMonitor.Init()
 	// pubsub.PubSub.Connect()
 	fileupload.InitialiseFileUploader()

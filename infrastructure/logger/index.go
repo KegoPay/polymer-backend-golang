@@ -10,13 +10,16 @@ type LoggerOptions struct{
 	Data interface{}
 }
 
+var MetricMonitor MetricType = (&SentryMonitor{})
+
+
 // This logs info level messages.
 func Info(msg string, payload ...LoggerOptions) {
 	zapFields := []zapcore.Field{}
 	for _, data := range payload{
 		zapFields = append(zapFields, zap.Any(data.Key, data.Data))
 	}
-	// metrics.MetricMonitor.
+	MetricMonitor.Log(msg, payload, InfoLevel)
 	Logger.Info(msg, zapFields...)
 }
 
@@ -26,6 +29,7 @@ func Error(err error, payload ...LoggerOptions) {
 	for _, data := range payload{
 		zapFields = append(zapFields, zap.Any(data.Key, data.Data))
 	}
+	MetricMonitor.ReportError(err, payload)
 	Logger.Error(err.Error(), zapFields...)
 }
 
@@ -35,5 +39,6 @@ func Warning(msg string, payload ...LoggerOptions) {
 	for _, data := range payload{
 		zapFields = append(zapFields, zap.Any(data.Key, data.Data))
 	}
+	MetricMonitor.Log(msg, payload, InfoLevel)
 	Logger.Warn(msg, zapFields...)
 }
