@@ -20,7 +20,12 @@ import (
 
 func FlutterwaveWebhook(ctx *interfaces.ApplicationContext[dto.FlutterwaveWebhookDTO]) {
 	if ctx.Body.EventType == "Transfer" {
-		err := services.RemoveLockFunds(ctx.Ctx, ctx.Body.Transfer.Meta.WalletID, ctx.Body.Transfer.Ref)
+		var err error
+		if ctx.Body.Transfer.Status == "SUCCESSFUL" {
+			err = services.RemoveLockFunds(ctx.Ctx, ctx.Body.Transfer.Meta.WalletID, ctx.Body.Transfer.Ref)
+		}else if ctx.Body.Transfer.Status == "FAILED" {
+			err = services.ReverseLockFunds(ctx.Ctx, ctx.Body.Transfer.Meta.WalletID, ctx.Body.Transfer.Ref)
+		}
 		if err != nil {
 			logger.Error(errors.New("error removing locked funds after flutterwave webhook call"), logger.LoggerOptions{
 				Key: "error",
