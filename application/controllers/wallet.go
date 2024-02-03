@@ -325,7 +325,7 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		AccountNumber: ctx.Body.AccountNumber,
 		AccountBank: ctx.Body.BankCode,
 		Currency: "NGN",
-		Amount: utils.UInt64ToFloat32Currency(totalAmount),
+		Amount: utils.UInt64ToFloat32Currency(ctx.Body.Amount),
 		Narration: narration ,
 		Reference: reference,
 		DebitCurrency: "NGN",
