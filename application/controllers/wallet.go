@@ -330,6 +330,10 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		Reference: reference,
 		DebitCurrency: "NGN",
 		CallbackURL: os.Getenv("LOCAL_TRANSFER_WEBHOOK_URL"),
+		Meta: types.InitiateLocalTransferMeta{
+			WalletID: wallet.ID,
+			UserID: wallet.UserID,
+		},
 	})
 	if response == nil {
 		services.ReverseLockFunds(ctx.Ctx, wallet.ID, reference)

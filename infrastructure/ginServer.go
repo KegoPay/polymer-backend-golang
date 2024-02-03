@@ -70,6 +70,7 @@ func (s *ginServer)Start(){
 		webRouterV1.Use(middlewares.UserAgentMiddleware(false))
 		{
 			webroutev1.EmailSubsRouter(webRouterV1)
+			webroutev1.WebhookRouter(webRouterV1)
 		}
 	}
 

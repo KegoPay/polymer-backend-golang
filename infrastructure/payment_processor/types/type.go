@@ -20,14 +20,20 @@ type NameVerificationResponseField struct {
 
 
 type InitiateLocalTransferPayload struct {
-	AccountBank 	string		`json:"account_bank"`
-	AccountNumber 	string		`json:"account_number"`
-	Amount 			float32		`json:"amount"`
-	Narration 		string		`json:"narration"`
-	Currency 		string		`json:"currency"`
-	Reference 		string		`json:"reference"`
-	CallbackURL 	string		`json:"callback_url"`
-	DebitCurrency 	string		`json:"debit_currency"`
+	AccountBank 	string						`json:"account_bank"`
+	AccountNumber 	string						`json:"account_number"`
+	Amount 			float32						`json:"amount"`
+	Narration 		string						`json:"narration"`
+	Currency 		string						`json:"currency"`
+	Reference 		string						`json:"reference"`
+	CallbackURL 	string						`json:"callback_url"`
+	DebitCurrency 	string						`json:"debit_currency"`
+	Meta 			InitiateLocalTransferMeta  `json:"meta"`
+}
+
+type InitiateLocalTransferMeta struct {
+	WalletID	string 	`json:"walletID"`
+	UserID		string 	`json:"userID"`
 }
 
 type InitiateLocalTransferPayloadResponse struct {

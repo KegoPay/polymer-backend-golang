@@ -85,6 +85,18 @@ func CountryCodeToCurrencyCode(code string) string {
 	return countryCodeMap[code]
 }
 
+func CurrencyCodeToCountryCode(code string) string {
+	countryCodeMap := map[string]string {
+		"NGN": "NG",
+		"INR": "IN",
+		"USD": "US",
+		"KES": "KE",
+		"ZAR": "ZA",
+		"GBP": "GB",
+	}
+	return countryCodeMap[code]
+}
+
 func CurrencyCodeToCurrencySymbol(code string) string {
     currencySymbolMap := map[string]string{
         "NGN": "₦",
