@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	apperrors "kego.com/application/appErrors"
 	"kego.com/application/constants"
@@ -13,6 +14,8 @@ import (
 	"kego.com/application/repository"
 	userusecases "kego.com/application/usecases/userUseCases"
 	"kego.com/entities"
+	"kego.com/infrastructure/database/repository/cache"
+	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
 	server_response "kego.com/infrastructure/serverResponse"
 	"kego.com/infrastructure/validator"
@@ -108,6 +111,21 @@ func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionD
 		server_response.Responder.Respond(ctx.Ctx, http.StatusOK,
 			"Seems you have registered with this email previously.\nNot to worry, you still have access to exclusive insights, updates, and special offers delivered straight to your inbox. Thanks for staying connected with us! ", nil, nil)
 		return
+	}
+	found := cache.Cache.FindOne(fmt.Sprintf("%s-email-blacklist", ctx.Body.Email))
+	if found != nil {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("%s was not approved for signup on Polymer", ctx.Body.Email), nil)
+		return 
+	}
+	valid, err := identityverification.IdentityVerifier.EmailVerification(ctx.Body.Email)
+	if err != nil {
+		apperrors.FatalServerError(ctx, err)
+		return  
+	}
+	if !valid {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("%s was not approved for signup on Polymer", ctx.Body.Email), nil)
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-email-blacklist", ctx.Body.Email), ctx.Body.Email, time.Minute * 0 )
+		return 
 	}
 	payload := entities.Subscriptions{
 		Email: ctx.Body.Email,
