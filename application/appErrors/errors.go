@@ -1,6 +1,7 @@
 package apperrors
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -28,8 +29,13 @@ func ExternalDependencyError(ctx interface{}, serviceName string, statusCode str
 	logger.Error(err, logger.LoggerOptions{
 		Key: fmt.Sprintf("error with %s. status code %s", serviceName, statusCode),
 	})
-	// metrics.MetricMonitor.ReportError(ctx, fmt.Errorf(fmt.Sprintf("error with %s. status code %s", serviceName, statusCode)))
-	// metrics.MetricMonitor.ReportError(ctx, err)
+	logger.MetricMonitor.ReportError(fmt.Errorf(fmt.Sprintf("error with %s", serviceName)), []logger.LoggerOptions{
+		{
+			Key: "statusCode",
+			Data: statusCode,
+		},
+	})
+	logger.MetricMonitor.ReportError(err, nil)
 	server_response.Responder.Respond(ctx, http.StatusServiceUnavailable,
 		"Omo! Our service is temporarily down 😢. Our team is working to fix it. Please check back later.", nil, nil)
 }
@@ -39,13 +45,13 @@ func ErrorProcessingPayload(ctx interface{}){
 }
 
 func FatalServerError(ctx interface{}, err error){
-	// metrics.MetricMonitor.ReportError(ctx, err)
+	logger.MetricMonitor.ReportError(err, nil)
 	server_response.Responder.Respond(ctx, http.StatusInternalServerError,
 		"Omo! Our service is temporarily down 😢. Our team is working to fix it. Please check back later.", nil, nil)
 }
 
 func UnknownError(ctx interface{}, err error){
-	// metrics.MetricMonitor.ReportError(ctx, err)
+	logger.MetricMonitor.ReportError(err, nil)
 	server_response.Responder.Respond(ctx, http.StatusBadRequest,
 		"Omo! Something went wrong somewhere 😭. Please check back later.", nil, nil)
 }
@@ -60,7 +66,10 @@ func UnsupportedAppVersion(ctx interface{}){
 }
 
 func UnsupportedUserAgent(ctx interface{}){
-	// metrics.MetricMonitor.ReportError(ctx, errors.New("unspported user agent"))
+	logger.MetricMonitor.ReportError(errors.New("unspported user agent"), []logger.LoggerOptions{
+		{Key: "ctx",
+		Data: ctx,},
+	})
 	server_response.Responder.Respond(ctx, http.StatusBadRequest,
 		"Unsupported user agent 👮🏻‍♂️", nil, nil)
 }
