@@ -3,7 +3,10 @@ package authusecases
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	apperrors "kego.com/application/appErrors"
@@ -11,6 +14,8 @@ import (
 	walletUsecases "kego.com/application/usecases/wallet"
 	"kego.com/entities"
 	"kego.com/infrastructure/cryptography"
+	"kego.com/infrastructure/database/repository/cache"
+	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/validator"
 )
@@ -27,6 +32,35 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 		apperrors.ValidationFailedError(ctx, &[]error{err})
 		return nil, nil, err
 	}
+	exists, err := userRepo.CountDocs(map[string]any{
+		"email": payload.Email,
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx, err)
+		return nil, nil, err
+	}
+	if exists != 0 {
+		apperrors.EntityAlreadyExistsError(ctx, "User with email already exists")
+		return nil, nil, err
+	}
+	if os.Getenv("GIN_MODE") == "release" {
+		found := cache.Cache.FindOne(fmt.Sprintf("%s-email-blacklist", payload.Email))
+		if found != nil {
+			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil)
+			return nil, nil, err
+		}
+		valid, err := identityverification.IdentityVerifier.EmailVerification(payload.Email)
+		if err != nil {
+			apperrors.FatalServerError(ctx, err)
+			return nil, nil, err
+		}
+		if !valid {
+			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil)
+			cache.Cache.CreateEntry(fmt.Sprintf("%s-email-blacklist", payload.Email), payload.Email, time.Minute * 0 )
+			return nil, nil, err
+		}
+	}
+
 	payload.Password = string(passwordHash)
 	var user *entities.User
 	var wallet *entities.Wallet

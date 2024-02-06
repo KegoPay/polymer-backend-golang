@@ -24,11 +24,11 @@ func (div *DojahIdentityVerification) FetchBVNDetails(bvn string) (*identity_ver
 	var dojahResponse DojahBVNResponse
 	json.Unmarshal(*response, &dojahResponse)
 	if err != nil {
-		logger.Error(errors.New("error retireving bvn data from prembly"), logger.LoggerOptions{
+		logger.Error(errors.New("error retireving bvn data from dojah"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,
 		})
-		return nil, errors.New("something went wrong while retireving bvn data from prembly")
+		return nil, errors.New("something went wrong while retireving bvn data from dojah")
 	}
 	if *statusCode != 200 {
 		logger.Error(errors.New("request to Dojah for BVN fetch was unsuccessful"), logger.LoggerOptions{
@@ -42,4 +42,39 @@ func (div *DojahIdentityVerification) FetchBVNDetails(bvn string) (*identity_ver
 	}
 	logger.Info("BVN information retireved by Dojah")
 	return &dojahResponse.Data, nil
+}
+
+
+func (div *DojahIdentityVerification) EmailVerification(email string) (bool, error) {
+	response, statusCode, err := div.Network.Get(fmt.Sprintf("/fraud/email?email_address=%s",email) , &map[string]string{
+		"Authorization": div.API_KEY,
+		"AppId": div.APP_ID,
+	}, nil)
+	var dojahResponse DojahEmailVerification
+	json.Unmarshal(*response, &dojahResponse)
+	if err != nil {
+		logger.Error(errors.New("error verifying email from dojah"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		return false, errors.New("something went wrong while verifying email from dojah")
+	}
+	if *statusCode != 200 {
+		logger.Error(errors.New("request to Dojah email verification was unsuccessful"), logger.LoggerOptions{
+			Key: "statusCode",
+			Data: fmt.Sprintf("%d", statusCode),
+		}, logger.LoggerOptions{
+			Key: "data",
+			Data: dojahResponse,
+		})
+		return false, errors.New("error verifying email")
+	}
+	logger.Info("Email verification successful", logger.LoggerOptions{
+		Key: "email",
+		Data: email,
+	}, logger.LoggerOptions{
+		Key: "result",
+		Data: dojahResponse,
+	})
+	return dojahResponse.Entity.Deliverable && !dojahResponse.Entity.DomainDetails.SusTLD && dojahResponse.Entity.DomainDetails.Registered && (dojahResponse.Entity.Score == 1), nil
 }

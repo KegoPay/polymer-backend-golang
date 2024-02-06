@@ -300,7 +300,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		apperrors.CustomError(ctx.Ctx, err.Error())
 		return
 	}
-	result, err := identityverification.IdentityVerifier.FaceMatch(*&ctx.Body.ProfileImage, bvnDetails.Base64Image)
+	// result, err := identityverification.IdentityVerifier.FaceMatch(*&ctx.Body.ProfileImage, bvnDetails.Base64Image)
 	if err != nil {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
 		// _, _ := fileupload.FileUploader.DeleteFileByURL(ctx.Body.ProfileImage)
@@ -311,16 +311,16 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		apperrors.ClientError(ctx.Ctx, err.Error(), nil)
 		return
 	}
-	if *result < 80 {
-		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+	// if *result < 80 {
+		// cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
 		// err = fileupload.FileUploader.DeleteSingleFile(account.ID)
 		// if err != nil {
 		// 	apperrors.FatalServerError(ctx.Ctx, err)
 		// 	return
 		// }
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("Your picture does not match with your Image on the BVN provided. If you think this is a mistake please contact support on %s", constants.SUPPORT_EMAIL), nil)
-		return
-	}
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("Your picture does not match with your Image on the BVN provided. If you think this is a mistake please contact support on %s", constants.SUPPORT_EMAIL), nil)
+	// 	return
+	// }
 	userUpdatedInfo := map[string]any{
 		"gender": bvnDetails.Gender,
 		"dob": bvnDetails.DateOfBirth,

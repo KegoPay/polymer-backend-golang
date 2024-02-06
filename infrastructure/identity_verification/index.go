@@ -3,7 +3,7 @@ package identityverification
 import (
 	"os"
 
-	prembly_identity_verification "kego.com/infrastructure/identity_verification/prembly"
+	dojah_identity_verification "kego.com/infrastructure/identity_verification/dojah"
 	identity_verification_types "kego.com/infrastructure/identity_verification/types"
 	"kego.com/infrastructure/network"
 )
@@ -11,11 +11,11 @@ import (
 var IdentityVerifier identity_verification_types.IdentityVerifierType
 
 func InitialiseIdentityVerifier(){
-	IdentityVerifier = &prembly_identity_verification.PremblyIdentityVerification{
+	IdentityVerifier = &dojah_identity_verification.DojahIdentityVerification{
 		Network: &network.NetworkController{
-			BaseUrl: os.Getenv("PREMBLY_BASE_URL"),
+			BaseUrl: os.Getenv("DOJAH_BASE_URL"),
 		},
-		API_KEY: os.Getenv("PREMBLY_API_KEY"),
-		APP_ID: os.Getenv("PREMBLY_APP_ID"),
+		API_KEY: os.Getenv("DOJAH_API_KEY"),
+		APP_ID: os.Getenv("DOJAH_APP_ID"),
 	}
 }

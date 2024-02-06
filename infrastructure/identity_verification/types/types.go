@@ -2,7 +2,7 @@ package identity_verification_types
 
 type IdentityVerifierType interface {
 	FetchBVNDetails(string) (*BVNData, error)
-	FaceMatch(string, string) (*float32, error)
+	EmailVerification(email string) (bool, error)
 }
 
 
