@@ -399,7 +399,7 @@ func GenerateFileURL(ctx *interfaces.ApplicationContext[dto.FileUploadOptions]){
 		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
 		return
 	}
-	url, err := fileupload.FileUploader.GeneratedSignedURL(ctx.Body.Type, ctx.Body.Permissions)
+	url, err := fileupload.FileUploader.GeneratedSignedURL(fmt.Sprintf("%s/%s", ctx.Body.Type, ctx.GetStringContextData("UserID")), ctx.Body.Permissions)
 	if err != nil {
 		apperrors.CustomError(ctx.Ctx, err.Error())
 		return

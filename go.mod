@@ -24,7 +24,9 @@ require (
 	cloud.google.com/go/iam v1.1.3 // indirect
 	cloud.google.com/go/longrunning v0.5.2 // indirect
 	cloud.google.com/go/storage v1.30.1 // indirect
+	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.1 // indirect
+	github.com/Azure/azure-storage-blob-go v0.15.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
@@ -34,6 +36,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
+	github.com/mattn/go-ieproxy v0.0.1 // indirect
 	github.com/onsi/gomega v1.27.1 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect

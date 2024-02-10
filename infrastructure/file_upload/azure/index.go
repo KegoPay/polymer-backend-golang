@@ -7,7 +7,6 @@ import (
 
 	"kego.com/infrastructure/file_upload/types"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	azblob "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	azblob_sas "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
 )
@@ -21,7 +20,7 @@ type AzureBlobSignedURLService struct {
 }
 
 func (azurlservice *AzureBlobSignedURLService) GeneratedSignedURL(file_name string, permission types.SignedURLPermission) (*string, error){
-	if permission.Read && permission.Write  || !permission.Read && !permission.Write{
+	if permission.Read == permission.Write {
 		return nil, errors.New("permission must be either read or write")
 	}
 	credential, err := azblob.NewSharedKeyCredential(azurlservice.AccountName, azurlservice.AccountKey)
@@ -32,9 +31,10 @@ func (azurlservice *AzureBlobSignedURLService) GeneratedSignedURL(file_name stri
 	sasQueryParams, err := azblob_sas.BlobSignatureValues{
 		Protocol:      azblob_sas.ProtocolHTTPS,
 		StartTime:     time.Now().UTC(),
-		ExpiryTime:    time.Now().UTC().Add(10 * time.Minute), // url is valid for only 10 mins
-		Permissions:   to.Ptr(azblob_sas.BlobPermissions{Read: permission.Read, Write: permission.Write}).String(),
+		ExpiryTime:    time.Now().UTC().Add(5 * time.Minute), // url is valid for only 5 mins
+		Permissions:   (&azblob_sas.BlobPermissions{Read: permission.Read, Write: permission.Write}).String(),
 		ContainerName: azurlservice.ContainerName,
+		BlobName: file_name,
 	}.SignWithSharedKey(credential)
 	if err != nil {
 		return nil, err
