@@ -250,7 +250,9 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[dto.VerifyEmailData]) {
 		apperrors.UnknownError(ctx.Ctx, err)
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", token, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", map[string]string{
+		"token": *token,
+	}, nil)
 }
 
 func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
