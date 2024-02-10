@@ -64,11 +64,15 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 	if account == nil || token == nil {
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "login successful", map[string]interface{}{
+	responsePayload := map[string]interface{}{
 		"account": account,
 		"wallet": wallet,
 		"token":   token,
-	}, nil)
+	}
+	if account.TransactionPin == "" {
+		responsePayload["unsetTrxPin"] = true
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "login successful", responsePayload, nil)
 }
 
 
