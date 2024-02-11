@@ -45,7 +45,7 @@ func FetchInternationalBanks(ctx *interfaces.ApplicationContext[dto.CountryCode]
 func FetchExchangeRates(ctx *interfaces.ApplicationContext[any]){
 	amountAsUInt, err := strconv.ParseUint(ctx.Query["amount"].(string), 10, 64)
 	if err != nil {
-		apperrors.ClientError(ctx, fmt.Sprintf("The amount %d is not a valid amount. Put in a valid amount", amountAsUInt), nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("The amount %d is not a valid amount. Put in a valid amount", amountAsUInt), nil)
 		return
 	}
 	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Query["currency"], &amountAsUInt)
