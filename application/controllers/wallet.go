@@ -465,7 +465,16 @@ func FetchPastTransactions(ctx *interfaces.ApplicationContext[any]){
 		Sort: map[string]any{
 			"createdAt": -1,
 		},
-	})
+	}, options.Find().SetProjection(map[string]any{
+		"transactionReference": 1,
+		"amount": 1,
+		"amountInNGN": 1,
+		"fee": 1,
+		"description": 1,
+		"amountInUSD": 1,
+		"transactionRecepient": 1,
+		"currency": 1,
+	}))
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return

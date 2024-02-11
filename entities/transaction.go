@@ -56,7 +56,7 @@ type Transaction struct {
 	Intent               TransactionIntent 	  `bson:"intent" json:"intent" validate:"required"`
 	DeviceInfo           DeviceInfo        	  `bson:"deviceInfo" json:"deviceInfo" validate:"required"`
 	Sender               TransactionSender 	  `bson:"transactionSender" json:"transactionSender" validate:"required"`
-	Recepient            TransactionRecepient `bson:"transactionRcepient" json:"transactionRcepient" validate:"required"`
+	Recepient            TransactionRecepient `bson:"transactionRecepient" json:"transactionRecepient" validate:"required"`
 
 	ID        string    `bson:"_id" json:"id"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`
