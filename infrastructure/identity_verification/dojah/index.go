@@ -38,7 +38,7 @@ func (div *DojahIdentityVerification) FetchBVNDetails(bvn string) (*identity_ver
 			Key: "data",
 			Data: dojahResponse,
 		})
-		return nil, errors.New("error retrivin bvn")
+		return nil, errors.New("error retireving bvn")
 	}
 	logger.Info("BVN information retireved by Dojah")
 	return &dojahResponse.Data, nil

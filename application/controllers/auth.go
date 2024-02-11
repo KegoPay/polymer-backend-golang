@@ -334,7 +334,12 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		"dob": bvnDetails.DateOfBirth,
 		"lastName": cases.Title(language.Und).String(bvnDetails.LastName),
 		"firstName": cases.Title(language.Und).String(bvnDetails.FirstName),
-		"middleName": bvnDetails.MiddleName,
+		"middleName": func () *string {
+			if bvnDetails.MiddleName != nil {
+				return utils.GetStringPointer(cases.Title(language.Und).String(*bvnDetails.MiddleName))
+			}
+			return nil
+		}(),
 		"watchListed": bvnDetails.WatchListed == "True",
 		"nationality": bvnDetails.Nationality,
 		"phone": entities.PhoneNumber{
