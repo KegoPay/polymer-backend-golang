@@ -11,6 +11,7 @@ type LoggerOptions struct{
 }
 
 var MetricMonitor MetricType = (&SentryMonitor{})
+var RequestMetricMonitor  = (&APIToolKitMonitor{})
 
 
 // This logs info level messages.

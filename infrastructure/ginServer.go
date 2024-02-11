@@ -50,6 +50,7 @@ func (s *ginServer)Start(){
 	server.MaxMultipartMemory =  15 << 20  // 8 MiB
 
 	server.Use(logger.MetricMonitor.MetricMiddleware().(gin.HandlerFunc))
+	server.Use(logger.RequestMetricMonitor.RequestMetricMiddleware().(func (*gin.Context)))
 
 	v1 := server.Group("/api",)
 

@@ -16,7 +16,7 @@ func StartServices(){
 	logger.InitializeLogger()
 	database.SetUpDatabase()
 	logger.MetricMonitor.Init()
-	// metrics.MetricMonitor.Init()
+	logger.RequestMetricMonitor.Init()
 	// pubsub.PubSub.Connect()
 	fileupload.InitialiseFileUploader()
 	pushnotification.InitialisePushNotificationService()
