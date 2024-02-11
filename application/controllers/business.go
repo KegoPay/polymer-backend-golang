@@ -8,20 +8,17 @@ import (
 	"kego.com/application/interfaces"
 	"kego.com/application/repository"
 	"kego.com/application/usecases/business"
-	"kego.com/application/utils"
 	"kego.com/entities"
 	server_response "kego.com/infrastructure/serverResponse"
 )
 
 
 func CreateBusiness(ctx *interfaces.ApplicationContext[dto.BusinessDTO]){
-	if ctx.Body.Email == nil {
-		ctx.Body.Email =  utils.GetStringPointer(ctx.GetStringContextData("Email"))
-	}
+	ctx.Body.Email =  ctx.GetStringContextData("Email")
 	business, wallet, err := business.CreateBusiness(ctx.Ctx, &entities.Business{
 		Name: ctx.Body.Name,
 		UserID: ctx.GetStringContextData("UserID"),
-		Email: *ctx.Body.Email,
+		Email: ctx.Body.Email,
 	})
 	if err != nil {
 		return

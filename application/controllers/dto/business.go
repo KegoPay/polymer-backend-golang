@@ -2,7 +2,7 @@ package dto
 
 type BusinessDTO struct {
 	Name  string `json:"name"`
-	Email *string `json:"email"`
+	Email string `json:"-"`
 }
 
 type UpdateBusinessDTO struct {
