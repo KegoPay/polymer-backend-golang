@@ -31,7 +31,7 @@ type User struct {
 	BVN		  		  				string 	  	 			`bson:"bvn" json:"-"`
 	Gender		  		  			string 	  	 			`bson:"gender" json:"gender"`
 	DOB		  		  				string 	  	 			`bson:"dob" json:"dob"`
-	WatchListed		  		  		string 	  	 			`bson:"watchListed" json:"-"`
+	WatchListed		  		  		bool 	  	 			`bson:"watchListed" json:"-"`
 	Nationality		  		  		string 	  	 			`bson:"nationality" json:"nationality"`
 	ProfileImage		  		  	string 	  	 			`bson:"profileImage" json:"profileImage"`
 	Tag		  		  				string 	  			 	`bson:"tag" json:"tag"`

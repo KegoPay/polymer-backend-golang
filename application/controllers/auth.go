@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	apperrors "kego.com/application/appErrors"
 	"kego.com/application/constants"
 	"kego.com/application/controllers/dto"
@@ -330,10 +332,10 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 	userUpdatedInfo := map[string]any{
 		"gender": bvnDetails.Gender,
 		"dob": bvnDetails.DateOfBirth,
-		"lastName": bvnDetails.LastName,
-		"firstName": bvnDetails.FirstName,
+		"lastName": cases.Title(language.Und).String(bvnDetails.LastName),
+		"firstName": cases.Title(language.Und).String(bvnDetails.FirstName),
 		"middleName": bvnDetails.MiddleName,
-		"watchListed": bvnDetails.WatchListed,
+		"watchListed": bvnDetails.WatchListed == "True",
 		"nationality": bvnDetails.Nationality,
 		"phone": entities.PhoneNumber{
 			Prefix: "234",
@@ -343,6 +345,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		"profileImage": ctx.Body.ProfileImage,
 		"kycCompleted": true,
 		"bvn": ctx.Body.BVN,
+		"accountRestricted": bvnDetails.WatchListed == "True",
 	}
 	userRepo.UpdatePartialByFilter(map[string]interface{}{
 		"email": ctx.GetStringContextData("Email"),

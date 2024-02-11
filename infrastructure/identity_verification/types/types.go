@@ -8,12 +8,12 @@ type IdentityVerifierType interface {
 
 type BVNData struct {
 	Gender            string    `json:"gender"`
-	WatchListed       string    `json:"watchListed"`
-	FirstName         string    `json:"firstName"`
-	MiddleName        *string    `json:"middleName"`
-	LastName          string    `json:"lastName"`
-	DateOfBirth       string    `json:"dateOfBirth"`
-	PhoneNumber       string     `json:"phoneNumber1"`
+	WatchListed       string    `json:"watch_listed"`
+	FirstName         string    `json:"first_name"`
+	MiddleName        *string    `json:"middle_name"`
+	LastName          string    `json:"last_name"`
+	DateOfBirth       string    `json:"date_of_birth"`
+	PhoneNumber       string     `json:"phone_number1"`
 	Nationality       string    `json:"nationality"`
-	Base64Image       string    `json:"base64Image"`
+	Base64Image       string    `json:"image"`
 }
