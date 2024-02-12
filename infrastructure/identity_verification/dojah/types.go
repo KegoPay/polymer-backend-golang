@@ -6,6 +6,10 @@ type DojahBVNResponse struct {
 	Data        	identity_verification_types.BVNData `json:"entity"`
 }
 
+type DojahNINResponse struct {
+	Data        	identity_verification_types.NINData `json:"entity"`
+}
+
 type DojahEmailVerification struct {
 	Entity		DojahEmailVerificationPayload		`json:"entity"`
 }

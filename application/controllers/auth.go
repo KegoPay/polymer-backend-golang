@@ -236,7 +236,7 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[dto.VerifyEmailData]) {
 	}
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
 		Email:     &account.Email,
-		Phone:     &account.Phone,
+		Phone:     account.Phone,
 		UserID:    account.ID,
 		IssuedAt:  time.Now().Unix(),
 		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
@@ -302,11 +302,51 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		apperrors.ClientError(ctx.Ctx, "you have completed your identity verification", nil)
 		return
 	}
-	bvnDetails, err := identityverification.IdentityVerifier.FetchBVNDetails(ctx.Body.BVN)
-	if err != nil {
-		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-		apperrors.CustomError(ctx.Ctx, err.Error())
+	kycDetails := struct{
+		Gender            string
+		WatchListed       *string
+		FirstName         string
+		MiddleName        *string 
+		LastName          string
+		DateOfBirth       string 
+		PhoneNumber       *string
+		Nationality       string
+		Base64Image       string 
+	}{}
+	if ctx.Body.Path == "bvn" {
+		bvnDetails, err := identityverification.IdentityVerifier.FetchBVNDetails(*ctx.Body.BVN)
+		if err != nil {
+			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+			apperrors.CustomError(ctx.Ctx, err.Error())
+			return
+		}
+		kycDetails.Base64Image = bvnDetails.Base64Image
+		kycDetails.WatchListed = &bvnDetails.WatchListed
+		kycDetails.FirstName = bvnDetails.FirstName
+		kycDetails.MiddleName = bvnDetails.MiddleName
+		kycDetails.LastName = bvnDetails.LastName
+		kycDetails.Gender = bvnDetails.Gender
+		kycDetails.PhoneNumber = &bvnDetails.PhoneNumber
+		kycDetails.Nationality = bvnDetails.Nationality
+		kycDetails.DateOfBirth = bvnDetails.DateOfBirth
+	}else if ctx.Body.Path == "nin" {
+		apperrors.ClientError(ctx.Ctx, "Verification by NIN is currently not supported", nil)
 		return
+		ninDetails, err := identityverification.IdentityVerifier.FetchNINDetails(*ctx.Body.NIN)
+		if err != nil {
+			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+			apperrors.CustomError(ctx.Ctx, err.Error())
+			return
+		}
+		kycDetails.Base64Image = ninDetails.Base64Image
+		kycDetails.WatchListed = nil
+		kycDetails.FirstName = ninDetails.FirstName
+		kycDetails.MiddleName = ninDetails.MiddleName
+		kycDetails.LastName = ninDetails.LastName
+		kycDetails.Gender = ninDetails.Gender
+		kycDetails.PhoneNumber = ninDetails.PhoneNumber
+		kycDetails.Nationality = ninDetails.Nationality
+		kycDetails.DateOfBirth = ninDetails.DateOfBirth
 	}
 	// result, err := identityverification.IdentityVerifier.FaceMatch(*&ctx.Body.ProfileImage, bvnDetails.Base64Image)
 	if err != nil {
@@ -329,33 +369,47 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("Your picture does not match with your Image on the BVN provided. If you think this is a mistake please contact support on %s", constants.SUPPORT_EMAIL), nil)
 	// 	return
 	// }
+	watchListed := false
+	if  kycDetails.WatchListed  != nil {
+		if *kycDetails.WatchListed == "True" {
+			watchListed = true
+		}
+	}
 	userUpdatedInfo := map[string]any{
-		"gender": bvnDetails.Gender,
-		"dob": bvnDetails.DateOfBirth,
-		"lastName": cases.Title(language.Und).String(bvnDetails.LastName),
-		"firstName": cases.Title(language.Und).String(bvnDetails.FirstName),
+		"gender": kycDetails.Gender,
+		"dob": kycDetails.DateOfBirth,
+		"lastName": cases.Title(language.Und).String(kycDetails.LastName),
+		"firstName": cases.Title(language.Und).String(kycDetails.FirstName),
 		"middleName": func () *string {
-			if bvnDetails.MiddleName != nil {
-				return utils.GetStringPointer(cases.Title(language.Und).String(*bvnDetails.MiddleName))
+			if kycDetails.MiddleName != nil {
+				return utils.GetStringPointer(cases.Title(language.Und).String(*kycDetails.MiddleName))
 			}
 			return nil
 		}(),
-		"watchListed": bvnDetails.WatchListed == "True",
-		"nationality": bvnDetails.Nationality,
-		"phone": entities.PhoneNumber{
-			Prefix: "234",
-			ISOCode: "NG",
-			LocalNumber: bvnDetails.PhoneNumber,
-		},
+		"watchListed": watchListed,
+		"nationality": kycDetails.Nationality,
+		"phone": func () *entities.PhoneNumber {
+			if kycDetails.PhoneNumber != nil {
+				return &entities.PhoneNumber{
+					Prefix: "234",
+					ISOCode: "NG",
+					LocalNumber: *kycDetails.PhoneNumber,
+				}
+			}	
+			return nil
+		}(),
 		"profileImage": ctx.Body.ProfileImage,
 		"kycCompleted": true,
 		"bvn": ctx.Body.BVN,
-		"accountRestricted": bvnDetails.WatchListed == "True",
+		"nin": ctx.Body.NIN,
+		"accountRestricted": watchListed,
 	}
 	userRepo.UpdatePartialByFilter(map[string]interface{}{
 		"email": ctx.GetStringContextData("Email"),
 	}, userUpdatedInfo)
-	wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID,  account.FirstName, account.LastName, account.Email, ctx.Body.BVN)
+	if ctx.Body.Path == "bvn" {
+	wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID,  account.FirstName, account.LastName, account.Email, *ctx.Body.BVN)
+	}
 	cache.Cache.DeleteOne(fmt.Sprintf("%s-kyc-attempts-left", account.Email))
 	now := time.Now()
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
@@ -363,14 +417,14 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		Phone:     &entities.PhoneNumber{
 			Prefix: "234",
 			ISOCode: "NG",
-			LocalNumber: bvnDetails.PhoneNumber,
+			LocalNumber: *kycDetails.PhoneNumber,
 		},
 		UserID:    account.ID,
 		IssuedAt:  now.Unix(),
 		ExpiresAt: now.Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
 		UserAgent: account.UserAgent,
-		FirstName: bvnDetails.FirstName,
-		LastName: bvnDetails.LastName,
+		FirstName: userUpdatedInfo["firstName"].(string),
+		LastName: userUpdatedInfo["lastName"].(string),
 		DeviceID:   account.DeviceID,
 		AppVersion: account.AppVersion,
 	})

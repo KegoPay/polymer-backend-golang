@@ -49,7 +49,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 	}
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
 		Email:     &account.Email,
-		Phone:     &account.Phone,
+		Phone:     account.Phone,
 		UserID:    account.ID,
 		IssuedAt:  time.Now().Unix(),
 		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins

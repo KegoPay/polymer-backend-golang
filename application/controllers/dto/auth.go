@@ -30,7 +30,9 @@ type SetBVNDTOO struct {
 
 type VerifyAccountData struct {
 	ProfileImage     string `json:"profileImage" validate:"required,url"`
-	BVN    			 string `json:"bvn" validate:"required,min=11,max=11"`
+	Path     		 string `json:"path" validate:"required,oneof=nin bvn"`
+	BVN    			 *string `json:"bvn"`
+	NIN    			 *string `json:"nin"`
 }
 
 type SetTransactionPinDTO struct {

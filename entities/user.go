@@ -17,7 +17,7 @@ type User struct {
 	LastName          				string       			`bson:"lastName" json:"lastName"`
 	MiddleName          			*string      			`bson:"middleName" json:"middleName"`
 	Email            				string       			`bson:"email" json:"email" validate:"required,email"`
-	Phone             				PhoneNumber  			`bson:"phone" json:"phone"`
+	Phone             				*PhoneNumber  			`bson:"phone" json:"phone"`
 	Password          				string       			`bson:"password" json:"-" validate:"required,password"`
 	TransactionPin    				string       			`bson:"transactionPin" json:"-"`
 	UserAgent        				string    	 			`bson:"userAgent" json:"-" validate:"required"`
@@ -29,6 +29,7 @@ type User struct {
 	AccountRestricted 				bool         			`bson:"accountRestricted" json:"accountRestricted"`
 	Deactivated 					bool         			`bson:"deactivated" json:"deactivated"`
 	BVN		  		  				string 	  	 			`bson:"bvn" json:"-"`
+	NIN		  		  				string 	  	 			`bson:"nin" json:"-"`
 	Gender		  		  			string 	  	 			`bson:"gender" json:"gender"`
 	DOB		  		  				string 	  	 			`bson:"dob" json:"dob"`
 	WatchListed		  		  		bool 	  	 			`bson:"watchListed" json:"-"`

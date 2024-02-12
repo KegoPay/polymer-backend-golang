@@ -62,7 +62,7 @@ func UpdateUserProfile(ctx *interfaces.ApplicationContext[dto.UpdateUserDTO]){us
 		user.LastName = *ctx.Body.LastName
 	}
 	if ctx.Body.Phone != nil {
-		user.Phone = *ctx.Body.Phone
+		user.Phone = ctx.Body.Phone
 	}
 	validationErr := validator.ValidatorInstance.ValidateStruct(user)
 	if validationErr != nil {
