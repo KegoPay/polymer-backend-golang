@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"crypto/ecdh"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
@@ -31,6 +33,29 @@ import (
 	server_response "kego.com/infrastructure/serverResponse"
 	"kego.com/infrastructure/validator"
 )
+
+func KeyExchange(ctx *interfaces.ApplicationContext[dto.GenerateServerPublicKey]) {
+	keyBytes, err := hex.DecodeString(ctx.Body.ClientPubKey)
+    if err != nil {
+		logger.Error(errors.New("error decoding keys for key exchange"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		apperrors.UnknownError(ctx.Ctx, errors.New("could not perform key exchange"))
+        return
+    }
+    ClientPubKey, err := ecdh.P256().NewPublicKey(keyBytes)
+    if err != nil {
+		logger.Error(errors.New("error geting public key from key bytes"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		apperrors.UnknownError(ctx.Ctx, errors.New("could not perform key exchange"))
+        return
+    }
+	serverPubKey := cryptography.GeneratePublicKey(ctx.Body.SessionID, ClientPubKey)
+	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusCreated, "key generated", serverPubKey, nil)
+}
 
 func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 	account, _, err := authusecases.CreateAccount(ctx.Ctx, &entities.User{

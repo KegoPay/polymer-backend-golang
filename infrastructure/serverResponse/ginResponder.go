@@ -9,7 +9,35 @@ import (
 
 type ginResponder struct{}
 
+// Sends an encrypted payload to the client
 func (gr ginResponder)Respond(ctx interface{}, code int, message string, payload interface{}, errs []error) {
+	ginCtx, ok := (ctx).(*gin.Context)
+    if !ok {
+		logger.Error(errors.New("could not transform *interface{} to gin.Context in serverResponse package"), logger.LoggerOptions{
+			Key: "payload",
+			Data: ctx,
+		})
+        return
+    }
+	ginCtx.Abort()
+	ginCtx.JSON(code, gin.H{
+		"message": message,
+		"body":    payload,
+		"errors": func() interface{} {
+			if len(errs) == 0 {
+				return nil
+			}
+			errMsgs := []string{}
+			for _, err := range errs {
+				errMsgs = append(errMsgs, err.Error())
+			}
+			return errMsgs
+		}(),
+	})
+}
+
+// Sends a response to the client using plain JSON
+func (gr ginResponder) UnEncryptedRespond(ctx interface{}, code int, message string, payload interface{}, errs []error) {
 	ginCtx, ok := (ctx).(*gin.Context)
     if !ok {
 		logger.Error(errors.New("could not transform *interface{} to gin.Context in serverResponse package"), logger.LoggerOptions{

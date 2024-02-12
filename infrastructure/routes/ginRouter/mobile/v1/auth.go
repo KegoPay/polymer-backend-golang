@@ -14,6 +14,11 @@ import (
 func AuthRouter(router *gin.RouterGroup) {
 	authRouter := router.Group("/auth")
 	{
+
+		authRouter.POST("/key-exchange", func(ctx *gin.Context) {
+
+		})
+
 		authRouter.POST("/account/create", func(ctx *gin.Context) {
 			var body dto.CreateAccountDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {

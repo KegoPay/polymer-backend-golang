@@ -9,8 +9,12 @@ type CreateAccountDTO struct {
 	Password      		  string             `json:"password"`
 	UserAgent 		  string     			 `json:"deviceType"`
 	DeviceID  		  string                 `json:"deviceID"`
-	// TransactionPin    string           		 `json:"transactionPin"`
 	AppVersion        string       			 `json:"appVersion"`
+}
+
+type GenerateServerPublicKey struct {
+	ClientPubKey	string		`json:"clientPubKey"`
+	SessionID		string		`json:"sessionID"`
 }
 
 type LoginDTO struct {
