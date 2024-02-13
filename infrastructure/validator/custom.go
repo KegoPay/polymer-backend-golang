@@ -1,6 +1,8 @@
 package validator
 
 import (
+	"fmt"
+	"regexp"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
@@ -45,4 +47,18 @@ func exclusiveEmailAndPhone(fl validator.FieldLevel) bool {
 func stringLengthValidator(fl validator.FieldLevel) bool {
 	value := fl.Field().String()
 	return len(value) >= 3
+}
+
+func alphaSpace(fl validator.FieldLevel) bool {
+	pattern := `^[a-zA-Z ]+$`
+
+	// Compile the regular expression
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		fmt.Println("Error compiling regular expression:", err)
+		return false
+	}
+
+	// Match the string against the regular expression
+	return re.MatchString(fl.Field().String())
 }

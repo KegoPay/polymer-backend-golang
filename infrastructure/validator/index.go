@@ -5,6 +5,7 @@ func init(){
 	validate.RegisterValidation("password", validatePasswordStrength)
 	validate.RegisterValidation("trx_pin", validateTrxPinStrength)
 	validate.RegisterValidation("string_min_length_3", stringLengthValidator)
+	validate.RegisterValidation("alpha_space", alphaSpace)
 }
 
 type Validator struct {}

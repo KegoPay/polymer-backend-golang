@@ -23,12 +23,6 @@ type SetPaymentTagDTO struct {
 	Tag  string       `bson:"tag" json:"tag" validate:"required,alphanum,string_min_length_3"`
 }
 
-type UpdateAddressDTO struct {
-	State 	  string       `bson:"state" json:"state" validate:"required,alpha,oneof=lagos"`
-	LGA    	  string       `bson:"lga" json:"lga" validate:"required,alpha,mx=20"`
-	Street	  string       `bson:"street" json:"street" validate:"required,alpha,max=300"`
-}
-
 type ToggleNotificationOptionsDTO struct {
 	Emails 			 *bool `bson:"emails" json:"emails"`
 	PushNotification *bool `bson:"pushNotification" json:"pushNotification"`

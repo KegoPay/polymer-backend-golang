@@ -33,6 +33,21 @@ func UserRouter(router *gin.RouterGroup) {
 			controllers.UpdateUserProfile(&appContext)
 		})
 
+		userRouter.PATCH("/address/update", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.UpdateAddressDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.UpdateAddressDTO]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.UpdateAddress(&appContext)
+		})
+
 		userRouter.PATCH("/profile/payment-tag", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SetPaymentTagDTO

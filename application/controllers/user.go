@@ -141,6 +141,29 @@ func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionD
 }
 
 
-func UpdateAddress(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionDTO]) {
-
+func UpdateAddress(ctx *interfaces.ApplicationContext[dto.UpdateAddressDTO]) {
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		return
+	}
+	userRepo := repository.UserRepo()
+	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]any{
+		"address": entities.Address{
+			FullAddress: nil,
+			State: &ctx.Body.State,
+			Street: &ctx.Body.Street,
+			LGA: &ctx.Body.LGA,
+			Verified: true,
+		},
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	if updated != 1 {
+		apperrors.UnknownError(ctx.Ctx, errors.New("could not update users address"))
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address set", nil, nil)
 }

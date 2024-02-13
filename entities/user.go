@@ -13,7 +13,7 @@ type NotificationOptions struct {
 
 type Address struct {
 	FullAddress 	*string 	`bson:"fullAddress" json:"fullAddress"`
-	Verified 		*string 	`bson:"verified" json:"verified"`
+	Verified 		bool 	`bson:"verified" json:"verified"`
 	State 			*string 	`bson:"state" json:"state"`
 	LGA 			*string 	`bson:"lga" json:"lga"`
 	Street 			*string 	`bson:"street" json:"street"`

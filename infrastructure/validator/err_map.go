@@ -12,6 +12,8 @@ func fieldErrorMap(tag string, field string, value interface{}, param interface{
 		"iso3166_1_alpha2": 		fmt.Sprintf("%s should be a 2 letter country code (ISO 3166-1 alpha-2)", field),
 		"oneof": 					fmt.Sprintf("%s must be one of %s", field, param),
 		"url": 						fmt.Sprintf("%s must be a valid url", field),
+		"alpha": 				fmt.Sprintf("%s must be an alphabet", field),
+		"alpha_space": 				fmt.Sprintf("%s must be an alphabet", field),
 		// custom
 		"password":      			fmt.Sprintf("%s should be a secret 6 digit number", field),
 		"exclusive_email_phone": 	"An email or phone number must be provided to sign up",
