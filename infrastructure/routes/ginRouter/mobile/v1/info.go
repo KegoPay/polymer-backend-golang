@@ -32,6 +32,12 @@ func InfoRouter(router *gin.RouterGroup) {
 			})
 		})
 
+		infoRouter.GET("/states", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			controllers.FetchStateData(&interfaces.ApplicationContext[any]{
+				Ctx: ctx,
+			})
+		})
+
 		infoRouter.POST("/banks/international", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.CountryCode

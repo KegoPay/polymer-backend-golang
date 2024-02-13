@@ -16,6 +16,7 @@ type BVNData struct {
 	DateOfBirth       string    `json:"date_of_birth"`
 	PhoneNumber       string     `json:"phone_number1"`
 	Nationality       string    `json:"nationality"`
+	Address	 	      string    `json:"residential_address"`
 	Base64Image       string    `json:"image"`
 }
 
@@ -27,5 +28,6 @@ type NINData struct {
 	DateOfBirth       string    `json:"birthdate"`
 	PhoneNumber       *string     `json:"telephoneno"`
 	Nationality       string    `json:"birth_country"`
+	Address	 	      string    `json:"address"`
 	Base64Image       string    `json:"photo"`
 }

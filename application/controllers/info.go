@@ -7,6 +7,7 @@ import (
 
 	apperrors "kego.com/application/appErrors"
 	bankssupported "kego.com/application/banksSupported"
+	"kego.com/application/constants"
 	"kego.com/application/controllers/dto"
 	countriessupported "kego.com/application/countriesSupported"
 	"kego.com/application/interfaces"
@@ -25,6 +26,11 @@ func FilterCountries(ctx *interfaces.ApplicationContext[dto.CountryFilter]){
 func FetchLocalBanks(ctx *interfaces.ApplicationContext[any]){
 	banks := bankssupported.SupportedLocalBanks
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "banks fetched", banks, nil)
+}
+
+func FetchStateData(ctx *interfaces.ApplicationContext[any]){
+	states := constants.States
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "states fetched", states, nil)
 }
 
 func FetchInternationalBanks(ctx *interfaces.ApplicationContext[dto.CountryCode]){

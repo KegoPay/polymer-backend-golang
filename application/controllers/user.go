@@ -139,3 +139,8 @@ func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionD
 	emailSubRepo.CreateOne(context.TODO(), payload)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "You're in! You now have access to exclusive insights, updates, and special offers delivered straight to your inbox.", nil, nil)
 }
+
+
+func UpdateAddress(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionDTO]) {
+
+}

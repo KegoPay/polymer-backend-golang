@@ -337,6 +337,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		PhoneNumber       *string
 		Nationality       string
 		Base64Image       string 
+		Address		      string 
 	}{}
 	if ctx.Body.Path == "bvn" {
 		bvnDetails, err := identityverification.IdentityVerifier.FetchBVNDetails(*ctx.Body.BVN)
@@ -354,6 +355,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		kycDetails.PhoneNumber = &bvnDetails.PhoneNumber
 		kycDetails.Nationality = bvnDetails.Nationality
 		kycDetails.DateOfBirth = bvnDetails.DateOfBirth
+		kycDetails.Address = bvnDetails.Address
 	}else if ctx.Body.Path == "nin" {
 		apperrors.ClientError(ctx.Ctx, "Verification by NIN is currently not supported", nil)
 		return
@@ -428,6 +430,9 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		"bvn": ctx.Body.BVN,
 		"nin": ctx.Body.NIN,
 		"accountRestricted": watchListed,
+		"address": entities.Address{
+			FullAddress: &kycDetails.Address,
+		},
 	}
 	userRepo.UpdatePartialByFilter(map[string]interface{}{
 		"email": ctx.GetStringContextData("Email"),

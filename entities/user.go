@@ -11,6 +11,14 @@ type NotificationOptions struct {
 	Emails 			 bool `bson:"emails" json:"emails"`
 }
 
+type Address struct {
+	FullAddress 	*string 	`bson:"fullAddress" json:"fullAddress"`
+	Verified 		*string 	`bson:"verified" json:"verified"`
+	State 			*string 	`bson:"state" json:"state"`
+	LGA 			*string 	`bson:"lga" json:"lga"`
+	Street 			*string 	`bson:"street" json:"street"`
+}
+
 
 type User struct {
 	FirstName         				string       			`bson:"firstName" json:"firstName"`
@@ -31,6 +39,7 @@ type User struct {
 	BVN		  		  				string 	  	 			`bson:"bvn" json:"-"`
 	NIN		  		  				string 	  	 			`bson:"nin" json:"-"`
 	Gender		  		  			string 	  	 			`bson:"gender" json:"gender"`
+	Address							*Address				`bson:"address" json:"address"`
 	DOB		  		  				string 	  	 			`bson:"dob" json:"dob"`
 	WatchListed		  		  		bool 	  	 			`bson:"watchListed" json:"-"`
 	Nationality		  		  		string 	  	 			`bson:"nationality" json:"nationality"`
