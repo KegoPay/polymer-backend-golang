@@ -14,7 +14,7 @@ import (
 )
 
 
-func OTPTokenMiddleware(ctx *interfaces.ApplicationContext[any], ipAddress string) (*interfaces.ApplicationContext[any], bool) {
+func OTPTokenMiddleware(ctx *interfaces.ApplicationContext[any], ipAddress string, intent string) (*interfaces.ApplicationContext[any], bool) {
 	otp_token := ctx.GetHeader("Otp-Token")
 	if otp_token == nil {
 		apperrors.AuthenticationError(ctx.Ctx, "missing otp token")
@@ -53,15 +53,13 @@ func OTPTokenMiddleware(ctx *interfaces.ApplicationContext[any], ipAddress strin
 		apperrors.ClientError(ctx.Ctx, "otp expired", nil)
 		return nil, false
 	}
-	if *otpIntent != auth_token_claims["otpIntent"].(string) {
+	if *otpIntent != auth_token_claims["otpIntent"].(string) || auth_token_claims["otpIntent"].(string) != intent{
 		logger.Warning("this should trigger a wallet lock")
 		logger.Error(errors.New("wrong otp intent in token"))
-		apperrors.ClientError(ctx.Ctx, "otp expired", nil)
+		apperrors.ClientError(ctx.Ctx, "incorrect intent", nil)
 		return nil, false
 	}
 	ctx.SetContextData("OTPToken", otp_token)
-	fmt.Println("here oo")
-	fmt.Println(auth_token_claims["email"])
 	ctx.SetContextData("OTPEmail", auth_token_claims["email"])
 	ctx.SetContextData("OTPPhone", auth_token_claims["phoneNum"])
 	return ctx, true

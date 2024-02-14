@@ -146,14 +146,9 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 }
 
 func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
-	msg, success := auth.VerifyOTP(ctx.Body.Email, ctx.Body.Otp)
-	if !success {
-		apperrors.ClientError(ctx.Ctx, msg, nil)
-		return
-	}
 	userRepo := repository.UserRepo()
 	account, err := userRepo.FindOneByFilter(map[string]interface{}{
-		"email": ctx.Body.Email,
+		"email":  ctx.GetStringContextData("OTPEmail"),
 	})
 	if err != nil {
 		logger.Error(errors.New("error fetching a user account to reset password"), logger.LoggerOptions{
@@ -178,19 +173,25 @@ func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
-	success, err = userRepo.UpdatePartialByFilter(map[string]interface{}{
-		"email": ctx.Body.Email,
+	success, err := userRepo.UpdatePartialByFilter(map[string]interface{}{
+		"email":  ctx.GetStringContextData("OTPEmail"),
 	}, map[string]interface{}{
 		"password": string(hashedPassword),
 	})
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err)
+		return
 	}
 	
-	if err != nil {
+	if !success {
+		logger.Error(errors.New("could not reset password"), logger.LoggerOptions{
+			Key: "email",
+			Data: ctx.GetStringContextData("OTPEmail"),
+		})
 		apperrors.UnknownError(ctx.Ctx, err)
+		return
 	}
-	
+	cache.Cache.CreateEntry(ctx.GetStringContextData("OTPToken"), true, time.Minute * 5)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password reset", nil, nil)
 }
 

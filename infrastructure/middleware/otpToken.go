@@ -6,13 +6,13 @@ import (
 	"kego.com/application/middlewares"
 )
 
-func OTPTokenMiddleware() gin.HandlerFunc {
+func OTPTokenMiddleware(intent string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		appContext, next := middlewares.OTPTokenMiddleware(&interfaces.ApplicationContext[any]{
 			Ctx:    ctx,
 			Keys:   ctx.Keys,
 			Header: ctx.Request.Header,
-		}, ctx.ClientIP())
+		}, ctx.ClientIP(), intent)
 		if next {
 			ctx.Set("AppContext", appContext)
 			ctx.Next()

@@ -56,9 +56,7 @@ type VerifyPassword struct {
 }
 
 type ResetPasswordDTO struct {
-	Otp         string `json:"otp"`
 	NewPassword string `json:"newPassword"`
-	Email       string `json:"email"`
 }
 
 type UpdatePassword struct {

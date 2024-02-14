@@ -84,7 +84,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.PATCH("/email/verify", middlewares.OTPTokenMiddleware(), func(ctx *gin.Context) {
+		authRouter.PATCH("/email/verify", middlewares.OTPTokenMiddleware("verify_account"), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			controllers.VerifyEmail(&interfaces.ApplicationContext[any]{
 				Ctx: ctx,
@@ -124,15 +124,17 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.POST("/account/password/reset",  func(ctx *gin.Context) {
+		authRouter.POST("/account/password/reset", middlewares.OTPTokenMiddleware("update_password"), func(ctx *gin.Context) {
 			var body dto.ResetPasswordDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
 				apperrors.ErrorProcessingPayload(ctx)
 				return
 			}
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			controllers.ResetPassword(&interfaces.ApplicationContext[dto.ResetPasswordDTO]{
 				Ctx: ctx,
 				Body: &body,
+				Keys: appContextAny.Keys,
 			})
 		})
 
