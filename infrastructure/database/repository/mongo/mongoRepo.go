@@ -71,7 +71,7 @@ func (repo *MongoRepository[T]) CreateBulk(payload []T, opts ...*options.InsertM
 	}
 	var ids []string
 	for _, id := range response.InsertedIDs {
-		ids = append(ids, id.(primitive.ObjectID).Hex())
+		ids = append(ids, id.(string))
 	}
 	logger.Info("CreateBulk complete")
 	return &ids, err

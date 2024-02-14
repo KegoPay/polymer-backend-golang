@@ -1,6 +1,7 @@
 package startup
 
 import (
+	"kego.com/application"
 	"kego.com/infrastructure/database"
 	"kego.com/infrastructure/database/connection/datastore"
 	fileupload "kego.com/infrastructure/file_upload"
@@ -25,6 +26,7 @@ func StartServices(){
 	paymentprocessor.InternationalPaymentProcessor.InitialisePaymentProcessor()
 	ipresolver.IPResolverInstance.ConnectToDB()
 	// sms.InitSMSService()
+	application.DBGenesis()
 }
 
 // Used to clean up after services that have been shutdown.
