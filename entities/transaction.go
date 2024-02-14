@@ -14,6 +14,8 @@ const (
 	ChimoneyDebitInternational TransactionIntent = "chimoney_debit_international"
 	PaystackDebitLocal         TransactionIntent = "paystack_debit_local"
 	FlutterwaveDebitLocal         TransactionIntent = "flutterwave_debit_local"
+	PolymerVAT         TransactionIntent = "polymer_vat"
+	PolymerFee         TransactionIntent = "polymer_fee"
 )
 
 type DeviceInfo struct {
