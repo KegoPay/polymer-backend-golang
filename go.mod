@@ -4,12 +4,11 @@ go 1.21.2
 
 require (
 	firebase.google.com/go v3.13.0+incompatible
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.1
+	github.com/apitoolkit/apitoolkit-go v0.0.0-20231207005449-8800ec83efb3
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gin-contrib/cors v1.5.0
 	github.com/google/uuid v1.4.0
-	github.com/mileusna/useragent v1.3.4
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/rabbitmq/amqp091-go v1.9.0
 	go.uber.org/ratelimit v0.3.0
@@ -26,14 +25,11 @@ require (
 	cloud.google.com/go/pubsub v1.33.0 // indirect
 	cloud.google.com/go/storage v1.30.1 // indirect
 	github.com/AsaiYusuke/jsonpath v1.6.0 // indirect
-	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.1 // indirect
-	github.com/Azure/azure-storage-blob-go v0.15.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
-	github.com/apitoolkit/apitoolkit-go v0.0.0-20231207005449-8800ec83efb3 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-chi/chi/v5 v5.0.10 // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/gofiber/fiber/v2 v2.50.0 // indirect
@@ -48,9 +44,7 @@ require (
 	github.com/labstack/echo/v4 v4.11.2 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-ieproxy v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/onsi/gomega v1.27.1 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
@@ -112,7 +106,7 @@ require (
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/text v0.14.0
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
