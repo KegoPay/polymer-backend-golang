@@ -24,6 +24,7 @@ func StartServices(){
 	paymentprocessor.LocalPaymentProcessor.InitialisePaymentProcessor()
 	paymentprocessor.InternationalPaymentProcessor.InitialisePaymentProcessor()
 	ipresolver.IPResolverInstance.ConnectToDB()
+	// sms.InitSMSService()
 }
 
 // Used to clean up after services that have been shutdown.

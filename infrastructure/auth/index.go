@@ -16,7 +16,7 @@ import (
 
 const otpChars = "1234567890"
 
-func GenerateOTP(length int, email string) (*string, error) {
+func GenerateOTP(length int, channel string) (*string, error) {
 	buffer := make([]byte, length)
 	_, err := rand.Read(buffer)
 	if err != nil {
@@ -27,14 +27,14 @@ func GenerateOTP(length int, email string) (*string, error) {
 		buffer[i] = otpChars[int(buffer[i])%otpCharsLength]
 	}
 	otp := string(buffer)
-	otpSaved := saveOTP(email, otp)
+	otpSaved := saveOTP(channel, otp)
 	if !otpSaved {
 		return nil, errors.New("could not save otp")
 	}
 	return &otp, nil
 }
 
-func saveOTP(email string, otp string) bool {
+func saveOTP(channel string, otp string) bool {
 	hashedOTP, err := cryptography.CryptoHahser.HashString(otp)
 	if err != nil {
 		logger.Error(errors.New("auth module error - error while saving otp"),logger.LoggerOptions{
@@ -43,7 +43,7 @@ func saveOTP(email string, otp string) bool {
 		})
 		return false
 	}
-	return cache.Cache.CreateEntry(fmt.Sprintf("%s-otp", email), string(hashedOTP), 10*time.Minute) // otp is valid for 10 mins
+	return cache.Cache.CreateEntry(fmt.Sprintf("%s-otp", channel), string(hashedOTP), 10*time.Minute) // otp is valid for 10 mins
 }
 
 func VerifyOTP(key string, otp string) (string, bool) {
@@ -66,6 +66,7 @@ func GenerateAuthToken(claimsData ClaimsData) (*string, error) {
 		"userID":     claimsData.UserID,
 		"exp":        claimsData.ExpiresAt,
 		"email":      claimsData.Email,
+		"phoneNum":   claimsData.PhoneNum,
 		"phone":      claimsData.Phone,
 		"firstName":  claimsData.FirstName,
 		"lastName":   claimsData.LastName,
@@ -73,6 +74,7 @@ func GenerateAuthToken(claimsData ClaimsData) (*string, error) {
 		"deviceID":   claimsData.DeviceID,
 		"userAgent": claimsData.UserAgent,
 		"appVersion": claimsData.AppVersion,
+		"otpIntent": claimsData.OTPIntent,
 	}).SignedString([]byte(os.Getenv("JWT_SIGNING_KEY")))
 	if err != nil {
 		return nil, err

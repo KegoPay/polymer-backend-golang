@@ -71,7 +71,12 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 	updateAccountPayload["deviceID"] = deviceID
 	account.DeviceID = deviceID
 	userRepo.UpdatePartialByID(account.ID,updateAccountPayload)
-	cache.Cache.CreateEntry(account.ID, *token, time.Minute * time.Duration(10)) // cache authentication token for 10 mins
+	hashedToken, err := cryptography.CryptoHahser.HashString(*token)
+	if err != nil {
+		apperrors.FatalServerError(ctx, err)
+		return nil, nil, nil
+	}
+	cache.Cache.CreateEntry(account.ID, hashedToken, time.Minute * time.Duration(10)) // cache authentication token for 10 mins
 	walletRepo := repository.WalletRepo()
 	wallet, err := walletRepo.FindByID(account.WalletID)
 	if err != nil {

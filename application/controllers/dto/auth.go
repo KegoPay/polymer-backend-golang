@@ -17,6 +17,12 @@ type GenerateServerPublicKey struct {
 	SessionID		string		`json:"sessionID"`
 }
 
+type VerifyOTPDTO struct {
+	OTP		string		`json:"otp"`
+	Email	*string		`json:"email"`
+	Phone	*string		`json:"phone"`
+}
+
 type LoginDTO struct {
 	Email      *string                `json:"email,omitempty"`
 	Phone      *string  			  `json:"phone,omitempty"`
@@ -67,4 +73,10 @@ type ConfirmPin struct {
 type FileUploadOptions struct {
 	Type 		string					  `json:"type" validate:"required,oneof=biometric profile_image"`
 	Permissions types.SignedURLPermission `json:"permissions" validate:"required"`
+}
+
+type ResendOTP struct {
+	Email 	*string		`json:"email"`
+	Phone 	*string		`json:"phone"`
+	Intent 	string		`json:"intent" validate:"required,oneof=verify_account update_password verify_phone"`
 }

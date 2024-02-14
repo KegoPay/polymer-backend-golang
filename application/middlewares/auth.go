@@ -11,6 +11,7 @@ import (
 	"kego.com/application/repository"
 	"kego.com/application/utils"
 	"kego.com/infrastructure/auth"
+	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
 	"kego.com/infrastructure/logger"
 )
@@ -39,6 +40,11 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 		}
 		valid_token := cache.Cache.FindOne(auth_token_claims["userID"].(string))
 		if valid_token == nil {
+			apperrors.AuthenticationError(ctx.Ctx, "this session has expired")
+			return nil, false
+		}
+		match := cryptography.CryptoHahser.VerifyData(*valid_token, auth_token)
+		if !match {
 			apperrors.AuthenticationError(ctx.Ctx, "this session has expired")
 			return nil, false
 		}

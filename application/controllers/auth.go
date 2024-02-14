@@ -30,6 +30,8 @@ import (
 	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/messaging/emails"
+
+	// "kego.com/infrastructure/messaging/sms"
 	server_response "kego.com/infrastructure/serverResponse"
 	"kego.com/infrastructure/validator"
 )
@@ -57,6 +59,46 @@ func KeyExchange(ctx *interfaces.ApplicationContext[dto.GenerateServerPublicKey]
 	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusCreated, "key generated", serverPubKey, nil)
 }
 
+func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
+	if ctx.Body.Phone == nil && ctx.Body.Email == nil {
+		apperrors.ClientError(ctx.Ctx, "pass in either a phone number or email", nil)
+		return
+	}
+	var channel = ""
+	var filter = map[string]any{}
+	if ctx.Body.Email != nil {
+		channel = *ctx.Body.Email
+		filter["email"] = channel
+	}else {
+		channel = *ctx.Body.Phone
+		filter["phone.localNumber"] = channel
+	}
+	msg, success := auth.VerifyOTP(*ctx.Body.Email, ctx.Body.OTP)
+	if !success {
+		apperrors.ClientError(ctx.Ctx, msg, nil)
+		return
+	}
+	otpIntent := cache.Cache.FindOne(fmt.Sprintf("%s-otp-intent", channel))
+	if otpIntent == nil {
+		logger.Error(errors.New("otp intent missing"))
+		apperrors.ClientError(ctx.Ctx, "otp expired", nil)
+		return
+	}
+	token, err := auth.GenerateAuthToken(auth.ClaimsData{
+		Email: ctx.Body.Email,
+		PhoneNum: ctx.Body.Phone,
+		OTPIntent: *otpIntent,
+		IssuedAt:  time.Now().Unix(),
+		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+
+	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusCreated, "otp verified", token, nil)
+}
+
 func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 	account, _, err := authusecases.CreateAccount(ctx.Ctx, &entities.User{
 		Email:          ctx.Body.Email,
@@ -78,6 +120,7 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 			"FIRSTNAME": account.FirstName,
 			"OTP":      otp,
 		},)
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Email), "verify_account", time.Minute * 10)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "account created", nil, nil)
 }
 
@@ -101,7 +144,6 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "login successful", responsePayload, nil)
 }
-
 
 func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
 	msg, success := auth.VerifyOTP(ctx.Body.Email, ctx.Body.Otp)
@@ -209,21 +251,30 @@ func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password updated", nil, nil)
 }
 
-func ResendOTP(ctx *interfaces.ApplicationContext[any]) {
-	email := ctx.Query["email"].(string)
-	if email == "" {
-		server_response.Responder.Respond(ctx.Ctx, http.StatusBadRequest, "pass in a valid email to recieve the otp", nil, nil)
+func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
+	if ctx.Body.Phone == nil && ctx.Body.Email == nil {
+		apperrors.ClientError(ctx.Ctx, "pass in either a phone number or email", nil)
 		return
 	}
-	otp, err := auth.GenerateOTP(6, email)
-	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		return
 	}
+	var channel = ""
+	var filter = map[string]any{}
+	if ctx.Body.Email != nil {
+		channel = *ctx.Body.Email
+		filter["email"] = channel
+	}else {
+		channel = *ctx.Body.Phone
+		filter["phone.localNumber"] = channel
+	}
+	
 	userRepo := repository.UserRepo()
-	account, err := userRepo.FindOneByFilter(map[string]interface{}{
-		"email": email,
-	}, options.FindOne().SetProjection(map[string]any{
+	account, err := userRepo.FindOneByFilter(filter, options.FindOne().SetProjection(map[string]any{
 		"firstName": 1,
+		"phone": 1,
 	}))
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err)
@@ -234,25 +285,39 @@ func ResendOTP(ctx *interfaces.ApplicationContext[any]) {
 		return
 	}
 
-		emails.EmailService.SendEmail(email, "An OTP was requested for your account", "otp", map[string]interface{}{
+	if ctx.Body.Email != nil {
+		otp, err := auth.GenerateOTP(6, channel)
+		if err != nil {
+			apperrors.FatalServerError(ctx.Ctx, err)
+		}
+		emails.EmailService.SendEmail(channel, "An OTP was requested for your account", "otp", map[string]interface{}{
 			"FIRSTNAME": account.FirstName,
 			"OTP":      otp,
 		},)
+	}else if ctx.Body.Phone != nil {
+		// ref := sms.SMSService.SendSMS(fmt.Sprintf("%s%s", account.Phone.Prefix, account.Phone.LocalNumber), "< 123456 >is your Polymer OTP")
+		// encryptedRef, err := cryptography.SymmetricEncryption(*ref)
+		// if err != nil {
+		// 	apperrors.UnknownError(ctx.Ctx, err)
+		// 	return
+		// }
+		// cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", channel), *encryptedRef, time.Minute * 10)
+	}
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", channel), ctx.Body.Intent, time.Minute * 10)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil)
 }
 
-func VerifyEmail(ctx *interfaces.ApplicationContext[dto.VerifyEmailData]) {
-	msg, success := auth.VerifyOTP(ctx.Body.Email, ctx.Body.Otp)
-	if !success {
-		apperrors.ClientError(ctx.Ctx, msg, nil)
-		return
-	}
+func VerifyEmail(ctx *interfaces.ApplicationContext[any]) {
 	userRepo := repository.UserRepo()
 	account, err := userRepo.FindOneByFilter(map[string]interface{}{
-		"email": ctx.Body.Email,
+		"email": ctx.GetStringContextData("OTPEmail"),
 	})
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	if account == nil {
+		apperrors.NotFoundError(ctx.Ctx, "this account no longer exists")
 		return
 	}
 	if account.EmailVerified {
@@ -272,7 +337,7 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[dto.VerifyEmailData]) {
 		AppVersion: account.AppVersion,
 	})
 	account.EmailVerified = true
-	success, err = userRepo.UpdateByID(account.ID, account)
+	success, err := userRepo.UpdateByID(account.ID, account)
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
@@ -281,6 +346,7 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[dto.VerifyEmailData]) {
 		apperrors.UnknownError(ctx.Ctx, err)
 		return
 	}
+	cache.Cache.CreateEntry(ctx.GetStringContextData("OTPToken"), true, time.Minute * 5)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", map[string]string{
 		"token": *token,
 	}, nil)
@@ -595,6 +661,15 @@ func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){
 			Data: success,
 		},)
 		apperrors.FatalServerError(ctx.Ctx, fmt.Errorf("error while deactivating user account userID - %s", ctx.GetStringContextData("UserID")))
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "deactivated", nil, nil)
+}
+
+func LogOut(ctx *interfaces.ApplicationContext[any]){
+	success := cache.Cache.DeleteOne(ctx.GetStringContextData("UserID"))
+	if !success {
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("log out user failed - %s", ctx.GetStringContextData("UserID")))
+		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "deactivated", nil, nil)
 }

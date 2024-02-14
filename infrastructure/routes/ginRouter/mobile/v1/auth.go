@@ -58,25 +58,37 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.GET("/otp/resend", func(ctx *gin.Context) {
-			query := map[string]any{
-				"email": ctx.Query("email"),
-			}
-			controllers.ResendOTP(&interfaces.ApplicationContext[any]{
-				Ctx: ctx,
-				Query: query,
-			})
-		})
-
-		authRouter.POST("/email/verify", func(ctx *gin.Context) {
-			var body dto.VerifyEmailData
+		authRouter.POST("/otp/resend", func(ctx *gin.Context) {
+			var body dto.ResendOTP
 			if err := ctx.ShouldBindJSON(&body); err != nil {
 				apperrors.ErrorProcessingPayload(ctx)
 				return
 			}
-			controllers.VerifyEmail(&interfaces.ApplicationContext[dto.VerifyEmailData]{
+			controllers.ResendOTP(&interfaces.ApplicationContext[dto.ResendOTP]{
 				Ctx: ctx,
 				Body: &body,
+				Header: ctx.Request.Header,
+			})
+		})
+
+		authRouter.POST("/otp/verify", func(ctx *gin.Context) {
+			var body dto.VerifyOTPDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			controllers.VerifyOTP(&interfaces.ApplicationContext[dto.VerifyOTPDTO]{
+				Ctx: ctx,
+				Body: &body,
+				Header: ctx.Request.Header,
+			})
+		})
+
+		authRouter.PATCH("/email/verify", middlewares.OTPTokenMiddleware(), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			controllers.VerifyEmail(&interfaces.ApplicationContext[any]{
+				Ctx: ctx,
+				Keys: appContextAny.Keys,
 			})
 		})
 
@@ -90,7 +102,15 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.POST("/account/verify", middlewares.AuthenticationMiddleware(false, false) ,func(ctx *gin.Context) {
+		authRouter.GET("/account/logout",  middlewares.AuthenticationMiddleware(false, true) , func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			controllers.LogOut(&interfaces.ApplicationContext[any]{
+				Ctx: ctx,
+				Keys: appContextAny.Keys,
+			})
+		})
+
+		authRouter.POST("/account/verify", middlewares.AuthenticationMiddleware(false, false), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.VerifyAccountData
 			if err := ctx.ShouldBindJSON(&body); err != nil {

@@ -8,10 +8,12 @@ type ClaimsData struct {
     FirstName    string
     LastName     string
     Email        *string
+    PhoneNum     *string
     Phone        *entities.PhoneNumber
     ExpiresAt    int64
     IssuedAt     int64
     UserAgent    string
     DeviceID     string
     AppVersion   string
+    OTPIntent      string
 }
