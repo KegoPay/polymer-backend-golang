@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -40,6 +41,12 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 		}
 		valid_token := cache.Cache.FindOne(auth_token_claims["userID"].(string))
 		if valid_token == nil {
+			fmt.Println("here")
+			fmt.Println("here")
+			fmt.Println("here")
+			fmt.Println("here")
+			fmt.Println("here")
+			fmt.Println(valid_token)
 			apperrors.AuthenticationError(ctx.Ctx, "this session has expired")
 			return nil, false
 		}

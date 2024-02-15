@@ -348,6 +348,12 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[any]) {
 		return
 	}
 	cache.Cache.CreateEntry(ctx.GetStringContextData("OTPToken"), true, time.Minute * 5)
+	hashedToken, err := cryptography.CryptoHahser.HashString(*token)
+	if err != nil {
+		apperrors.FatalServerError(ctx, err)
+		return
+	}
+	cache.Cache.CreateEntry(account.ID, hashedToken, time.Minute * time.Duration(10)) // cache authentication token for 10 mins
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", map[string]string{
 		"token": *token,
 	}, nil)
