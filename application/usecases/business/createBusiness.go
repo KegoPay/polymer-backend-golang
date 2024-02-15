@@ -66,6 +66,35 @@ func CreateBusiness(ctx any, payload *entities.Business) (*entities.Business, *e
 			(sc).AbortTransaction(c)
 			return e
 		}
+		userRepo := repository.UserRepo()
+		affected, e := userRepo.UpdatePartialByID(b.UserID, map[string]any{
+			"hasBusiness": true,
+		})
+		if e != nil {
+			logger.Error(errors.New("error updated users hasBusiness field after business creation"), logger.LoggerOptions{
+				Key: "error",
+				Data: e,
+			}, logger.LoggerOptions{
+				Key: "payload",
+				Data: business,
+			})
+			err = e
+			(sc).AbortTransaction(c)
+			return e
+		}
+		if affected == 0 {
+			e = errors.New("error updated users hasBusiness field after business creation")
+			logger.Error(e, logger.LoggerOptions{
+				Key: "error",
+				Data: e,
+			}, logger.LoggerOptions{
+				Key: "payload",
+				Data: business,
+			})
+			err = e
+			(sc).AbortTransaction(c)
+			return e
+		}
 		wallet = w
 		(sc).CommitTransaction(c)
 		return nil

@@ -33,6 +33,7 @@ type User struct {
 	AppVersion          			string       			`bson:"appVersion" json:"-"`
 	WalletID  						string    				`bson:"walletID" json:"walletID"`
 	KYCCompleted   					bool         			`bson:"kycCompleted" json:"kycCompleted"`
+	HasBusiness   					bool         			`bson:"hasBusiness" json:"hasBusiness"`
 	EmailVerified     				bool         			`bson:"emailVerified" json:"emailVerified"`
 	AccountRestricted 				bool         			`bson:"accountRestricted" json:"accountRestricted"`
 	Deactivated 					bool         			`bson:"deactivated" json:"deactivated"`
