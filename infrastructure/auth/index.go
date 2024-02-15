@@ -43,7 +43,7 @@ func saveOTP(channel string, otp string) bool {
 		})
 		return false
 	}
-	return cache.Cache.CreateEntry(fmt.Sprintf("%s-otp", channel), string(hashedOTP), 10*time.Minute) // otp is valid for 10 mins
+	return cache.Cache.CreateEntry(fmt.Sprintf("%s-otp", channel), string(hashedOTP), 5*time.Minute) // otp is valid for 5 mins
 }
 
 func VerifyOTP(key string, otp string) (string, bool) {
