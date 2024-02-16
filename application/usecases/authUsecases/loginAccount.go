@@ -74,7 +74,11 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 	if !passwordMatch {
 		currentTriesInt =  currentTriesInt + 1
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-password-tries", *email), fmt.Sprintf("%d", currentTriesInt), time.Hour * 24 * 5)
-		apperrors.AuthenticationError(ctx, fmt.Sprintf("wrong password. your account will be deactivated after %d wrong attempts", constants.MAX_PASSWORD_TRIES - currentTriesInt))
+		msg := fmt.Sprintf("wrong password. your account will be deactivated after %d wrong attempts", constants.MAX_PASSWORD_TRIES - currentTriesInt)
+		if currentTriesInt == 0 {
+			msg =  "you have exceeded maximum password tries and your account has been locked"
+		}
+		apperrors.AuthenticationError(ctx, msg)
 		return nil, nil, nil
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-password-tries", *email), 0, 0)
