@@ -63,7 +63,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		destinationCountry = utils.CountryCodeToCountryName("NG")
 	}
 	if destinationCountry == "" {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("Unsupported country code used %s", ctx.Body.DestinationCountryCode))
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", ctx.Body.DestinationCountryCode))
 		return
 	}
 	trxRef := utils.GenerateUUIDString()
@@ -190,7 +190,7 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		destinationCountry = utils.CountryCodeToCountryName("NG")
 	}
 	if destinationCountry == "" {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("Unsupported country code used %s", ctx.Body.DestinationCountryCode))
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", ctx.Body.DestinationCountryCode))
 		return
 	}
 	trxRef := utils.GenerateUUIDString()
