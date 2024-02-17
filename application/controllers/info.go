@@ -56,6 +56,18 @@ func FetchExchangeRates(ctx *interfaces.ApplicationContext[any]){
 		return
 	}
 	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Query["currency"], &amountAsUInt)
+	if ctx.Query["currency"] != nil {
+		var country entities.Country
+		for _, c := range countriessupported.CountriesSupported {
+			if c.ISOCode == ctx.Query["currency"] {
+				c.Rate = currencyformatter.HumanReadableFloat32Currency((*rates)["convertedValue"])
+				country = c
+				break
+			}
+		}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rate fetched", country, nil)
+	return
+	}
 	if err != nil {
 		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
 		return
