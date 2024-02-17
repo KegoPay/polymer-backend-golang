@@ -141,6 +141,7 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 	for _, c := range signupCountries {
 		if strings.Contains(c.Name, account.Nationality) {
 			country = c
+			country.ServicesAllowed = nil
 			break
 		}
 	}

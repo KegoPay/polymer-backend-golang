@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	apperrors "kego.com/application/appErrors"
 	"kego.com/application/constants"
 	"kego.com/application/controllers/dto"
+	countriessupported "kego.com/application/countriesSupported"
 	"kego.com/application/interfaces"
 	"kego.com/application/repository"
 	userusecases "kego.com/application/usecases/userUseCases"
@@ -39,9 +41,19 @@ func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
+	signupCountries := countriessupported.FilterCountries(entities.SignUp)
+	var country entities.Country
+	for _, c := range signupCountries {
+		if strings.Contains(c.Name, user.Nationality) {
+			country = c
+			country.ServicesAllowed = nil
+			break
+		}
+	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "profile fetched", map[string]any{
 		"account": user,
 		"wallet": wallet,
+		"country": country,
 	}, nil)
 }
 
