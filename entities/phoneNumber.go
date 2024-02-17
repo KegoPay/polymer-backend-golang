@@ -6,6 +6,8 @@ type PhoneNumber struct	{
 	ISOCode 	 string `bson:"isoCode" json:"isoCode"` // Two-letter country code (ISO 3166-1 alpha-2)
 	LocalNumber  string `bson:"localNumber" json:"localNumber"`
 	Prefix		 string `bson:"prefix" json:"prefix"`
+	IsVerified	 bool   `bson:"isVerified" json:"isVerified"`
+	WhatsApp	 bool   `bson:"whatsapp" json:"whatsapp"`
 }
 
 func (pn *PhoneNumber) ParsePhoneNumber() string {
