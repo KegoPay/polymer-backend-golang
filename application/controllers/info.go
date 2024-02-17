@@ -56,7 +56,7 @@ func FetchExchangeRates(ctx *interfaces.ApplicationContext[any]){
 		return
 	}
 	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Query["currency"], &amountAsUInt)
-	if ctx.Query["currency"] != nil {
+	if ctx.Query["currency"] != "" {
 		var country entities.Country
 		for _, c := range countriessupported.CountriesSupported {
 			if c.ISOCode == ctx.Query["currency"] {
