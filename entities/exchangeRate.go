@@ -20,7 +20,7 @@ func (er *ExchangeRates) FormatAllRates() map[string]float32 {
 	formatedRates := map[string]float32{}
 	formatedRates["American Dollar (US) - Naira"] = er.USDNGN
 	formatedRates["Canadian Dollar (CA) - Naira"] = er.FormatAgainstNGN(er.USDNGN, er.USDCAD)
-	formatedRates["British Pounds - Naira"] = er.FormatAgainstNGN(er.USDNGN, er.USDGBP)
+	formatedRates["British Pounds (GB) - Naira"] = er.FormatAgainstNGN(er.USDNGN, er.USDGBP)
 	formatedRates["South African Rand (ZA)- Naira"] = er.FormatAgainstNGN(er.USDNGN, er.USDZAR)
 	formatedRates["Ghanaian Cedis (GH) - Naira"] = er.FormatAgainstNGN(er.USDNGN, er.USDGHS)
 	formatedRates["Indian Rupees (IN) - Naira"] = er.FormatAgainstNGN(er.USDNGN, er.USDINR)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	apperrors "kego.com/application/appErrors"
 	bankssupported "kego.com/application/banksSupported"
@@ -63,9 +64,15 @@ func FetchExchangeRates(ctx *interfaces.ApplicationContext[any]){
 		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney failed to return 200 response code"))
 		return
 	}
-	var formattedRates = map[string]string{}
-	for i, r := range *rates {
-		formattedRates[i] = currencyformatter.HumanReadableFloat32Currency(r)
+	var countries []entities.Country
+	for _, country := range countriessupported.CountriesSupported {
+		for c, currency := range *rates {
+			if strings.Contains(c, country.ISOCode) {
+				country.Rate = currencyformatter.HumanReadableFloat32Currency(currency)
+				countries = append(countries, country)
+				continue
+			}
+		}
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rates fetched", formattedRates, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rates fetched", countries, nil)
 }
