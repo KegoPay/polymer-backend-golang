@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -15,6 +16,7 @@ import (
 	apperrors "kego.com/application/appErrors"
 	"kego.com/application/constants"
 	"kego.com/application/controllers/dto"
+	countriessupported "kego.com/application/countriesSupported"
 	"kego.com/application/interfaces"
 	"kego.com/application/repository"
 	"kego.com/application/services"
@@ -134,10 +136,19 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 	if account == nil || token == nil {
 		return
 	}
+	signupCountries := countriessupported.FilterCountries(entities.SignUp)
+	var country entities.Country
+	for _, c := range signupCountries {
+		if strings.Contains(c.Name, account.Nationality) {
+			country = c
+			break
+		}
+	}
 	responsePayload := map[string]interface{}{
 		"account": account,
 		"wallet": wallet,
 		"token":   token,
+		"country": country,
 	}
 	if account.TransactionPin == "" {
 		responsePayload["unsetTrxPin"] = true
