@@ -179,3 +179,22 @@ func UpdateAddress(ctx *interfaces.ApplicationContext[dto.UpdateAddressDTO]) {
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address set", nil, nil)
 }
+
+
+func VerifyCurrentAddress(ctx *interfaces.ApplicationContext[any]) {
+	userRepo := repository.UserRepo()
+	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]any{
+		"address": entities.Address{
+			Verified: true,
+		},
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	if updated != 1 {
+		apperrors.UnknownError(ctx.Ctx, errors.New("could not update users address"))
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address verified", nil, nil)
+}

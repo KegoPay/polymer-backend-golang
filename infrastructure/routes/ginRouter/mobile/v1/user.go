@@ -48,6 +48,11 @@ func UserRouter(router *gin.RouterGroup) {
 			controllers.UpdateAddress(&appContext)
 		})
 
+		userRouter.PATCH("/address/verify", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContext, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			controllers.VerifyCurrentAddress(appContext)
+		})
+
 		userRouter.PATCH("/profile/payment-tag", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SetPaymentTagDTO
