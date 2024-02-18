@@ -1,11 +1,13 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
+	"go.mongodb.org/mongo-driver/mongo"
 	apperrors "kego.com/application/appErrors"
 	"kego.com/application/constants"
 	"kego.com/application/repository"
@@ -364,4 +366,67 @@ func RemoveLockFunds(ctx any, walletID string, lockedFundsReference string) erro
 		return err
 	}
 	return nil
+}
+
+func CreditWallet(walletID string, amount uint64, intent entities.TransactionIntent, transactionPayload *entities.Transaction) error {
+	var err error
+	walletRepository := repository.WalletRepo()
+	transactionRepository := repository.TransactionRepo()
+	walletRepository.StartTransaction(func(sc mongo.Session, c context.Context) error {
+		affected, e := walletRepository.UpdateManyWithOperator(map[string]interface{}{
+			"_id": walletID,
+		}, map[string]any{
+			"$inc": map[string]any {
+				"balance": int64(amount),
+				"ledgerBalance": int64(amount),
+			},
+		})
+		if e != nil {
+			logger.Error(errors.New("could not credit account"), logger.LoggerOptions{
+				Key: "error",
+				Data: e,
+			}, logger.LoggerOptions{
+				Key: "transaction",
+				Data: transactionPayload,
+			},logger.LoggerOptions{
+				Key: "walletID",
+				Data: walletID,
+			})
+			err = e
+			(sc).AbortTransaction(c)
+			return e
+		}
+		if affected != 1 {
+			logger.Error(errors.New("could not credit account or multiple accounts credited"), logger.LoggerOptions{
+				Key: "transaction",
+				Data: transactionPayload,
+			},logger.LoggerOptions{
+				Key: "walletID",
+				Data: walletID,
+			})
+			err = e
+			(sc).AbortTransaction(c)
+			return e
+		}
+
+		_, e = transactionRepository.CreateOne(c, *transactionPayload)
+		if e != nil {
+			logger.Error(errors.New("could not create transaction entry"), logger.LoggerOptions{
+				Key: "error",
+				Data: e,
+			}, logger.LoggerOptions{
+				Key: "transaction",
+				Data: transactionPayload,
+			},logger.LoggerOptions{
+				Key: "walletID",
+				Data: walletID,
+			})
+			err = e
+			(sc).AbortTransaction(c)
+			return e
+		}
+		(sc).CommitTransaction(c)
+		return nil
+	})
+	return err
 }

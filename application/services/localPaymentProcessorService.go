@@ -6,6 +6,7 @@ import (
 	"os"
 
 	apperrors "kego.com/application/appErrors"
+	"kego.com/application/utils"
 	"kego.com/infrastructure/logger"
 	paymentprocessor "kego.com/infrastructure/payment_processor"
 	"kego.com/infrastructure/payment_processor/types"
@@ -43,6 +44,9 @@ func InitiateLocalPayment(ctx any, payload *types.InitiateLocalTransferPayload) 
 }
 
 func GenerateDVA(ctx any, payload *types.CreateVirtualAccountPayload) *types.VirtualAccountPayload {
+	if os.Getenv("GIN_MODE") != "release" {
+		payload.Amount = utils.GetUInt64Pointer(10000000)
+	}
 	response, statusCode, err :=  paymentprocessor.LocalPaymentProcessor.GenerateDVA(payload)
 	if err != nil {
 		apperrors.ExternalDependencyError(ctx, "flutterwave", fmt.Sprintf("%d", *statusCode), err)

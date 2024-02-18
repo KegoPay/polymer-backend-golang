@@ -20,23 +20,26 @@ const (
 
 type DeviceInfo struct {
 	IPAddress  string    `bson:"ipAddress" json:"ipAddress" validate:"required,ip"`
-	DeviceID   string    `bson:"deviceID" json:"deviceID" validate:"required"`
-	UserAgent  string 	 `bson:"userAgent" json:"userAgent" validate:"user_agent,required"`
+	DeviceID   *string    `bson:"deviceID" json:"deviceID" validate:"required"`
+	UserAgent  *string 	 `bson:"userAgent" json:"userAgent" validate:"user_agent,required"`
 }
 
 type TransactionSender struct {
-	BusinessName string      `bson:"businessName" json:"businessName" validate:"required"`
-	FirstName    string      `bson:"firstName" json:"firstName" validate:"required"`
-	LastName     string      `bson:"lastName" json:"lastName" validate:"required"`
-	Email        string      `bson:"email" json:"email,omitempty" validate:"required,email"`
+	BusinessName *string      `bson:"businessName" json:"businessName" validate:"required"`
+	FullName     string      `bson:"fullName" json:"fullName" validate:"required"`
+	Email        *string      `bson:"email" json:"email,omitempty" validate:"required,email"`
+	BankCode      *string  `bson:"bankCode" json:"bankCode" validate:"required"`
+	BankName      *string  `bson:"bankName" json:"bankName"`
+	BranchCode    *string `bson:"branchCode" json:"branchCode"`
+	AccountNumber string  `bson:"accountNumber" json:"accountNumber" validate:"required"`
 }
 
 type TransactionRecepient struct {
-	Name     	  string  `bson:"name" json:"name" validate:"required"`
+	FullName      string  `bson:"fullName" json:"fullName" validate:"required"`
 	AccountNumber string  `bson:"accountNumber" json:"accountNumber" validate:"required"`
-	Country       string  `bson:"country" json:"country" validate:"iso3166_1_alpha2"`
-	BankCode      string  `bson:"bankCode" json:"bankCode" validate:"required"`
-	BankName      string  `bson:"bankName" json:"bankName"`
+	Country       *string  `bson:"country" json:"country" validate:"iso3166_1_alpha2"`
+	BankCode      *string  `bson:"bankCode" json:"bankCode" validate:"required"`
+	BankName      *string  `bson:"bankName" json:"bankName"`
 	BranchCode    *string `bson:"branchCode" json:"branchCode" validate:"required"`
 }
 
@@ -56,7 +59,7 @@ type Transaction struct {
 	MetaData          	 any               	  `bson:"metadata" json:"metadata" validate:"required"`
 	Location             Location          	  `bson:"location" json:"location" validate:"required"`
 	Intent               TransactionIntent 	  `bson:"intent" json:"intent" validate:"required"`
-	DeviceInfo           DeviceInfo        	  `bson:"deviceInfo" json:"deviceInfo" validate:"required"`
+	DeviceInfo           *DeviceInfo          `bson:"deviceInfo" json:"deviceInfo"`
 	Sender               TransactionSender 	  `bson:"transactionSender" json:"transactionSender" validate:"required"`
 	Recepient            TransactionRecepient `bson:"transactionRecepient" json:"transactionRecepient" validate:"required"`
 

@@ -58,6 +58,7 @@ type CreateVirtualAccountPayload struct {
 	FirstName 				string		`json:"firstname"`
 	LastName 				string		`json:"lastname"`
 	Narration 				string		`json:"narration"`
+	Amount	 				*uint64		`json:"amount"`
 	Currency 				string		`json:"currency"`
 }
 

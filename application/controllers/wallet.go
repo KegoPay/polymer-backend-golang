@@ -107,23 +107,22 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 			IPAddress: ctx.Body.IPAddress,
 		},
 		Intent: entities.ChimoneyDebitInternational,
-		DeviceInfo: entities.DeviceInfo{
+		DeviceInfo: &entities.DeviceInfo{
 			IPAddress: ctx.Body.IPAddress,
-			DeviceID: ctx.GetStringContextData("DeviceID"),
-			UserAgent: ctx.GetStringContextData("UserAgent"),
+			DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
+			UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
 		},
 		Sender: entities.TransactionSender{
-			BusinessName: *wallet.BusinessName,
-			FirstName: ctx.GetStringContextData("FirstName"),
-			LastName: ctx.GetStringContextData("LastName"),
-			Email: ctx.GetStringContextData("Email"),
+			BusinessName: wallet.BusinessName,
+			FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
+			Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
 		},
 		Recepient: entities.TransactionRecepient{
-			Name: *ctx.Body.FullName,
-			BankCode: ctx.Body.BankCode,
+			FullName: *ctx.Body.FullName,
+			BankCode: &ctx.Body.BankCode,
 			AccountNumber: ctx.Body.AccountNumber,
 			BranchCode: ctx.Body.BranchCode,
-			Country: ctx.Body.DestinationCountryCode,
+			Country: &ctx.Body.DestinationCountryCode,
 		},
 	}
 	trxRepository := repository.TransactionRepo()
@@ -139,16 +138,16 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 
 	if ctx.GetBoolContextData("PushNotifOptions") {
 		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
-			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.Name, utils.CountryCodeToCountryName(transaction.Recepient.Country)))
+			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.FullName, utils.CountryCodeToCountryName(*transaction.Recepient.Country)))
 	}
 
 	if ctx.GetBoolContextData("EmailOptions") {
 		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-			"FIRSTNAME": transaction.Sender.FirstName,
+			"FIRSTNAME": transaction.Sender.FullName,
 			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
 			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-			"RECEPIENT_NAME": transaction.Recepient.Name,
-			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(transaction.Recepient.Country),
+			"RECEPIENT_NAME": transaction.Recepient.FullName,
+			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
 		})
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
@@ -233,22 +232,21 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 			IPAddress: ctx.Body.IPAddress,
 		},
 		Intent: entities.ChimoneyDebitInternational,
-		DeviceInfo: entities.DeviceInfo{
+		DeviceInfo: &entities.DeviceInfo{
 			IPAddress: ctx.Body.IPAddress,
-			DeviceID: ctx.GetStringContextData("DeviceID"),
-			UserAgent: ctx.GetStringContextData("UserAgent"),
+			DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
+			UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
 		},
 		Sender: entities.TransactionSender{
-			FirstName: ctx.GetStringContextData("FirstName"),
-			LastName: ctx.GetStringContextData("LastName"),
-			Email: ctx.GetStringContextData("Email"),
+			FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
+			Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
 		},
 		Recepient: entities.TransactionRecepient{
-			Name: *ctx.Body.FullName,
-			BankCode: ctx.Body.BankCode,
+			FullName: *ctx.Body.FullName,
+			BankCode: &ctx.Body.BankCode,
 			AccountNumber: ctx.Body.AccountNumber,
 			BranchCode: ctx.Body.BranchCode,
-			Country: ctx.Body.DestinationCountryCode,
+			Country: &ctx.Body.DestinationCountryCode,
 		},
 	}
 	trxRepository := repository.TransactionRepo()
@@ -264,16 +262,16 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 
 	if ctx.GetBoolContextData("PushNotifOptions") {
 		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
-			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.Name, utils.CountryCodeToCountryName(transaction.Recepient.Country)))
+			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.FullName, utils.CountryCodeToCountryName(*transaction.Recepient.Country)))
 	}
 
 	if ctx.GetBoolContextData("EmailOptions") {
 		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-			"FIRSTNAME": transaction.Sender.FirstName,
+			"FIRSTNAME": transaction.Sender.FullName,
 			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
 			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-			"RECEPIENT_NAME": transaction.Recepient.Name,
-			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(transaction.Recepient.Country),
+			"RECEPIENT_NAME": transaction.Recepient.FullName,
+			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
 		})
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
@@ -356,24 +354,23 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 			IPAddress: ctx.Body.IPAddress,
 		},
 		Intent: entities.FlutterwaveDebitLocal,
-		DeviceInfo: entities.DeviceInfo{
+		DeviceInfo: &entities.DeviceInfo{
 			IPAddress: ctx.Body.IPAddress,
-			DeviceID: ctx.GetStringContextData("DeviceID"),
-			UserAgent: ctx.GetStringContextData("UserAgent"),
+			DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
+			UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
 		},
 		Sender: entities.TransactionSender{
-			BusinessName: *wallet.BusinessName,
-			FirstName: ctx.GetStringContextData("FirstName"),
-			LastName: ctx.GetStringContextData("LastName"),
-			Email: ctx.GetStringContextData("Email"),
+			BusinessName: wallet.BusinessName,
+			FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
+			Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
 		},
 		Recepient: entities.TransactionRecepient{
-			Name: response.FullName,
-			BankCode: ctx.Body.BankCode,
+			FullName: response.FullName,
+			BankCode: &ctx.Body.BankCode,
 			AccountNumber: ctx.Body.AccountNumber,
 			BranchCode: ctx.Body.BranchCode,
-			BankName: bankName,
-			Country: "Nigeria",
+			BankName: &bankName,
+			Country: utils.GetStringPointer("Nigeria"),
 		},
 	}
 	trxRepository := repository.TransactionRepo()
@@ -388,16 +385,16 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	}
 	if ctx.GetBoolContextData("PushNotifOptions") {
 		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
-			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.Name, utils.CountryCodeToCountryName(transaction.Recepient.Country)))
+			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.FullName, utils.CountryCodeToCountryName(*transaction.Recepient.Country)))
 	}
 
 	if ctx.GetBoolContextData("EmailOptions") {
 		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-			"FIRSTNAME": transaction.Sender.FirstName,
+			"FIRSTNAME": transaction.Sender.FullName,
 			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol("NGN"),
 			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-			"RECEPIENT_NAME": transaction.Recepient.Name,
-			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(transaction.Recepient.Country),
+			"RECEPIENT_NAME": transaction.Recepient.FullName,
+			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
 		})
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)

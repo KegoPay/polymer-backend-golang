@@ -3,10 +3,12 @@ package wallet
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	apperrors "kego.com/application/appErrors"
 	"kego.com/application/repository"
 	"kego.com/application/services"
+	"kego.com/application/utils"
 	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/payment_processor/types"
 )
@@ -21,6 +23,12 @@ func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string,
 		TransactionReference: walletID,
 		Narration: fmt.Sprintf("%s %s", firstName, lastName),
 		BVN: bvn,
+		Amount: func () *uint64 {
+			if os.Getenv("ENV") != "production" {
+				return utils.GetUInt64Pointer(10000000)
+			}
+			return utils.GetUInt64Pointer(0)
+		}(),
 	})
 	walletRepo := repository.WalletRepo()
 	affected, err := walletRepo.UpdatePartialByID(walletID, map[string]any{
