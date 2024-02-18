@@ -32,6 +32,7 @@ import (
 	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/messaging/emails"
+	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 	sms "kego.com/infrastructure/messaging/whatsapp"
 
 	server_response "kego.com/infrastructure/serverResponse"
@@ -124,6 +125,8 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 			"OTP":      otp,
 		},)
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Email), "verify_account", time.Minute * 10)
+	pushnotification.PushNotificationService.PushOne(account.PushNotificationToken, "Welcome to Polymer!😃",
+	"You now have global payments at your finger tips! Make payments with crypto, Mobile Money and to bank accounts in over 40+ countries!🤯")
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "account created", nil, nil)
 }
 
