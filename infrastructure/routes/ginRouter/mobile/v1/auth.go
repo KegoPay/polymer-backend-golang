@@ -27,6 +27,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			}
 			body.DeviceID = ctx.GetHeader("polymer-device-id")
 			body.UserAgent = ctx.Request.UserAgent()
+			body.PushNotificationToken = ctx.GetHeader("x-firebase-push-token")
 			appVersion := utils.ExtractAppVersionFromUserAgentHeader(ctx.Request.UserAgent())
 			if appVersion == nil {
 				apperrors.UnsupportedAppVersion(ctx)
@@ -51,6 +52,12 @@ func AuthRouter(router *gin.RouterGroup) {
 				return
 			}
 			body.DeviceID = deviceID
+			pushNotificationToken := ctx.GetHeader("x-firebase-push-token")
+			if pushNotificationToken == "" {
+				apperrors.AuthenticationError(ctx, "no push notification token")
+				return
+			}
+			body.PushNotificationToken =  pushNotificationToken
 			controllers.LoginUser(&interfaces.ApplicationContext[dto.LoginDTO]{
 				Ctx: ctx,
 				Body: &body,

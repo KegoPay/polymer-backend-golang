@@ -17,7 +17,7 @@ import (
 	"kego.com/infrastructure/logger"
 )
 
-func LoginAccount(ctx any, email *string, phone *string, password *string, appVersion string, userAgent string, deviceID string) (*entities.User, *entities.Wallet, *string) {
+func LoginAccount(ctx any, email *string, phone *string, password *string, appVersion string, userAgent string, deviceID string, pushNotificationToken string) (*entities.User, *entities.Wallet, *string) {
 	currentTries := cache.Cache.FindOne(fmt.Sprintf("%s-password-tries", *email))
 	if currentTries == nil {
 		currentTries = utils.GetStringPointer("0")
@@ -93,6 +93,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		LastName: account.LastName,
 		DeviceID:   account.DeviceID,
 		AppVersion: account.AppVersion,
+		PushNotificationToken: account.PushNotificationToken,
 	})
 	if err != nil {
 		apperrors.UnknownError(ctx, err)
@@ -108,6 +109,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		account.AppVersion = appVersion
 	}
 	updateAccountPayload["deviceID"] = deviceID
+	updateAccountPayload["pushNotificationToken"] = pushNotificationToken
 	account.DeviceID = deviceID
 	userRepo.UpdatePartialByID(account.ID,updateAccountPayload)
 	hashedToken, err := cryptography.CryptoHahser.HashString(*token)

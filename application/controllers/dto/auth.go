@@ -5,11 +5,12 @@ import (
 )
 
 type CreateAccountDTO struct {
-	Email      		  string                 `json:"email"`
-	Password      		  string             `json:"password"`
-	UserAgent 		  string     			 `json:"deviceType"`
-	DeviceID  		  string                 `json:"deviceID"`
-	AppVersion        string       			 `json:"appVersion"`
+	Email      		  				string             `json:"email"`
+	Password      		  			string             `json:"password"`
+	UserAgent 						string     		   `json:"deviceType"`
+	DeviceID  		  				string             `json:"deviceID"`
+	PushNotificationToken  		  	string             `json:"pushNotificationToken"`
+	AppVersion        				string       	   `json:"appVersion"`
 }
 
 type GenerateServerPublicKey struct {
@@ -24,10 +25,11 @@ type VerifyOTPDTO struct {
 }
 
 type LoginDTO struct {
-	Email      *string                `json:"email,omitempty"`
-	Phone      *string  			  `json:"phone,omitempty"`
-	Password   string                 `json:"password"`
-	DeviceID   string                 `json:"deviceID"`
+	Email      				*string            `json:"email,omitempty"`
+	Phone      				*string  		   `json:"phone,omitempty"`
+	Password   				string             `json:"password"`
+	DeviceID   				string             `json:"deviceID"`
+	PushNotificationToken   string             `json:"pushNotificationToken"`
 }
 
 type VerifyEmailData struct {

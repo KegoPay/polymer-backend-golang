@@ -14,6 +14,7 @@ type ClaimsData struct {
     IssuedAt     int64
     UserAgent    string
     DeviceID     string
+    PushNotificationToken     string
     AppVersion   string
     OTPIntent      string
 }

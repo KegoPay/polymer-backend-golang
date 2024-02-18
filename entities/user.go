@@ -29,7 +29,8 @@ type User struct {
 	Password          				string       			`bson:"password" json:"-" validate:"required,password"`
 	TransactionPin    				string       			`bson:"transactionPin" json:"-"`
 	UserAgent        				string    	 			`bson:"userAgent" json:"-" validate:"required"`
-	DeviceID          				string       			`bson:"deviceID" json:"-"`
+	DeviceID          				string       			`bson:"deviceID" json:"-" validate:"required"`
+	PushNotificationToken	        string       			`bson:"pushNotificationToken" json:"-" validate:"required"`
 	AppVersion          			string       			`bson:"appVersion" json:"-"`
 	WalletID  						string    				`bson:"walletID" json:"walletID"`
 	KYCCompleted   					bool         			`bson:"kycCompleted" json:"kycCompleted"`

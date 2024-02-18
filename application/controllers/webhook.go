@@ -40,7 +40,7 @@ func FlutterwaveWebhook(ctx *interfaces.ApplicationContext[dto.FlutterwaveWebhoo
 		user, err := userRepo.FindByID(ctx.Body.Transfer.Meta.UserID, options.FindOne().SetProjection(map[string]any{
 			"notificationOptions": 1,
 			"email": 1,
-			"deviceID": 1,
+			"pushNotificationToken": 1,
 			"firstName": 1,
 		}))
 		if err != nil {
@@ -62,7 +62,7 @@ func FlutterwaveWebhook(ctx *interfaces.ApplicationContext[dto.FlutterwaveWebhoo
 		}
 		
 		if user.NotificationOptions.PushNotification {
-			pushnotification.PushNotificationService.PushOne(user.DeviceID, "Your payment was successful! 🚀",
+			pushnotification.PushNotificationService.PushOne(user.PushNotificationToken, "Your payment was successful! 🚀",
 				fmt.Sprintf("Your payment of %s%s to %s in %s has been processed successfully.", ctx.Body.Transfer.Currency, currencyformatter.HumanReadableFloat32Currency(ctx.Body.Transfer.Amount), ctx.Body.Transfer.RecepientName, utils.CurrencyCodeToCountryCode(ctx.Body.Transfer.Currency)))
 		}
 	

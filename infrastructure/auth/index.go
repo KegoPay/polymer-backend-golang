@@ -75,6 +75,7 @@ func GenerateAuthToken(claimsData ClaimsData) (*string, error) {
 		"userAgent": claimsData.UserAgent,
 		"appVersion": claimsData.AppVersion,
 		"otpIntent": claimsData.OTPIntent,
+		"pushNotificationToken": claimsData.PushNotificationToken,
 	}).SignedString([]byte(os.Getenv("JWT_SIGNING_KEY")))
 	if err != nil {
 		return nil, err

@@ -35,7 +35,7 @@ func (s *ginServer)Start(){
 	if os.Getenv("GIN_MODE") == "debug" {
 		origins = append(origins, "http://localhost:5173")
 	}else if os.Getenv("GIN_MODE") == "release" {
-		origins = append(origins, "https://usepolymer.co",  "https://www.usepolymer.co",  "www.usepolymer.co", "www.usepolymer.co", "https://www.usepolymer.co/")
+		origins = append(origins, "https://usepolymer.co",  "https://www.usepolymer.co", "https://www.usepolymer.co/")
 	}
 	corsConfig := cors.Config{
 		AllowOrigins:     origins,

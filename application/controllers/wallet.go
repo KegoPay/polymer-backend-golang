@@ -138,7 +138,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}
 
 	if ctx.GetBoolContextData("PushNotifOptions") {
-		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("DeviceID"), "Your payment is on its way! 🚀",
+		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
 			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.Name, utils.CountryCodeToCountryName(transaction.Recepient.Country)))
 	}
 
@@ -263,7 +263,7 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}
 
 	if ctx.GetBoolContextData("PushNotifOptions") {
-		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("DeviceID"), "Your payment is on its way! 🚀",
+		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
 			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.Name, utils.CountryCodeToCountryName(transaction.Recepient.Country)))
 	}
 
@@ -387,7 +387,7 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		return
 	}
 	if ctx.GetBoolContextData("PushNotifOptions") {
-		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("DeviceID"), "Your payment is on its way! 🚀",
+		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
 			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.Name, utils.CountryCodeToCountryName(transaction.Recepient.Country)))
 	}
 

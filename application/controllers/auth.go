@@ -108,6 +108,7 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 		UserAgent:      ctx.Body.UserAgent,
 		DeviceID:       ctx.Body.DeviceID,
 		AppVersion: 	ctx.Body.AppVersion,
+		PushNotificationToken: ctx.Body.PushNotificationToken,
 	})
 	if err != nil {
 		return
@@ -132,7 +133,7 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 		apperrors.UnsupportedAppVersion(ctx.Ctx)
 		return
 	}
-	account, wallet, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password, *appVersion, ctx.GetHeader("User-Agent").(string), ctx.Body.DeviceID)
+	account, wallet, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password, *appVersion, ctx.GetHeader("User-Agent").(string), ctx.Body.DeviceID, ctx.Body.PushNotificationToken)
 	if account == nil || token == nil {
 		return
 	}
@@ -348,6 +349,7 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[any]) {
 		LastName: account.LastName,
 		DeviceID:   account.DeviceID,
 		AppVersion: account.AppVersion,
+		PushNotificationToken: account.PushNotificationToken,
 	})
 	account.EmailVerified = true
 	success, err := userRepo.UpdateByID(account.ID, account)
@@ -541,6 +543,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		FirstName: userUpdatedInfo["firstName"].(string),
 		LastName: userUpdatedInfo["lastName"].(string),
 		DeviceID:   account.DeviceID,
+		PushNotificationToken: account.PushNotificationToken,
 		AppVersion: account.AppVersion,
 	})
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "kyc completed", token, nil)
