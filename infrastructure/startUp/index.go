@@ -9,6 +9,7 @@ import (
 	"kego.com/infrastructure/ipresolver"
 	"kego.com/infrastructure/logger"
 	pushnotification "kego.com/infrastructure/messaging/push_notifications"
+	sms "kego.com/infrastructure/messaging/whatsapp"
 	paymentprocessor "kego.com/infrastructure/payment_processor"
 )
 
@@ -25,7 +26,7 @@ func StartServices(){
 	paymentprocessor.LocalPaymentProcessor.InitialisePaymentProcessor()
 	paymentprocessor.InternationalPaymentProcessor.InitialisePaymentProcessor()
 	ipresolver.IPResolverInstance.ConnectToDB()
-	// sms.InitSMSService()
+	sms.InitSMSService()
 	application.DBGenesis()
 }
 

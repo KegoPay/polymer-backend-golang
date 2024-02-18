@@ -32,8 +32,8 @@ import (
 	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/messaging/emails"
+	sms "kego.com/infrastructure/messaging/whatsapp"
 
-	// "kego.com/infrastructure/messaging/sms"
 	server_response "kego.com/infrastructure/serverResponse"
 	"kego.com/infrastructure/validator"
 )
@@ -308,13 +308,13 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 			"OTP":      otp,
 		},)
 	}else if ctx.Body.Phone != nil {
-		// ref := sms.SMSService.SendSMS(fmt.Sprintf("%s%s", account.Phone.Prefix, account.Phone.LocalNumber), "< 123456 >is your Polymer OTP")
-		// encryptedRef, err := cryptography.SymmetricEncryption(*ref)
-		// if err != nil {
-		// 	apperrors.UnknownError(ctx.Ctx, err)
-		// 	return
-		// }
-		// cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", channel), *encryptedRef, time.Minute * 10)
+		ref := sms.SMSService.SendSMS(fmt.Sprintf("%s%s", account.Phone.Prefix, account.Phone.LocalNumber), "< 123456 >is your Polymer OTP")
+		encryptedRef, err := cryptography.SymmetricEncryption(*ref)
+		if err != nil {
+			apperrors.UnknownError(ctx.Ctx, err)
+			return
+		}
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", channel), *encryptedRef, time.Minute * 10)
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", channel), ctx.Body.Intent, time.Minute * 10)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil)

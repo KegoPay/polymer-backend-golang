@@ -20,7 +20,7 @@ func (ts *TermiiService) SendSMS(phone string, sms string) *string {
 		"message_type": "NUMERIC",
 		"from": "Polymer",
 		"to": phone,
-		"channel": "generic",
+		"channel": "generic", // temp
 		"pin_attempts": 3,
 		"pin_time_to_live": 10,
 		"pin_length": 6,
