@@ -125,8 +125,6 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 			"OTP":      otp,
 		},)
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Email), "verify_account", time.Minute * 10)
-	pushnotification.PushNotificationService.PushOne(account.PushNotificationToken, "Welcome to Polymer!😃",
-	"You now have global payments at your finger tips! Make payments with crypto, Mobile Money and to bank accounts in over 40+ countries!🤯")
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "account created", nil, nil)
 }
 
@@ -549,6 +547,8 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		PushNotificationToken: account.PushNotificationToken,
 		AppVersion: account.AppVersion,
 	})
+	pushnotification.PushNotificationService.PushOne(account.PushNotificationToken, "Welcome to Polymer!😃",
+	"You now have global payments at your finger tips! Make payments with crypto, Mobile Money and to bank accounts in over 40+ countries!🤯")
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "kyc completed", token, nil)
 }
 

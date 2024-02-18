@@ -16,7 +16,7 @@ func WebhookRouter(router *gin.RouterGroup) {
 		webhookRouter.POST("/flutterwave/transfer", middlewares.WebAgentMiddleware(), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.FlutterwaveWebhookDTO
-			if err := ctx.ShouldBindJSON(&body); err != nil {
+			if err := ctx.shouldbind(&body); err != nil {
 				apperrors.ErrorProcessingPayload(ctx)
 				return
 			}
