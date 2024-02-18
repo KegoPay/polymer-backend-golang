@@ -12,6 +12,7 @@ import (
 
 func EmailSubsRouter(router *gin.RouterGroup) {
 	emailSubRouter := router.Group("/emailsub")
+	emailSubRouter.Use(middlewares.UserAgentMiddleware(false))
 	{
 		emailSubRouter.POST("/subscribe", middlewares.WebAgentMiddleware(), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
