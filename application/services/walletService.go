@@ -175,11 +175,11 @@ func verifyTransactionPinByUserID(ctx any, userID string, pin string) (bool, err
 		apperrors.NotFoundError(ctx, err.Error())
 		return false, err
 	} 
-	// if user.TransactionPin == "" {
-	// 	err =  errors.New( "Set a transaction pin before attempting to send money")
-	// 	apperrors.ClientError(ctx, err.Error(), nil)
-	// 	return false, err
-	// }
+	if user.TransactionPin == "" {
+		err =  errors.New( "Set a transaction pin before attempting to send money")
+		apperrors.ClientError(ctx, err.Error(), nil)
+		return false, err
+	}
 	pinMatch := cryptography.CryptoHahser.VerifyData(user.TransactionPin, pin)
 	if !pinMatch {
 		currentTriesInt =  currentTriesInt + 1

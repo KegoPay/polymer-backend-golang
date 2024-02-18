@@ -15,7 +15,7 @@ import (
 
 func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string, email string, bvn string) (accountNumber *string, bankName *string, err error) {
 	dva := services.GenerateDVA(ctx, &types.CreateVirtualAccountPayload{
-		Permanent: true,
+		Permanent: os.Getenv("ENV") == "production",
 		Currency: "NGN",
 		FirstName: firstName,
 		LastName: lastName,
