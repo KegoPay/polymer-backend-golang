@@ -16,13 +16,19 @@ func WebhookRouter(router *gin.RouterGroup) {
 		webhookRouter.POST("/flutterwave/transfer", middlewares.WebAgentMiddleware(), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.FlutterwaveWebhookDTO
-			if err := ctx.Bind(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
-				return
+			if ctx.Request.Header.Get("Content-Type") == "application/json" {
+				if err := ctx.BindJSON(&body); err != nil {
+					apperrors.ErrorProcessingPayload(ctx)
+					return
+				}
+			}else {
+				if err := ctx.BindQuery(&body); err != nil {
+					apperrors.ErrorProcessingPayload(ctx)
+					return
+				}
 			}
 			appContext := interfaces.ApplicationContext[dto.FlutterwaveWebhookDTO]{
 				Keys: appContextAny.Keys,
-				Body: &body,
 				Ctx: appContextAny.Ctx,
 			}
 			controllers.FlutterwaveWebhook(&appContext)

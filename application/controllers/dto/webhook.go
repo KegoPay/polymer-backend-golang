@@ -3,17 +3,17 @@ package dto
 
 
 type FlutterwaveWebhookDTO struct {
-	EventType			*string						`json:"event.type"`
-	TrxRef 				*string						`json:"txRef"`
-	Amount 				*string						`json:"amount"`
-	ChargedAmount 		*string						`json:"charged_amount"`
-	Status 				*string						`json:"status"`
-	IPAddress 			*string						`json:"ip"`
-	Currency 			*string						`json:"currency"`
-	AppFee 				*string						`json:"appfee"`
+	EventType			*string						`json:"event.type" form:"event.type"`
+	TrxRef 				*string						`form:"txRef"`
+	Amount 				*string						`form:"amount"`
+	ChargedAmount 		*string						`form:"charged_amount"`
+	Status 				*string						`form:"status"`
+	IPAddress 			*string						`form:"ip"`
+	Currency 			*string						`form:"currency"`
+	AppFee 				*string						`form:"appfee"`
 	Transfer 			*FlutterwaveWebhookTransfer	`json:"transfer"`
-	Entity 				*FlutterwaveWebhookEntity	`json:"entity"`
-	Customer 			*FlutterwaveWebhookCustomer	`json:"Customer"`
+	Entity 				*FlutterwaveWebhookEntity	`form:"entity"`
+	Customer 			*FlutterwaveWebhookCustomer	`form:"Customer"`
 }
 
 type FlutterwaveWebhookEntity struct {
