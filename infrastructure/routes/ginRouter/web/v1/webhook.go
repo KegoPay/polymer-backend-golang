@@ -22,7 +22,7 @@ func WebhookRouter(router *gin.RouterGroup) {
 					return
 				}
 			}else {
-				if err := ctx.BindQuery(&body); err != nil {
+				if err := ctx.Bind(&body); err != nil {
 					apperrors.ErrorProcessingPayload(ctx)
 					return
 				}
