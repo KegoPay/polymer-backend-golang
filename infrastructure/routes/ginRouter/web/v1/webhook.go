@@ -21,15 +21,34 @@ func WebhookRouter(router *gin.RouterGroup) {
 					apperrors.ErrorProcessingPayload(ctx)
 					return
 				}
+				var transfer dto.FlutterwaveWebhookTransfer
+				if err := ctx.BindJSON(&transfer); err != nil {
+					apperrors.ErrorProcessingPayload(ctx)
+					return
+				}
+				body.Transfer = &transfer
 			}else {
 				if err := ctx.Bind(&body); err != nil {
 					apperrors.ErrorProcessingPayload(ctx)
 					return
 				}
+				var customer dto.FlutterwaveWebhookCustomer
+				if err := ctx.Bind(&customer); err != nil {
+					apperrors.ErrorProcessingPayload(ctx)
+					return
+				}
+				body.Customer = &customer
+				var entity dto.FlutterwaveWebhookEntity
+				if err := ctx.Bind(&entity); err != nil {
+					apperrors.ErrorProcessingPayload(ctx)
+					return
+				}
+				body.Entity = &entity
 			}
 			appContext := interfaces.ApplicationContext[dto.FlutterwaveWebhookDTO]{
 				Keys: appContextAny.Keys,
 				Ctx: appContextAny.Ctx,
+				Body: &body,
 			}
 			controllers.FlutterwaveWebhook(&appContext)
 		})
