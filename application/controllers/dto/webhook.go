@@ -17,14 +17,14 @@ type FlutterwaveWebhookDTO struct {
 }
 
 type FlutterwaveWebhookEntity struct {
-	AccNumber 				string						`json:"account_number"`
-	FirstName 				string						`json:"first_name"`
-	LastName 				string						`json:"last_name"`
+	AccNumber 				string						`form:"account_number"`
+	FirstName 				string						`form:"first_name"`
+	LastName 				string						`form:"last_name"`
 }
 
 type FlutterwaveWebhookCustomer struct {
-	FullName 			string						`json:"fullName"`
-	Email 				string						`json:"email"`
+	FullName 			string						`form:"fullName"`
+	Email 				string						`form:"email"`
 }
 
 type FlutterwaveWebhookTransfer struct {
