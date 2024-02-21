@@ -45,10 +45,10 @@ func CreditWebHook(body dto.FlutterwaveWebhookDTO) error {
 			return err
 		}
 		if *body.Status == "successful" {
-			services.CreditWallet(*body.TrxRef, utils.Float32ToUint64Currency(body.Transfer.Amount), entities.FlutterwaveDVACredit, &entities.Transaction{
+			services.CreditWallet(*body.TrxRef, utils.Float32ToUint64Currency(*body.Amount), entities.FlutterwaveDVACredit, &entities.Transaction{
 				TransactionReference: *body.TrxRef,
-				Amount: utils.Float32ToUint64Currency(body.Transfer.Amount),
-				AmountInNGN: utils.Float32ToUint64Currency(body.Transfer.Amount),
+				Amount: utils.Float32ToUint64Currency(*body.Amount),
+				AmountInNGN: utils.Float32ToUint64Currency(*body.Amount),
 				Fee: 0,
 				ProcessorFee: 0,
 				Currency: *body.Currency,
@@ -74,14 +74,14 @@ func CreditWebHook(body dto.FlutterwaveWebhookDTO) error {
 		if err == nil {
 			if user.NotificationOptions.PushNotification {
 				pushnotification.PushNotificationService.PushOne(user.DeviceID, "Money In!🤪",
-					fmt.Sprintf("You just got sent ₦%s by %s", currencyformatter.HumanReadableFloat32Currency(body.Transfer.Amount), body.Entity.FirstName))
+					fmt.Sprintf("You just got sent ₦%s by %s", currencyformatter.HumanReadableFloat32Currency(*body.Amount), body.Entity.FirstName))
 			}
 			if user.NotificationOptions.Emails {
 				emails.EmailService.SendEmail(user.Email, "Money In!", "credit", map[string]any{
 					"FIRSTNAME": user.FirstName,
 					"CURRENCY_CODE": "₦",
-					"AMOUNT": currencyformatter.HumanReadableFloat32Currency(body.Transfer.Amount),
-					"RECEPIENT_NAME": body.Transfer.RecepientName,
+					"AMOUNT": currencyformatter.HumanReadableFloat32Currency(*body.Amount),
+					"RECEPIENT_NAME": body.Entity.FirstName,
 				})
 			}
 			return nil

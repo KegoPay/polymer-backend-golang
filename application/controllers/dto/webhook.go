@@ -6,7 +6,7 @@ package dto
 type FlutterwaveWebhookDTO struct {
     EventType      string                         `form:"event.type"`
     TrxRef         *string                         `form:"txRef"`
-    Amount         *string                         `form:"amount"`
+    Amount         *float32                         `form:"amount"`
     ChargedAmount  *string                         `form:"charged_amount"`
     Status         *string                         `form:"status"`
     IPAddress      *string                         `form:"IP"`
