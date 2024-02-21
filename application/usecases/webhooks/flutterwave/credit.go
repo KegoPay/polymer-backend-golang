@@ -19,7 +19,9 @@ import (
 func CreditWebHook(body dto.FlutterwaveWebhookDTO) error {
 		var err error
 		userRepo := repository.UserRepo()
-		user, err := userRepo.FindByID(body.Customer.Email, options.FindOne().SetProjection(map[string]any{
+		user, err := userRepo.FindOneByFilter(map[string]interface{}{
+			"email": body.Customer.Email,
+		}, options.FindOne().SetProjection(map[string]any{
 			"id": 1,
 			"pushNotificationToken": 1,
 			"notificationOptions": 1,
