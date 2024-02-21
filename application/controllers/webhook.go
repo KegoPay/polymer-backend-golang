@@ -11,7 +11,7 @@ import (
 )
 
 func FlutterwaveWebhook(ctx *interfaces.ApplicationContext[dto.FlutterwaveWebhookDTO]) {
-	event := *ctx.Body.EventType
+	event := ctx.Body.EventType
 	if event == "Transfer" {
 		flutterwave.FlwTransferWebhook(ctx.Ctx, *ctx.Body)
 	} else if event == "BANK_TRANSFER_TRANSACTION" {

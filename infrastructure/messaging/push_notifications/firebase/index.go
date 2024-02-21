@@ -60,7 +60,7 @@ func (fbpn *FireBasePushNotification) PushOne(deviceID string, title string, bod
 			Key: "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "device_id",
+			Key: "deviceID",
 			Data: deviceID,
 		})
 		return
