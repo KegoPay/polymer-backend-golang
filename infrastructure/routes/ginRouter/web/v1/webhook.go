@@ -22,7 +22,6 @@ func WebhookRouter(router *gin.RouterGroup) {
 					return
 				}
 			}else {
-				ctx.Request.ParseForm()
 				if err := ctx.Bind(&body); err != nil {
 					apperrors.ErrorProcessingPayload(ctx)
 					return
