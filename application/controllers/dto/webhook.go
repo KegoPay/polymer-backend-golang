@@ -1,8 +1,5 @@
 package dto
 
-
-
-
 type FlutterwaveWebhookDTO struct {
     EventType      string                         `form:"event.type"`
     TrxRef         *string                         `form:"txRef"`
