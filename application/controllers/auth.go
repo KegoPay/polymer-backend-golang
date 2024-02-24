@@ -26,6 +26,7 @@ import (
 	"kego.com/application/utils"
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
+	"kego.com/infrastructure/biometric"
 	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
 	fileupload "kego.com/infrastructure/file_upload"
@@ -463,7 +464,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		kycDetails.Nationality = ninDetails.Nationality
 		kycDetails.DateOfBirth = ninDetails.DateOfBirth
 	}
-	// result, err := identityverification.IdentityVerifier.FaceMatch(*&ctx.Body.ProfileImage, bvnDetails.Base64Image)
+	result, err := biometric.BiometricService.FaceMatch(ctx.Body.ProfileImage, kycDetails.Base64Image)
 	if err != nil {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
 		// _, _ := fileupload.FileUploader.DeleteFileByURL(ctx.Body.ProfileImage)
@@ -474,16 +475,16 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		apperrors.ClientError(ctx.Ctx, err.Error(), nil)
 		return
 	}
-	// if *result < 80 {
-		// cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+	if *result < 80 {
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
 		// err = fileupload.FileUploader.DeleteSingleFile(account.ID)
 		// if err != nil {
 		// 	apperrors.FatalServerError(ctx.Ctx, err)
 		// 	return
 		// }
-	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("Your picture does not match with your Image on the BVN provided. If you think this is a mistake please contact support on %s", constants.SUPPORT_EMAIL), nil)
-	// 	return
-	// }
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("The image supplied does not match. If you think this is a mistake please contact support on %s", constants.SUPPORT_EMAIL), nil)
+		return
+	}
 	watchListed := false
 	if  kycDetails.WatchListed  != nil {
 		if *kycDetails.WatchListed == "True" {

@@ -2,6 +2,7 @@ package startup
 
 import (
 	"kego.com/application"
+	"kego.com/infrastructure/biometric"
 	"kego.com/infrastructure/database"
 	"kego.com/infrastructure/database/connection/datastore"
 	fileupload "kego.com/infrastructure/file_upload"
@@ -28,6 +29,7 @@ func StartServices(){
 	ipresolver.IPResolverInstance.ConnectToDB()
 	sms.InitSMSService()
 	application.DBGenesis()
+	biometric.InitialiseBiometricService()
 }
 
 // Used to clean up after services that have been shutdown.
