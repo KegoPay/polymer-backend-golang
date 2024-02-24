@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"kego.com/entities"
 	"kego.com/infrastructure/logger"
@@ -29,7 +28,7 @@ func (chimoneyPP *ChimoneyPaymentProcessor) InitialisePaymentProcessor() {
 }
 
 
-func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(currency any, amount *uint64) (*map[string]float32, int, error){
+func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(currency *string, amount *uint64) (*map[string]entities.ParsedExchangeRates, int, error){
 	response, statusCode, err := chimoneyPP.Network.Get("/info/exchange-rates", &map[string]string{
 		"X-API-KEY": chimoneyPP.AuthToken,
 		"Content-Type": "application/json",
@@ -54,30 +53,8 @@ func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(currency any, amount
 		})
 		return nil, *statusCode, nil
 	}
-	rateResponse := map[string]float32{}
-	formattedRates := chimoneyResponse.Data.FormatAllRates()
-	if currency != "" {
-		for key, rate := range formattedRates {
-			if strings.Contains(key, currency.(string)) {
-				rateResponse = map[string]float32{
-					"rate": rate,
-				}
-				break
-			}
-		}
-		if rateResponse["rate"] == 0 {
-			return nil, *statusCode, fmt.Errorf("Country %s is not supported", currency)
-		}
-
-		if amount != nil {
-				rateResponse["convertToUSD"] = (rateResponse["rate"] * float32(*amount)) / chimoneyResponse.Data.USDNGN
-				rateResponse["convertedValue"] = rateResponse["rate"] * float32(*amount)
-				rateResponse["USDRate"] = chimoneyResponse.Data.USDNGN
-		}
-	}else {
-		rateResponse = formattedRates
-	}
-	return &rateResponse, *statusCode, nil
+	formattedRates := chimoneyResponse.Data.FormatAllRates(amount)
+	return &formattedRates, *statusCode, nil
 }
 
 func (chimoneyPP *ChimoneyPaymentProcessor)GetSupportedInternationalBanks(countryCode string) (*[]entities.Bank,  int, error) {

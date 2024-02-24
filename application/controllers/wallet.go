@@ -1,403 +1,399 @@
 package controllers
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"net/http"
-	"os"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
 	apperrors "kego.com/application/appErrors"
 	bankssupported "kego.com/application/banksSupported"
-	"kego.com/application/constants"
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
 	"kego.com/application/repository"
 	"kego.com/application/services"
 	"kego.com/application/utils"
-	"kego.com/entities"
-	currencyformatter "kego.com/infrastructure/currency_formatter"
-	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/messaging/emails"
-	pushnotification "kego.com/infrastructure/messaging/push_notifications"
-	international_payment_processor "kego.com/infrastructure/payment_processor/chimoney"
-	"kego.com/infrastructure/payment_processor/types"
 	server_response "kego.com/infrastructure/serverResponse"
 )
 
 func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
-	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Body.DestinationCountryCode, &ctx.Body.Amount)
-	if statusCode < 500 && statusCode >= 400 {
-		apperrors.ClientError(ctx.Ctx, err.Error(), nil)
-		return
-	}
-	if err != nil {
-		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
-		return
-	}
-	if statusCode != 200 {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney international payment returned with status code %d", statusCode))
-		return
-	}
-	minLimit := (*rates)["USDRate"] * constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT
-	if ctx.Body.Amount < utils.Float32ToUint64Currency(minLimit) {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(minLimit)), nil)
-		return
-	}
-	maxLimit := (*rates)["USDRate"] * 20000.00
-	if ctx.Body.Amount > utils.Float32ToUint64Currency(maxLimit) {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(maxLimit)), nil)
-		return
-	}
-	amountInNGN := utils.Float32ToUint64Currency((*rates)["convertedValue"])
-	internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(amountInNGN)
-	totalAmount := internationalProcessorFee + transactionFee + amountInNGN
-	businessID := ctx.GetStringParameter("businessID") 
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin)
-	if err != nil {
-		return
-	}
-	destinationCountry := utils.CountryCodeToCountryName(ctx.Body.DestinationCountryCode)
-	if os.Getenv("GIN_MODE") != "release" {
-		destinationCountry = utils.CountryCodeToCountryName("NG")
-	}
-	if destinationCountry == "" {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", ctx.Body.DestinationCountryCode))
-		return
-	}
-	trxRef := utils.GenerateUUIDString()
-	err = services.LockFunds(ctx.Ctx, wallet, totalAmount, entities.ChimoneyDebitInternational, trxRef)
-	if err != nil {
-		return
-	}
-	response := services.InitiateInternationalPayment(ctx.Ctx, &international_payment_processor.InternationalPaymentRequestPayload{
-		DestinationCountry: destinationCountry,
-		AccountNumber: ctx.Body.AccountNumber,
-		BankCode: ctx.Body.BankCode,
-		ValueInUSD: (*rates)["convertToUSD"],
-		Reference: trxRef,
-	})
-	if response == nil {
-		services.ReverseLockFunds(ctx.Ctx, wallet.ID, trxRef)
-		return
-	}
-	services.RemoveLockFunds(ctx.Ctx, wallet.ID, trxRef)
-	transaction := entities.Transaction{
-		TransactionReference: response.Chimoneys[0].ChiRef,
-		MetaData: response.Chimoneys[0],
-		AmountInUSD: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(response.Chimoneys[0].ValueInUSD)),
-		AmountInNGN: totalAmount,
-		Fee: transactionFee,
-		ProcessorFeeCurrency: "USD",
-		ProcessorFee: internationalProcessorFee,
-		Amount: ctx.Body.Amount,
-		Currency: utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
-		WalletID: wallet.ID,
-		UserID: wallet.UserID,
-		BusinessID: wallet.BusinessID,
-		Description: func () string {
-			if	ctx.Body.Description == nil {
-				des := fmt.Sprintf("International transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), *ctx.Body.FullName)
-				return des
-			}
-			return *ctx.Body.Description
-		}(),
-		Location: entities.Location{
-			IPAddress: ctx.Body.IPAddress,
-		},
-		Intent: entities.ChimoneyDebitInternational,
-		DeviceInfo: &entities.DeviceInfo{
-			IPAddress: ctx.Body.IPAddress,
-			DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
-			UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
-		},
-		Sender: entities.TransactionSender{
-			BusinessName: wallet.BusinessName,
-			FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
-			Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
-		},
-		Recepient: entities.TransactionRecepient{
-			FullName: *ctx.Body.FullName,
-			BankCode: &ctx.Body.BankCode,
-			AccountNumber: ctx.Body.AccountNumber,
-			BranchCode: ctx.Body.BranchCode,
-			Country: &ctx.Body.DestinationCountryCode,
-		},
-	}
-	trxRepository := repository.TransactionRepo()
-	trx, err := trxRepository.CreateOne(context.TODO(), transaction)
-	if err != nil {
-		logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
-			Key: "payload",
-			Data: transaction,
-		})
-		apperrors.FatalServerError(ctx.Ctx, err)
-		return
-	}
+	// rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Body.DestinationCountryCode, &ctx.Body.Amount)
+	// if statusCode < 500 && statusCode >= 400 {
+	// 	apperrors.ClientError(ctx.Ctx, err.Error(), nil)
+	// 	return
+	// }
+	// if err != nil {
+	// 	apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
+	// 	return
+	// }
+	// if statusCode != 200 {
+	// 	apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney international payment returned with status code %d", statusCode))
+	// 	return
+	// }
+	// minLimit := (*rates)["USDRate"] * constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT
+	// if ctx.Body.Amount < utils.Float32ToUint64Currency(minLimit) {
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(minLimit)), nil)
+	// 	return
+	// }
+	// maxLimit := (*rates)["USDRate"] * 20000.00
+	// if ctx.Body.Amount > utils.Float32ToUint64Currency(maxLimit) {
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(maxLimit)), nil)
+	// 	return
+	// }
+	// amountInNGN := utils.Float32ToUint64Currency((*rates)["convertedValue"])
+	// internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(amountInNGN)
+	// totalAmount := internationalProcessorFee + transactionFee + amountInNGN
+	// businessID := ctx.GetStringParameter("businessID") 
+	// wallet , err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin)
+	// if err != nil {
+	// 	return
+	// }
+	// destinationCountry := utils.CountryCodeToCountryName(ctx.Body.DestinationCountryCode)
+	// if os.Getenv("GIN_MODE") != "release" {
+	// 	destinationCountry = utils.CountryCodeToCountryName("NG")
+	// }
+	// if destinationCountry == "" {
+	// 	apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", ctx.Body.DestinationCountryCode))
+	// 	return
+	// }
+	// trxRef := utils.GenerateUUIDString()
+	// err = services.LockFunds(ctx.Ctx, wallet, totalAmount, entities.ChimoneyDebitInternational, trxRef)
+	// if err != nil {
+	// 	return
+	// }
+	// response := services.InitiateInternationalPayment(ctx.Ctx, &international_payment_processor.InternationalPaymentRequestPayload{
+	// 	DestinationCountry: destinationCountry,
+	// 	AccountNumber: ctx.Body.AccountNumber,
+	// 	BankCode: ctx.Body.BankCode,
+	// 	ValueInUSD: (*rates)["convertToUSD"],
+	// 	Reference: trxRef,
+	// })
+	// if response == nil {
+	// 	services.ReverseLockFunds(ctx.Ctx, wallet.ID, trxRef)
+	// 	return
+	// }
+	// services.RemoveLockFunds(ctx.Ctx, wallet.ID, trxRef)
+	// transaction := entities.Transaction{
+	// 	TransactionReference: response.Chimoneys[0].ChiRef,
+	// 	MetaData: response.Chimoneys[0],
+	// 	AmountInUSD: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(response.Chimoneys[0].ValueInUSD)),
+	// 	AmountInNGN: totalAmount,
+	// 	Fee: transactionFee,
+	// 	ProcessorFeeCurrency: "USD",
+	// 	ProcessorFee: internationalProcessorFee,
+	// 	Amount: ctx.Body.Amount,
+	// 	Currency: utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
+	// 	WalletID: wallet.ID,
+	// 	UserID: wallet.UserID,
+	// 	BusinessID: wallet.BusinessID,
+	// 	Description: func () string {
+	// 		if	ctx.Body.Description == nil {
+	// 			des := fmt.Sprintf("International transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), *ctx.Body.FullName)
+	// 			return des
+	// 		}
+	// 		return *ctx.Body.Description
+	// 	}(),
+	// 	Location: entities.Location{
+	// 		IPAddress: ctx.Body.IPAddress,
+	// 	},
+	// 	Intent: entities.ChimoneyDebitInternational,
+	// 	DeviceInfo: &entities.DeviceInfo{
+	// 		IPAddress: ctx.Body.IPAddress,
+	// 		DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
+	// 		UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
+	// 	},
+	// 	Sender: entities.TransactionSender{
+	// 		BusinessName: wallet.BusinessName,
+	// 		FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
+	// 		Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
+	// 	},
+	// 	Recepient: entities.TransactionRecepient{
+	// 		FullName: *ctx.Body.FullName,
+	// 		BankCode: &ctx.Body.BankCode,
+	// 		AccountNumber: ctx.Body.AccountNumber,
+	// 		BranchCode: ctx.Body.BranchCode,
+	// 		Country: &ctx.Body.DestinationCountryCode,
+	// 	},
+	// }
+	// trxRepository := repository.TransactionRepo()
+	// trx, err := trxRepository.CreateOne(context.TODO(), transaction)
+	// if err != nil {
+	// 	logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
+	// 		Key: "payload",
+	// 		Data: transaction,
+	// 	})
+	// 	apperrors.FatalServerError(ctx.Ctx, err)
+	// 	return
+	// }
 
-	if ctx.GetBoolContextData("PushNotifOptions") {
-		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
-			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.FullName, utils.CountryCodeToCountryName(*transaction.Recepient.Country)))
-	}
+	// if ctx.GetBoolContextData("PushNotifOptions") {
+	// 	pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
+	// 		fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.FullName, utils.CountryCodeToCountryName(*transaction.Recepient.Country)))
+	// }
 
-	if ctx.GetBoolContextData("EmailOptions") {
-		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-			"FIRSTNAME": transaction.Sender.FullName,
-			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
-			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-			"RECEPIENT_NAME": transaction.Recepient.FullName,
-			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
-		})
-	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
+	// if ctx.GetBoolContextData("EmailOptions") {
+	// 	emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
+	// 		"FIRSTNAME": transaction.Sender.FullName,
+	// 		"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
+	// 		"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+	// 		"RECEPIENT_NAME": transaction.Recepient.FullName,
+	// 		"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
+	// 	})
+	// }
+	// server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
 }
 
 func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
-	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Body.DestinationCountryCode, &ctx.Body.Amount)
-	if statusCode < 500 && statusCode >= 400 {
-		apperrors.ClientError(ctx.Ctx, err.Error(), nil)
-		return
-	}
-	if err != nil {
-		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
-		return
-	}
-	if statusCode != 200 {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney international payment returned with status code %d", statusCode))
-		return
-	}
-	minLimit := (*rates)["USDRate"] * constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT
-	if ctx.Body.Amount < utils.Float32ToUint64Currency(minLimit) {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(minLimit)), nil)
-		return
-	}
-	maxLimit := (*rates)["USDRate"] * 20000.00
-	if ctx.Body.Amount > utils.Float32ToUint64Currency(maxLimit) {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(maxLimit)), nil)
-		return
-	}
-	amountInNGN := utils.Float32ToUint64Currency((*rates)["convertedValue"])
-	internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(amountInNGN)
-	totalAmount := internationalProcessorFee + transactionFee + amountInNGN
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, nil, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin)
-	if err != nil {
-		return
-	}
-	destinationCountry := utils.CountryCodeToCountryName(ctx.Body.DestinationCountryCode)
-	if os.Getenv("GIN_MODE") != "release" {
-		destinationCountry = utils.CountryCodeToCountryName("NG")
-	}
-	if destinationCountry == "" {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", ctx.Body.DestinationCountryCode))
-		return
-	}
-	trxRef := utils.GenerateUUIDString()
-	err = services.LockFunds(ctx.Ctx, wallet, totalAmount, entities.ChimoneyDebitInternational, trxRef)
-	if err != nil {
-		return
-	}
-	response := services.InitiateInternationalPayment(ctx.Ctx, &international_payment_processor.InternationalPaymentRequestPayload{
-		DestinationCountry: destinationCountry,
-		AccountNumber: ctx.Body.AccountNumber,
-		BankCode: ctx.Body.BankCode,
-		ValueInUSD: (*rates)["convertToUSD"],
-		Reference: trxRef,
-	})
-	if response == nil {
-		services.ReverseLockFunds(ctx.Ctx, wallet.ID, trxRef)
-		return
-	}
-	services.RemoveLockFunds(ctx.Ctx, wallet.ID, trxRef)
-	transaction := entities.Transaction{
-		TransactionReference: response.Chimoneys[0].ChiRef,
-		MetaData: response.Chimoneys[0],
-		AmountInUSD: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(response.Chimoneys[0].ValueInUSD)),
-		AmountInNGN: totalAmount,
-		Fee: transactionFee,
-		ProcessorFeeCurrency: "USD",
-		ProcessorFee: internationalProcessorFee,
-		Amount: ctx.Body.Amount,
-		Currency: utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
-		WalletID: wallet.ID,
-		UserID: wallet.UserID,
-		Description: func () string {
-			if	ctx.Body.Description == nil {
-				des := fmt.Sprintf("International transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), *ctx.Body.FullName)
-				return des
-			}
-			return *ctx.Body.Description
-		}(),
-		Location: entities.Location{
-			IPAddress: ctx.Body.IPAddress,
-		},
-		Intent: entities.ChimoneyDebitInternational,
-		DeviceInfo: &entities.DeviceInfo{
-			IPAddress: ctx.Body.IPAddress,
-			DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
-			UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
-		},
-		Sender: entities.TransactionSender{
-			FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
-			Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
-		},
-		Recepient: entities.TransactionRecepient{
-			FullName: *ctx.Body.FullName,
-			BankCode: &ctx.Body.BankCode,
-			AccountNumber: ctx.Body.AccountNumber,
-			BranchCode: ctx.Body.BranchCode,
-			Country: &ctx.Body.DestinationCountryCode,
-		},
-	}
-	trxRepository := repository.TransactionRepo()
-	trx, err := trxRepository.CreateOne(context.TODO(), transaction)
-	if err != nil {
-		logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
-			Key: "payload",
-			Data: transaction,
-		})
-		apperrors.FatalServerError(ctx.Ctx, err)
-		return
-	}
+	// rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Body.DestinationCountryCode, &ctx.Body.Amount)
+	// if statusCode < 500 && statusCode >= 400 {
+	// 	apperrors.ClientError(ctx.Ctx, err.Error(), nil)
+	// 	return
+	// }
+	// fmt.Println("")
+	// fmt.Println("")
+	// fmt.Println("")
+	// fmt.Println(rates)
+	// if err != nil {
+	// 	apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
+	// 	return
+	// }
+	// if statusCode != 200 {
+	// 	apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney international payment returned with status code %d", statusCode))
+	// 	return
+	// }
+	// minLimit := (*rates)["USDRate"] * constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT
+	// if ctx.Body.Amount < utils.Float32ToUint64Currency(minLimit) {
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(minLimit)), nil)
+	// 	return
+	// }
+	// maxLimit := (*rates)["USDRate"] * constants.MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT
+	// if ctx.Body.Amount > utils.Float32ToUint64Currency(maxLimit) {
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(maxLimit)), nil)
+	// 	return
+	// }
+	// fmt.Println(rates)
+	// fmt.Println(utils.Float32ToUint64Currency(maxLimit))
+	// return
+	// amountInNGN := utils.Float32ToUint64Currency((*rates)["convertedValue"])
+	// internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(amountInNGN)
+	// totalAmount := internationalProcessorFee + transactionFee + amountInNGN
+	// wallet , err := services.InitiatePreAuth(ctx.Ctx, nil, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin)
+	// if err != nil {
+	// 	return
+	// }
+	// destinationCountry := utils.CountryCodeToCountryName(ctx.Body.DestinationCountryCode)
+	// if os.Getenv("GIN_MODE") != "release" {
+	// 	destinationCountry = utils.CountryCodeToCountryName("NG")
+	// }
+	// if destinationCountry == "" {
+	// 	apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", ctx.Body.DestinationCountryCode))
+	// 	return
+	// }
+	// trxRef := utils.GenerateUUIDString()
+	// err = services.LockFunds(ctx.Ctx, wallet, totalAmount, entities.ChimoneyDebitInternational, trxRef)
+	// if err != nil {
+	// 	return
+	// }
+	// response := services.InitiateInternationalPayment(ctx.Ctx, &international_payment_processor.InternationalPaymentRequestPayload{
+	// 	DestinationCountry: destinationCountry,
+	// 	AccountNumber: ctx.Body.AccountNumber,
+	// 	BankCode: ctx.Body.BankCode,
+	// 	ValueInUSD: (*rates)["convertToUSD"],
+	// 	Reference: trxRef,
+	// })
+	// if response == nil {
+	// 	services.ReverseLockFunds(ctx.Ctx, wallet.ID, trxRef)
+	// 	return
+	// }
+	// services.RemoveLockFunds(ctx.Ctx, wallet.ID, trxRef)
+	// transaction := entities.Transaction{
+	// 	TransactionReference: response.Chimoneys[0].ChiRef,
+	// 	MetaData: response.Chimoneys[0],
+	// 	AmountInUSD: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(response.Chimoneys[0].ValueInUSD)),
+	// 	AmountInNGN: totalAmount,
+	// 	Fee: transactionFee,
+	// 	ProcessorFeeCurrency: "USD",
+	// 	ProcessorFee: internationalProcessorFee,
+	// 	Amount: ctx.Body.Amount,
+	// 	Currency: utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
+	// 	WalletID: wallet.ID,
+	// 	UserID: wallet.UserID,
+	// 	Description: func () string {
+	// 		if	ctx.Body.Description == nil {
+	// 			des := fmt.Sprintf("International transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), *ctx.Body.FullName)
+	// 			return des
+	// 		}
+	// 		return *ctx.Body.Description
+	// 	}(),
+	// 	Location: entities.Location{
+	// 		IPAddress: ctx.Body.IPAddress,
+	// 	},
+	// 	Intent: entities.ChimoneyDebitInternational,
+	// 	DeviceInfo: &entities.DeviceInfo{
+	// 		IPAddress: ctx.Body.IPAddress,
+	// 		DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
+	// 		UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
+	// 	},
+	// 	Sender: entities.TransactionSender{
+	// 		FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
+	// 		Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
+	// 	},
+	// 	Recepient: entities.TransactionRecepient{
+	// 		FullName: *ctx.Body.FullName,
+	// 		BankCode: &ctx.Body.BankCode,
+	// 		AccountNumber: ctx.Body.AccountNumber,
+	// 		BranchCode: ctx.Body.BranchCode,
+	// 		Country: &ctx.Body.DestinationCountryCode,
+	// 	},
+	// }
+	// trxRepository := repository.TransactionRepo()
+	// trx, err := trxRepository.CreateOne(context.TODO(), transaction)
+	// if err != nil {
+	// 	logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
+	// 		Key: "payload",
+	// 		Data: transaction,
+	// 	})
+	// 	apperrors.FatalServerError(ctx.Ctx, err)
+	// 	return
+	// }
 
-	if ctx.GetBoolContextData("PushNotifOptions") {
-		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
-			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.FullName, utils.CountryCodeToCountryName(*transaction.Recepient.Country)))
-	}
+	// if ctx.GetBoolContextData("PushNotifOptions") {
+	// 	pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
+	// 		fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.FullName, utils.CountryCodeToCountryName(*transaction.Recepient.Country)))
+	// }
 
-	if ctx.GetBoolContextData("EmailOptions") {
-		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-			"FIRSTNAME": transaction.Sender.FullName,
-			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
-			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-			"RECEPIENT_NAME": transaction.Recepient.FullName,
-			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
-		})
-	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
+	// if ctx.GetBoolContextData("EmailOptions") {
+	// 	emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
+	// 		"FIRSTNAME": transaction.Sender.FullName,
+	// 		"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(ctx.Body.DestinationCountryCode),
+	// 		"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+	// 		"RECEPIENT_NAME": transaction.Recepient.FullName,
+	// 		"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
+	// 	})
+	// }
+	// server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
 }
 
 func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
-	if ctx.Body.Amount < constants.MINIMUM_LOCAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than ₦%s", currencyformatter.HumanReadableIntCurrency(constants.MINIMUM_LOCAL_TRANSFER_LIMIT)), nil)
-		return
-	}
-	if ctx.Body.Amount >= constants.MAXIMUM_LOCAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than ₦%s at a time", currencyformatter.HumanReadableIntCurrency(constants.MAXIMUM_LOCAL_TRANSFER_LIMIT)), nil)
-		return
-	}
-	localProcessorFee, polymerFee := utils.GetLocalTransactionFee(ctx.Body.Amount)
-	totalAmount := ctx.Body.Amount + utils.Float32ToUint64Currency(localProcessorFee) + utils.Float32ToUint64Currency(polymerFee)
-	bankName := ""
-	for _, bank := range bankssupported.SupportedLocalBanks {
-		if bank.Code == ctx.Body.BankCode {
-			bankName =  bank.Name
-			break
-		}
-	}
-	if bankName == "" {
-		apperrors.NotFoundError(ctx.Ctx, "Selected bank is not currently supported")
-		return
-	}
-	businessID := ctx.GetStringParameter("businessID") 
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin)
-	if err != nil {
-		return
-	}
-	narration := func () string {
-		if	ctx.Body.Description == nil {
-			des := fmt.Sprintf("NGN Transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), bankName)
-			return des
-		}
-		return *ctx.Body.Description
-	}()
-	reference := utils.GenerateUUIDString()
-	err = services.LockFunds(ctx.Ctx, wallet, totalAmount, entities.FlutterwaveDebitLocal, reference)
-	if err != nil {
-		return
-	}
-	if os.Getenv("GIN_MODE") != "release" {
-		reference = fmt.Sprintf("%s_PMCKDU_1", reference)
-	}
-	response := services.InitiateLocalPayment(ctx.Ctx, &types.InitiateLocalTransferPayload{
-		AccountNumber: ctx.Body.AccountNumber,
-		AccountBank: ctx.Body.BankCode,
-		Currency: "NGN",
-		Amount: utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-		Narration: narration ,
-		Reference: reference,
-		DebitCurrency: "NGN",
-		CallbackURL: os.Getenv("LOCAL_TRANSFER_WEBHOOK_URL"),
-		Meta: types.InitiateLocalTransferMeta{
-			WalletID: wallet.ID,
-			UserID: wallet.UserID,
-		},
-	})
-	if response == nil {
-		services.ReverseLockFunds(ctx.Ctx, wallet.ID, reference)
-		return
-	}
-	transaction := entities.Transaction{
-		TransactionReference: reference,
-		MetaData: response,
-		AmountInNGN: totalAmount,
-		Fee: utils.Float32ToUint64Currency(polymerFee),
-		ProcessorFeeCurrency: "NGN",
-		ProcessorFee: utils.Float32ToUint64Currency(localProcessorFee),
-		Amount: totalAmount,
-		Currency: "NGN",
-		WalletID: wallet.ID,
-		UserID: wallet.UserID,
-		BusinessID: wallet.BusinessID,
-		Description: narration,
-		Location: entities.Location{
-			IPAddress: ctx.Body.IPAddress,
-		},
-		Intent: entities.FlutterwaveDebitLocal,
-		DeviceInfo: &entities.DeviceInfo{
-			IPAddress: ctx.Body.IPAddress,
-			DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
-			UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
-		},
-		Sender: entities.TransactionSender{
-			BusinessName: wallet.BusinessName,
-			FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
-			Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
-		},
-		Recepient: entities.TransactionRecepient{
-			FullName: response.FullName,
-			BankCode: &ctx.Body.BankCode,
-			AccountNumber: ctx.Body.AccountNumber,
-			BranchCode: ctx.Body.BranchCode,
-			BankName: &bankName,
-			Country: utils.GetStringPointer("Nigeria"),
-		},
-	}
-	trxRepository := repository.TransactionRepo()
-	trx, err := trxRepository.CreateOne(context.TODO(), transaction)
-	if err != nil {
-		logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
-			Key: "payload",
-			Data: transaction,
-		})
-		apperrors.FatalServerError(ctx.Ctx, err)
-		return
-	}
-	if ctx.GetBoolContextData("PushNotifOptions") {
-		pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
-			fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.FullName, utils.CountryCodeToCountryName(*transaction.Recepient.Country)))
-	}
+	// if ctx.Body.Amount < constants.MINIMUM_LOCAL_TRANSFER_LIMIT {
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than ₦%s", currencyformatter.HumanReadableIntCurrency(constants.MINIMUM_LOCAL_TRANSFER_LIMIT)), nil)
+	// 	return
+	// }
+	// if ctx.Body.Amount >= constants.MAXIMUM_LOCAL_TRANSFER_LIMIT {
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than ₦%s at a time", currencyformatter.HumanReadableIntCurrency(constants.MAXIMUM_LOCAL_TRANSFER_LIMIT)), nil)
+	// 	return
+	// }
+	// localProcessorFee, polymerFee := utils.GetLocalTransactionFee(ctx.Body.Amount)
+	// totalAmount := ctx.Body.Amount + utils.Float32ToUint64Currency(localProcessorFee) + utils.Float32ToUint64Currency(polymerFee)
+	// bankName := ""
+	// for _, bank := range bankssupported.SupportedLocalBanks {
+	// 	if bank.Code == ctx.Body.BankCode {
+	// 		bankName =  bank.Name
+	// 		break
+	// 	}
+	// }
+	// if bankName == "" {
+	// 	apperrors.NotFoundError(ctx.Ctx, "Selected bank is not currently supported")
+	// 	return
+	// }
+	// businessID := ctx.GetStringParameter("businessID") 
+	// wallet , err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin)
+	// if err != nil {
+	// 	return
+	// }
+	// narration := func () string {
+	// 	if	ctx.Body.Description == nil {
+	// 		des := fmt.Sprintf("NGN Transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), bankName)
+	// 		return des
+	// 	}
+	// 	return *ctx.Body.Description
+	// }()
+	// reference := utils.GenerateUUIDString()
+	// err = services.LockFunds(ctx.Ctx, wallet, totalAmount, entities.FlutterwaveDebitLocal, reference)
+	// if err != nil {
+	// 	return
+	// }
+	// if os.Getenv("GIN_MODE") != "release" {
+	// 	reference = fmt.Sprintf("%s_PMCKDU_1", reference)
+	// }
+	// response := services.InitiateLocalPayment(ctx.Ctx, &types.InitiateLocalTransferPayload{
+	// 	AccountNumber: ctx.Body.AccountNumber,
+	// 	AccountBank: ctx.Body.BankCode,
+	// 	Currency: "NGN",
+	// 	Amount: utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+	// 	Narration: narration ,
+	// 	Reference: reference,
+	// 	DebitCurrency: "NGN",
+	// 	CallbackURL: os.Getenv("LOCAL_TRANSFER_WEBHOOK_URL"),
+	// 	Meta: types.InitiateLocalTransferMeta{
+	// 		WalletID: wallet.ID,
+	// 		UserID: wallet.UserID,
+	// 	},
+	// })
+	// if response == nil {
+	// 	services.ReverseLockFunds(ctx.Ctx, wallet.ID, reference)
+	// 	return
+	// }
+	// transaction := entities.Transaction{
+	// 	TransactionReference: reference,
+	// 	MetaData: response,
+	// 	AmountInNGN: totalAmount,
+	// 	Fee: utils.Float32ToUint64Currency(polymerFee),
+	// 	ProcessorFeeCurrency: "NGN",
+	// 	ProcessorFee: utils.Float32ToUint64Currency(localProcessorFee),
+	// 	Amount: totalAmount,
+	// 	Currency: "NGN",
+	// 	WalletID: wallet.ID,
+	// 	UserID: wallet.UserID,
+	// 	BusinessID: wallet.BusinessID,
+	// 	Description: narration,
+	// 	Location: entities.Location{
+	// 		IPAddress: ctx.Body.IPAddress,
+	// 	},
+	// 	Intent: entities.FlutterwaveDebitLocal,
+	// 	DeviceInfo: &entities.DeviceInfo{
+	// 		IPAddress: ctx.Body.IPAddress,
+	// 		DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
+	// 		UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
+	// 	},
+	// 	Sender: entities.TransactionSender{
+	// 		BusinessName: wallet.BusinessName,
+	// 		FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
+	// 		Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
+	// 	},
+	// 	Recepient: entities.TransactionRecepient{
+	// 		FullName: response.FullName,
+	// 		BankCode: &ctx.Body.BankCode,
+	// 		AccountNumber: ctx.Body.AccountNumber,
+	// 		BranchCode: ctx.Body.BranchCode,
+	// 		BankName: &bankName,
+	// 		Country: utils.GetStringPointer("Nigeria"),
+	// 	},
+	// }
+	// trxRepository := repository.TransactionRepo()
+	// trx, err := trxRepository.CreateOne(context.TODO(), transaction)
+	// if err != nil {
+	// 	logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
+	// 		Key: "payload",
+	// 		Data: transaction,
+	// 	})
+	// 	apperrors.FatalServerError(ctx.Ctx, err)
+	// 	return
+	// }
+	// if ctx.GetBoolContextData("PushNotifOptions") {
+	// 	pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Your payment is on its way! 🚀",
+	// 		fmt.Sprintf("Your payment of %s%d to %s in %s is currently being processed.", utils.CurrencyCodeToCurrencySymbol(transaction.Currency), transaction.Amount, transaction.Recepient.FullName, utils.CountryCodeToCountryName(*transaction.Recepient.Country)))
+	// }
 
-	if ctx.GetBoolContextData("EmailOptions") {
-		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-			"FIRSTNAME": transaction.Sender.FullName,
-			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol("NGN"),
-			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-			"RECEPIENT_NAME": transaction.Recepient.FullName,
-			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
-		})
-	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
+	// if ctx.GetBoolContextData("EmailOptions") {
+	// 	emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
+	// 		"FIRSTNAME": transaction.Sender.FullName,
+	// 		"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol("NGN"),
+	// 		"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+	// 		"RECEPIENT_NAME": transaction.Recepient.FullName,
+	// 		"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
+	// 	})
+	// }
+	// server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
 }
 
 func BusinessLocalPaymentFee(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){

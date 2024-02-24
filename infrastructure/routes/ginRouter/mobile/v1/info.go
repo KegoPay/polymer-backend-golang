@@ -54,13 +54,19 @@ func InfoRouter(router *gin.RouterGroup) {
 		})
 
 		infoRouter.GET("/exchange-rates", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
-			query := map[string]any{
-				"currency": ctx.Query("currency"),
-				"amount": ctx.Query("amount"),
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.FXRateDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
 			}
-			controllers.FetchExchangeRates(&interfaces.ApplicationContext[any]{
-				Ctx: ctx,
-				Query: query,
+			appContext := interfaces.ApplicationContext[dto.FXRateDTO]{
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.FetchExchangeRates(&interfaces.ApplicationContext[dto.FXRateDTO]{
+				Body: &body,
+				Ctx: appContext.Ctx,
 			})
 		})
 	}

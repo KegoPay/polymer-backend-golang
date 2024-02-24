@@ -3,7 +3,6 @@ package controllers
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	apperrors "kego.com/application/appErrors"
@@ -49,38 +48,38 @@ func FetchInternationalBanks(ctx *interfaces.ApplicationContext[dto.CountryCode]
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "banks fetched", banks, nil)
 }
 
-func FetchExchangeRates(ctx *interfaces.ApplicationContext[any]){
-	amountAsUInt, err := strconv.ParseUint(ctx.Query["amount"].(string), 10, 64)
+func FetchExchangeRates(ctx *interfaces.ApplicationContext[dto.FXRateDTO]){
+	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(nil, nil)
 	if err != nil {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("The amount %d is not a valid amount. Put in a valid amount", amountAsUInt), nil)
+			apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
+			return
+	}
+	if statusCode != 200 {
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney failed to return 200 response code"))
 		return
 	}
-	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Query["currency"], &amountAsUInt)
-	if ctx.Query["currency"] != "" {
+	if ctx.Body.Currency != nil {
 		var country entities.Country
 		for _, c := range countriessupported.CountriesSupported {
-			if c.ISOCode == ctx.Query["currency"] {
-				c.Rate = currencyformatter.HumanReadableFloat32Currency((*rates)["convertedValue"])
-				country = c
+			if c.ISOCode == *ctx.Body.Currency {
+				for key, rate := range *rates {
+					if strings.Contains(key, c.ISOCode) {
+						c.Rate = currencyformatter.HumanReadableFloat32Currency(rate.NGNRate)
+						country = c
+						break
+					}
+				}
 				break
 			}
 		}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rate fetched", country, nil)
 	return
 	}
-	if err != nil {
-		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
-		return
-	}
-	if statusCode != 200 {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney failed to return 200 response code"))
-		return
-	}
 	var countries []entities.Country
 	for _, country := range countriessupported.CountriesSupported {
 		for c, currency := range *rates {
 			if strings.Contains(c, country.ISOCode) {
-				country.Rate = currencyformatter.HumanReadableFloat32Currency(currency)
+				country.Rate = currencyformatter.HumanReadableFloat32Currency(currency.NGNRate)
 				countries = append(countries, country)
 				continue
 			}

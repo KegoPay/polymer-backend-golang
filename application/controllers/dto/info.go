@@ -9,3 +9,8 @@ type CountryFilter struct {
 type CountryCode struct {
 	Code string	`json:"code"`
 }
+
+type FXRateDTO struct {
+	Amount 		*uint64	`json:"amount"`
+	Currency 	*string	`json:"currency"`
+}
