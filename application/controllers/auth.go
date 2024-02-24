@@ -148,11 +148,33 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 			break
 		}
 	}
+	businessRepo := repository.BusinessRepo()
+	business, err := businessRepo.FindOneByFilter(map[string]interface{}{
+		"userID": account.ID,
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	if business ==  nil {
+		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business fetched", nil, nil)
+		return
+	}
+	walletRepo := repository.WalletRepo()
+	businessWallet, err := walletRepo.FindOneByFilter(map[string]interface{}{
+		"businessID": business.ID,
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
 	responsePayload := map[string]interface{}{
 		"account": account,
 		"wallet": wallet,
 		"token":   token,
 		"country": country,
+		"business": business,
+		"businessWallet": businessWallet,
 	}
 	if account.TransactionPin == "" {
 		responsePayload["unsetTrxPin"] = true
