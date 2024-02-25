@@ -71,7 +71,7 @@ func DBGenesis() {
 		})
 		panic("error creating genesis wallets")
 	}
-	if len(*created) != 4 {
+	if len(*created) != 5 {
 		logger.Error(errors.New("failed to create the expeted 5 genesis wallets"), logger.LoggerOptions{
 			Key: "created",
 			Data: created,
