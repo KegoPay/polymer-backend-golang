@@ -53,7 +53,7 @@ func InfoRouter(router *gin.RouterGroup) {
 			controllers.FetchInternationalBanks(&appContext)
 		})
 
-		infoRouter.GET("/exchange-rates", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+		infoRouter.POST("/exchange-rates", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.FXRateDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
