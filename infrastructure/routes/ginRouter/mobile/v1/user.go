@@ -18,20 +18,20 @@ func UserRouter(router *gin.RouterGroup) {
 			controllers.FetchUserProfile(appContext)
 		})
 
-		userRouter.PATCH("/profile/update", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
-			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
-			var body dto.UpdateUserDTO
-			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
-				return
-			}
-			appContext := interfaces.ApplicationContext[dto.UpdateUserDTO]{
-				Keys: appContextAny.Keys,
-				Body: &body,
-				Ctx: appContextAny.Ctx,
-			}
-			controllers.UpdateUserProfile(&appContext)
-		})
+		// userRouter.PATCH("/profile/update", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+		// 	appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+		// 	var body dto.UpdateUserDTO
+		// 	if err := ctx.ShouldBindJSON(&body); err != nil {
+		// 		apperrors.ErrorProcessingPayload(ctx)
+		// 		return
+		// 	}
+		// 	appContext := interfaces.ApplicationContext[dto.UpdateUserDTO]{
+		// 		Keys: appContextAny.Keys,
+		// 		Body: &body,
+		// 		Ctx: appContextAny.Ctx,
+		// 	}
+		// 	controllers.UpdateUserProfile(&appContext)
+		// })
 
 		userRouter.PATCH("/address/update", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
@@ -46,6 +46,21 @@ func UserRouter(router *gin.RouterGroup) {
 				Ctx: appContextAny.Ctx,
 			}
 			controllers.UpdateAddress(&appContext)
+		})
+
+		userRouter.PATCH("/phone/update", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.UpdatePhoneDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.UpdatePhoneDTO]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.UpdatePhone(&appContext)
 		})
 
 		userRouter.PATCH("/address/verify", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {

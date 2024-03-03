@@ -16,9 +16,10 @@ import (
 	"kego.com/application/repository"
 	userusecases "kego.com/application/usecases/userUseCases"
 	"kego.com/entities"
+	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
 	identityverification "kego.com/infrastructure/identity_verification"
-	"kego.com/infrastructure/logger"
+	sms "kego.com/infrastructure/messaging/whatsapp"
 	server_response "kego.com/infrastructure/serverResponse"
 	"kego.com/infrastructure/validator"
 )
@@ -57,33 +58,34 @@ func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 	}, nil)
 }
 
-func UpdateUserProfile(ctx *interfaces.ApplicationContext[dto.UpdateUserDTO]){userRepo := repository.UserRepo()
-	user, err := userRepo.FindByID(ctx.GetStringContextData("UserID"))
-	if err != nil {
-		logger.Error(errors.New("error fetching user profile for update"), logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
-		apperrors.FatalServerError(ctx.Ctx, err)
-		return
-	}
-	if ctx.Body.FirstName != nil {
-		user.FirstName = *ctx.Body.FirstName
-	}
-	if ctx.Body.LastName != nil {
-		user.LastName = *ctx.Body.LastName
-	}
-	if ctx.Body.Phone != nil {
-		user.Phone = ctx.Body.Phone
-	}
-	validationErr := validator.ValidatorInstance.ValidateStruct(user)
-	if validationErr != nil {
-		apperrors.ValidationFailedError(ctx, validationErr)
-		return
-	}
-	userRepo.UpdateByID(ctx.GetStringContextData("UserID"), user)
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "update completed", nil, nil)
-}
+// func UpdateUserProfile(ctx *interfaces.ApplicationContext[dto.UpdateUserDTO]){
+// 	userRepo := repository.UserRepo()
+// 	user, err := userRepo.FindByID(ctx.GetStringContextData("UserID"))
+// 	if err != nil {
+// 		logger.Error(errors.New("error fetching user profile for update"), logger.LoggerOptions{
+// 			Key: "error",
+// 			Data: err,
+// 		})
+// 		apperrors.FatalServerError(ctx.Ctx, err)
+// 		return
+// 	}
+// 	if ctx.Body.FirstName != nil {
+// 		user.FirstName = *ctx.Body.FirstName
+// 	}
+// 	if ctx.Body.LastName != nil {
+// 		user.LastName = *ctx.Body.LastName
+// 	}
+// 	if ctx.Body.Phone != nil {
+// 		user.Phone = ctx.Body.Phone
+// 	}
+// 	validationErr := validator.ValidatorInstance.ValidateStruct(user)
+// 	if validationErr != nil {
+// 		apperrors.ValidationFailedError(ctx, validationErr)
+// 		return
+// 	}
+// 	userRepo.UpdateByID(ctx.GetStringContextData("UserID"), user)
+// 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "update completed", nil, nil)
+// }
 
 func SetPaymentTag(ctx *interfaces.ApplicationContext[dto.SetPaymentTagDTO]){
 	err := userusecases.UpdateUserTag(ctx.Ctx, ctx.GetStringContextData("UserID"), *ctx.Body)
@@ -180,6 +182,41 @@ func UpdateAddress(ctx *interfaces.ApplicationContext[dto.UpdateAddressDTO]) {
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address set", nil, nil)
 }
 
+
+func UpdatePhone(ctx *interfaces.ApplicationContext[dto.UpdatePhoneDTO]) {
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		return
+	}
+	userRepo := repository.UserRepo()
+	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]any{
+		"phone": entities.PhoneNumber{
+			WhatsApp: ctx.Body.WhatsApp,
+			LocalNumber: ctx.Body.Phone,
+			Prefix: "234",
+			ISOCode: "NG",
+		},
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	if updated != 1 {
+		apperrors.UnknownError(ctx.Ctx, errors.New("could not update users phone"))
+		return
+	}
+
+	ref := sms.SMSService.SendOTP(fmt.Sprintf("%s%s", "234", ctx.Body.Phone), ctx.Body.WhatsApp)
+	encryptedRef, err := cryptography.SymmetricEncryption(*ref)
+	if err != nil {
+		apperrors.UnknownError(ctx.Ctx, err)
+		return
+	}
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", ctx.Body.Phone), *encryptedRef, time.Minute * 10)
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Phone), "verify_phone", time.Minute * 10)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone set", nil, nil)
+}
 
 func VerifyCurrentAddress(ctx *interfaces.ApplicationContext[any]) {
 	userRepo := repository.UserRepo()

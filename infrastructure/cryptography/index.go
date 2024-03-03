@@ -14,8 +14,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
+	"kego.com/application/utils"
 	"kego.com/infrastructure/database/repository/cache"
 	"kego.com/infrastructure/logger"
 )
@@ -44,6 +46,47 @@ func GeneratePublicKey(sessionID string, clientPubKey *ecdh.PublicKey) *ecdh.Pub
 	}
 	cache.Cache.CreateEntry(sessionID, string(serverSecret), time.Minute * 20)
 	return serverPubKey
+}
+
+func DecryptData(encryptedData string) (*string, error) {
+    // Split the IV and ciphertext
+    parts := strings.Split(encryptedData, ":")
+    if len(parts) != 2 {
+        return nil, errors.New("invalid encrypted data format")
+    }
+    iv, err := hex.DecodeString(parts[0])
+    if err != nil {
+        return nil, err
+    }
+    ciphertext, err := hex.DecodeString(parts[1])
+    if err != nil {
+        return nil, err
+    }
+
+    // Initialize the block cipher
+    block, err := newCipherBlock(os.Getenv("ENC_KEY"))
+    if err != nil {
+        return nil, err
+    }
+
+    // Check if the ciphertext length is a multiple of block size
+    if len(ciphertext)%aes.BlockSize != 0 {
+        return nil, errors.New("ciphertext is not a multiple of the block size")
+    }
+
+    // Create a CBC decrypter
+    mode := cipher.NewCBCDecrypter(block, iv)
+
+    // Decrypt the ciphertext
+    mode.CryptBlocks(ciphertext, ciphertext)
+
+    // Unpad the plaintext
+    plaintext, err := pkcs7Unpad(ciphertext, aes.BlockSize)
+    if err != nil {
+        return nil, err
+    }
+
+    return utils.GetStringPointer(string(plaintext)), nil
 }
 
 func SymmetricEncryption(data string) (*string, error) {
@@ -82,7 +125,7 @@ func SymmetricEncryption(data string) (*string, error) {
 	if blocksize <= 0 {
 	   return nil, errors.New("invalid blocksize")
 	}
-	if b == nil || len(b) == 0 {
+	if len(b) == 0 {
 	   return nil, errors.New("invalid PKCS7 data (empty or not padded)")
 	}
 	n := blocksize - (len(b) % blocksize)
@@ -96,7 +139,7 @@ func SymmetricEncryption(data string) (*string, error) {
 	if blocksize <= 0 {
 	   return nil, errors.New("invalid blocksize")
 	}
-	if b == nil || len(b) == 0 {
+	if len(b) == 0 {
 	   return nil, errors.New("invalid PKCS7 data (empty or not padded)")
 	}
  

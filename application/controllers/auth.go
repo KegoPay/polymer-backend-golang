@@ -73,14 +73,26 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 	if ctx.Body.Email != nil {
 		channel = *ctx.Body.Email
 		filter["email"] = channel
+		msg, success := auth.VerifyOTP(channel, ctx.Body.OTP)
+		if !success {
+			apperrors.ClientError(ctx.Ctx, msg, nil)
+			return
+		}
 	}else {
 		channel = *ctx.Body.Phone
 		filter["phone.localNumber"] = channel
-	}
-	msg, success := auth.VerifyOTP(*ctx.Body.Email, ctx.Body.OTP)
-	if !success {
-		apperrors.ClientError(ctx.Ctx, msg, nil)
-		return
+		otpRef := cache.Cache.FindOne(fmt.Sprintf("%s-sms-otp-ref", channel))
+		if otpRef == nil {
+			apperrors.NotFoundError(ctx.Ctx, "otp has expired")
+			return
+		}
+		d, _ :=cryptography.DecryptData(*otpRef)
+		success := sms.SMSService.VerifyOTP(*d, ctx.Body.OTP)
+		if !success {
+			apperrors.ClientError(ctx.Ctx, "wrong otp", nil)
+			return
+		}
+		cache.Cache.DeleteOne(fmt.Sprintf("%s-sms-otp-ref", channel))
 	}
 	otpIntent := cache.Cache.FindOne(fmt.Sprintf("%s-otp-intent", channel))
 	if otpIntent == nil {
@@ -156,17 +168,16 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
-	if business ==  nil {
-		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business fetched", nil, nil)
-		return
-	}
 	walletRepo := repository.WalletRepo()
-	businessWallet, err := walletRepo.FindOneByFilter(map[string]interface{}{
-		"businessID": business.ID,
-	})
-	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
-		return
+	var businessWallet *entities.Wallet
+	if business != nil {
+		businessWallet, err = walletRepo.FindOneByFilter(map[string]interface{}{
+			"businessID": business.ID,
+		})
+		if err != nil {
+			apperrors.FatalServerError(ctx.Ctx, err)
+			return
+		}
 	}
 	responsePayload := map[string]interface{}{
 		"account": account,
@@ -333,7 +344,7 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 			"OTP":      otp,
 		},)
 	}else if ctx.Body.Phone != nil {
-		ref := sms.SMSService.SendSMS(fmt.Sprintf("%s%s", account.Phone.Prefix, account.Phone.LocalNumber), "< 123456 >is your Polymer OTP")
+		ref := sms.SMSService.SendOTP(fmt.Sprintf("%s%s", account.Phone.Prefix, account.Phone.LocalNumber), account.Phone.WhatsApp)
 		encryptedRef, err := cryptography.SymmetricEncryption(*ref)
 		if err != nil {
 			apperrors.UnknownError(ctx.Ctx, err)
@@ -395,6 +406,33 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[any]) {
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", map[string]string{
 		"token": *token,
 	}, nil)
+}
+
+
+func VerifyPhone(ctx *interfaces.ApplicationContext[any]) {
+	userRepo := repository.UserRepo()
+	account, err := userRepo.FindOneByFilter(map[string]interface{}{
+		"phone.localNumber": ctx.GetStringContextData("OTPPhone"),
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	if account == nil {
+		apperrors.NotFoundError(ctx.Ctx, "this account no longer exists")
+		return
+	}
+	account.Phone.IsVerified = true
+	success, err := userRepo.UpdateByID(account.ID, account)
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	if !success {
+		apperrors.UnknownError(ctx.Ctx, err)
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", nil, nil)
 }
 
 func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
