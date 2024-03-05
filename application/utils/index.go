@@ -31,9 +31,9 @@ func GetInt64Pointer(data int64) *int64 {
 	return &data
 }
 
-func GetInternationalTransactionFee(amount uint64) (internationalProcessorFee uint64, transactionFee uint64) {
-	transactionFee = Float32ToUint64Currency(UInt64ToFloat32Currency(amount) * constants.INTERNATIONAL_TRANSACTION_FEE_RATE)
-	internationalProcessorFee = Float32ToUint64Currency(UInt64ToFloat32Currency(amount) * constants.INTERNATIONAL_PROCESSOR_FEE_RATE)
+func GetInternationalTransactionFee(amount float32) (internationalProcessorFee float32, transactionFee float32) {
+	transactionFee = amount * constants.INTERNATIONAL_TRANSACTION_FEE_RATE
+	internationalProcessorFee = amount * constants.INTERNATIONAL_PROCESSOR_FEE_RATE
     return
 }
 
@@ -111,7 +111,11 @@ func CurrencyCodeToCurrencySymbol(code string) string {
 
 
 func Float32ToUint64Currency(value float32) uint64 {
+	roundUp := (uint64(value * 10000000) % 100000) != 0
 	uintValue := uint64(value * 100)
+	if roundUp {
+		uintValue++
+	}
 	return uintValue
 }
 

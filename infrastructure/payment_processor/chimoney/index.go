@@ -28,7 +28,7 @@ func (chimoneyPP *ChimoneyPaymentProcessor) InitialisePaymentProcessor() {
 }
 
 
-func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(currency *string, amount *uint64) (*map[string]entities.ParsedExchangeRates, int, error){
+func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(amount *uint64) (*map[string]entities.ParsedExchangeRates, int, error){
 	response, statusCode, err := chimoneyPP.Network.Get("/info/exchange-rates", &map[string]string{
 		"X-API-KEY": chimoneyPP.AuthToken,
 		"Content-Type": "application/json",

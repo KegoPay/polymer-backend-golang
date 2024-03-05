@@ -30,32 +30,32 @@ func (er *ExchangeRates) FormatAllRates(amount *uint64) map[string]ParsedExchang
 		NGNRate: er.USDNGN * float32(*amount),
 	}
 	formatedRates["Canadian Dollar (CA) - Naira"] = ParsedExchangeRates{
-		USDRate: er.USDCAD * float32(*amount),
+		USDRate: (er.USDCAD * float32(*amount)),
 		NGNRate: er.FormatAgainstNGN(er.USDNGN, er.USDCAD) * float32(*amount),
 	}
 	formatedRates["British Pounds (GB) - Naira"] = ParsedExchangeRates{
-		USDRate: er.USDGBP * float32(*amount),
+		USDRate: (er.USDGBP * float32(*amount)),
 		NGNRate: er.FormatAgainstNGN(er.USDNGN, er.USDGBP) * float32(*amount),
 	}
 	formatedRates["South African Rand (ZA)- Naira"] = ParsedExchangeRates{
-		USDRate: er.USDZAR * float32(*amount),
+		USDRate: (er.USDZAR * float32(*amount)),
 		NGNRate: er.FormatAgainstNGN(er.USDNGN, er.USDZAR) * float32(*amount),
 	}
 	formatedRates["Ghanaian Cedis (GH) - Naira"] =  ParsedExchangeRates{
-		USDRate: er.USDGHS * float32(*amount),
+		USDRate: (er.USDGHS * float32(*amount)),
 		NGNRate: er.FormatAgainstNGN(er.USDNGN, er.USDGHS) * float32(*amount),
 	}
 	formatedRates["Indian Rupees (IN) - Naira"] =  ParsedExchangeRates{
-		USDRate: er.USDINR * float32(*amount),
+		USDRate: (er.USDINR * float32(*amount)),
 		NGNRate: er.FormatAgainstNGN(er.USDNGN, er.USDINR) * float32(*amount),
 	}
 	formatedRates["Kenyan Shilling (KE) - Naira"] =  ParsedExchangeRates{
-		USDRate: er.USDKES * float32(*amount),
+		USDRate: (er.USDKES * float32(*amount)),
 		NGNRate: er.FormatAgainstNGN(er.USDNGN, er.USDKES) * float32(*amount),
 	}
 	 return formatedRates
 }
 
 func (er *ExchangeRates) FormatAgainstNGN(NGNUSDRate float32, otherRate float32) float32 {
-	return NGNUSDRate * (1 / otherRate)
+	return NGNUSDRate * (otherRate)
 }

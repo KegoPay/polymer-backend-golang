@@ -49,7 +49,7 @@ func FetchInternationalBanks(ctx *interfaces.ApplicationContext[dto.CountryCode]
 }
 
 func FetchExchangeRates(ctx *interfaces.ApplicationContext[dto.FXRateDTO]){
-	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(nil, nil)
+	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Body.Amount)
 	if err != nil {
 			apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
 			return
