@@ -74,7 +74,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}
 	trxRef := utils.GenerateUUIDString()
 	businessID := ctx.GetStringParameter("businessID") 
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin)
+	wallet , err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), utils.Float32ToUint64Currency(totalAmount), ctx.Body.Pin)
 	if err != nil {
 		return
 	}
