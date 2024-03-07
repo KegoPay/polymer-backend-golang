@@ -1,9 +1,10 @@
 package cache
 
 import (
+	"crypto/tls"
 	"os"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis"
 	"kego.com/infrastructure/logger"
 )
 
@@ -12,15 +13,12 @@ var (
 )
 
 func connectRedis() {
-	opt, err := redis.ParseURL(os.Getenv("REDIS_URL"))
-	if err != nil {
-		logger.Warning("could not connect to redis", logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
-		return
+	opt := &redis.Options{
+		Addr: os.Getenv("REDIS_ADDR"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB: 0,
+		TLSConfig: &tls.Config{},
 	}
-
 	Client = redis.NewClient(opt)
 	logger.Info("connected to redis successfully")
 }

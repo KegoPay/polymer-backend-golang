@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis"
 	"kego.com/infrastructure/logger"
 
 	redisClient "kego.com/infrastructure/database/connection/cache"
@@ -32,9 +32,7 @@ func (redisRepo *RedisRepository) preRequest(){
 
 func (redisRepo *RedisRepository) CreateEntry(key string, payload interface{}, ttl time.Duration) bool {
 	redisRepo.preRequest()
-	c, cancel := generateContext()
-	defer cancel()
-	_, err := redisRepo.Clinet.Set(c, key, payload, ttl).Result()
+	_, err := redisRepo.Clinet.Set(key, payload, ttl).Result()
 	if err != nil {
 		logger.Error(errors.New("redis error occured while running CreateEntry"), logger.LoggerOptions{
 			Key: "error",
@@ -55,10 +53,8 @@ func (redisRepo *RedisRepository) CreateEntry(key string, payload interface{}, t
 
 func (redisRepo *RedisRepository) FindOne(key string) *string {
 	redisRepo.preRequest()
-	c, cancel := generateContext()
-	defer cancel()
 
-	result, err := redisRepo.Clinet.Get(c, key).Result()
+	result, err := redisRepo.Clinet.Get(key).Result()
 
 	if err != nil {
 		if err.Error() == "redis: nil" {
@@ -80,10 +76,8 @@ func (redisRepo *RedisRepository) FindOne(key string) *string {
 
 func (redisRepo *RedisRepository) DeleteOne(key string) bool {
 	redisRepo.preRequest()
-	c, cancel := generateContext()
-	defer cancel()
 
-	result, err := redisRepo.Clinet.Del(c, key).Result()
+	result, err := redisRepo.Clinet.Del(key).Result()
 
 	if err != nil {
 		logger.Error(errors.New("redis error occured while running DeleteOne"), logger.LoggerOptions{
@@ -105,10 +99,7 @@ func (redisRepo *RedisRepository) DeleteOne(key string) bool {
 
 func (redisRepo *RedisRepository) CreateInSet(key string, score float64, member interface{}) bool {
 	redisRepo.preRequest()
-	c, cancel := generateContext()
-	defer cancel()
-
-	added := redisRepo.Clinet.ZAdd(c, key, &redis.Z{
+	added := redisRepo.Clinet.ZAdd(key, redis.Z{
 		Score: score, Member: member,
 	})
 
@@ -135,10 +126,8 @@ func (redisRepo *RedisRepository) CreateInSet(key string, score float64, member 
 
 func (redisRepo *RedisRepository) FindSet(key string) *[]string {
 	redisRepo.preRequest()
-	c, cancel := generateContext()
-	defer cancel()
 
-	result := redisRepo.Clinet.ZRange(c, key, 0, -1)
+	result := redisRepo.Clinet.ZRange(key, 0, -1)
 	if err := result.Err(); err != nil {
 		logger.Error(errors.New("redis error occured while running FindSet"), logger.LoggerOptions{
 			Key: "error",

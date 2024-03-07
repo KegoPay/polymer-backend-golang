@@ -338,6 +338,7 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 		otp, err := auth.GenerateOTP(6, channel)
 		if err != nil {
 			apperrors.FatalServerError(ctx.Ctx, err)
+			return
 		}
 		emails.EmailService.SendEmail(channel, "An OTP was requested for your account", "otp", map[string]interface{}{
 			"FIRSTNAME": account.FirstName,
