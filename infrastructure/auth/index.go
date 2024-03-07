@@ -17,6 +17,10 @@ import (
 const otpChars = "1234567890"
 
 func GenerateOTP(length int, channel string) (*string, error) {
+	var otp string
+	if os.Getenv("ENV") == "staging" || os.Getenv("ENV") == "development" {
+		otp = "000000"
+	}else {
 	buffer := make([]byte, length)
 	_, err := rand.Read(buffer)
 	if err != nil {
@@ -26,7 +30,8 @@ func GenerateOTP(length int, channel string) (*string, error) {
 	for i := 0; i < length; i++ {
 		buffer[i] = otpChars[int(buffer[i])%otpCharsLength]
 	}
-	otp := string(buffer)
+	otp = string(buffer)
+	}
 	otpSaved := saveOTP(channel, otp)
 	if !otpSaved {
 		return nil, errors.New("could not save otp")
