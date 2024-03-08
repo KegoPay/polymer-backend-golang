@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 package background
 
 import (
@@ -15,3 +16,6 @@ func StartScheduler() {
 	})
 	Scheduler.StartScheduler()
 }
+=======
+package background
+>>>>>>> Stashed changes
