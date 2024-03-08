@@ -2,6 +2,7 @@ package startup
 
 import (
 	"kego.com/application"
+	"kego.com/infrastructure/background"
 	"kego.com/infrastructure/biometric"
 	"kego.com/infrastructure/database"
 	"kego.com/infrastructure/database/connection/datastore"
@@ -30,6 +31,7 @@ func StartServices(){
 	sms.InitSMSService()
 	application.DBGenesis()
 	biometric.InitialiseBiometricService()
+	background.StartScheduler()
 }
 
 // Used to clean up after services that have been shutdown.

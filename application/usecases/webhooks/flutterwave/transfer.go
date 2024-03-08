@@ -9,10 +9,10 @@ import (
 	"kego.com/application/repository"
 	"kego.com/application/services"
 	"kego.com/application/utils"
+	"kego.com/infrastructure/background"
+	currencyformatter "kego.com/infrastructure/currency_formatter"
 	"kego.com/infrastructure/logger"
 	pushnotification "kego.com/infrastructure/messaging/push_notifications"
-	currencyformatter "kego.com/infrastructure/currency_formatter"
-	"kego.com/infrastructure/messaging/emails"
 )
 
 func FlwTransferWebhook(ctx any, body dto.FlutterwaveWebhookDTO) error {
@@ -59,18 +59,24 @@ func FlwTransferWebhook(ctx any, body dto.FlutterwaveWebhookDTO) error {
 		}
 		
 		if user.NotificationOptions.PushNotification {
-			pushnotification.PushNotificationService.PushOne(user.DeviceID, "Your payment was successful! 🚀",
+			pushnotification.PushNotificationService.PushOne(user.PushNotificationToken, "Your payment was successful! 🚀",
 				fmt.Sprintf("Your payment of %s%s to %s in %s has been processed successfully.", body.Transfer.Currency, currencyformatter.HumanReadableFloat32Currency(body.Transfer.Amount), body.Transfer.RecepientName, utils.CurrencyCodeToCountryCode(body.Transfer.Currency)))
 		}
 	
 		if user.NotificationOptions.Emails {
-			emails.EmailService.SendEmail(user.Email, "Your payment is on its way! 🚀", "payment_recieved", map[string]any{
-				"FIRSTNAME": user.FirstName,
-				"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol("NGN"),
-				"AMOUNT": currencyformatter.HumanReadableFloat32Currency(body.Transfer.Amount),
-				"RECEPIENT_NAME": body.Transfer.RecepientName,
-				"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName("Nigeria"),
+			background.Scheduler.Emit("send_email", map[string]any{
+				"email": user.Email,
+				"subject": "Your payment is on its way! 🚀",
+				"templateName": "payment_recieved",
+				"opts": map[string]any{
+					"FIRSTNAME": user.FirstName,
+					"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol("NGN"),
+					"AMOUNT": currencyformatter.HumanReadableFloat32Currency(body.Transfer.Amount),
+					"RECEPIENT_NAME": body.Transfer.RecepientName,
+					"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName("Nigeria"),
+				},
 			})
+
 		}
 	return nil
 }

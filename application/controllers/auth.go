@@ -26,13 +26,13 @@ import (
 	"kego.com/application/utils"
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
+	"kego.com/infrastructure/background"
 	"kego.com/infrastructure/biometric"
 	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
 	fileupload "kego.com/infrastructure/file_upload"
 	identityverification "kego.com/infrastructure/identity_verification"
 	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/messaging/emails"
 	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 	sms "kego.com/infrastructure/messaging/whatsapp"
 
@@ -133,10 +133,15 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 		return
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), 2, time.Hour * 24 * 365 ) // keep data cached for a year
-		emails.EmailService.SendEmail(account.Email, "Welcome to Kego! Verify your account to continue", "otp", map[string]interface{}{
+	background.Scheduler.Emit("send_email", map[string]any{
+		"email": account.Email,
+		"subject": "Welcome to Kego! Verify your account to continue",
+		"templateName": "otp",
+		"opts": map[string]interface{}{
 			"FIRSTNAME": account.FirstName,
 			"OTP":      otp,
-		},)
+		},
+	})
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Email), "verify_account", time.Minute * 10)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "account created", nil, nil)
 }
@@ -340,10 +345,15 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 			apperrors.FatalServerError(ctx.Ctx, err)
 			return
 		}
-		emails.EmailService.SendEmail(channel, "An OTP was requested for your account", "otp", map[string]interface{}{
-			"FIRSTNAME": account.FirstName,
-			"OTP":      otp,
-		},)
+		background.Scheduler.Emit("send_email", map[string]any{
+			"email": account.Email,
+			"subject": "An OTP was requested for your account",
+			"templateName": "otp",
+			"opts": map[string]interface{}{
+				"FIRSTNAME": account.FirstName,
+				"OTP":      otp,
+			},
+		})
 	}else if ctx.Body.Phone != nil {
 		ref := sms.SMSService.SendOTP(fmt.Sprintf("%s%s", account.Phone.Prefix, account.Phone.LocalNumber), account.Phone.WhatsApp)
 		encryptedRef, err := cryptography.SymmetricEncryption(*ref)

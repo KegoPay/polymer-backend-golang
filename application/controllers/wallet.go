@@ -18,9 +18,9 @@ import (
 	"kego.com/application/services"
 	"kego.com/application/utils"
 	"kego.com/entities"
+	"kego.com/infrastructure/background"
 	currencyformatter "kego.com/infrastructure/currency_formatter"
 	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/messaging/emails"
 	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 	international_payment_processor "kego.com/infrastructure/payment_processor/chimoney"
 	server_response "kego.com/infrastructure/serverResponse"
@@ -153,12 +153,17 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}
 
 	if ctx.GetBoolContextData("EmailOptions") {
-		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-			"FIRSTNAME": transaction.Sender.FullName,
-			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
-			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-			"RECEPIENT_NAME": transaction.Recepient.FullName,
-			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
+		background.Scheduler.Emit("send_email", map[string]any{
+			"email": ctx.GetStringContextData("Email"),
+			"subject": "Your payment is on its way! 🚀",
+			"templateName": "payment_sent",
+			"opts": map[string]any{
+				"FIRSTNAME": transaction.Sender.FullName,
+				"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
+				"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+				"RECEPIENT_NAME": transaction.Recepient.FullName,
+				"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
+			},
 		})
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
@@ -288,12 +293,17 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}
 
 	if ctx.GetBoolContextData("EmailOptions") {
-		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-			"FIRSTNAME": transaction.Sender.FullName,
-			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
-			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-			"RECEPIENT_NAME": transaction.Recepient.FullName,
-			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
+		background.Scheduler.Emit("send_email", map[string]any{
+			"email": ctx.GetStringContextData("Email"),
+			"subject": "Your payment is on its way! 🚀",
+			"templateName": "payment_sent",
+			"opts": map[string]any{
+				"FIRSTNAME": transaction.Sender.FullName,
+				"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
+				"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+				"RECEPIENT_NAME": transaction.Recepient.FullName,
+				"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
+			},
 		})
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
