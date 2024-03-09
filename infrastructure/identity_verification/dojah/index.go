@@ -40,7 +40,7 @@ func (div *DojahIdentityVerification) FetchBVNDetails(bvn string) (*identity_ver
 		})
 		return nil, errors.New("error retireving bvn")
 	}
-	logger.Info("BVN information retireved by Dojah")
+	logger.Info("NIN information retireved by Dojah")
 	return &dojahResponse.Data, nil
 }
 

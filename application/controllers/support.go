@@ -10,9 +10,15 @@ import (
 	"kego.com/application/repository"
 	"kego.com/entities"
 	server_response "kego.com/infrastructure/serverResponse"
+	"kego.com/infrastructure/validator"
 )
 
 func ErrSupportRequest(ctx *interfaces.ApplicationContext[dto.ErrorSupportRequestDTO]){
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		return
+	}
 	errSupportRequestRepo := repository.ErrorSupportRequestRepo()
 	_, err := errSupportRequestRepo.CreateOne(context.TODO(), entities.ErrorSupportRequest{
 		UserID: ctx.GetStringContextData("UserID"),

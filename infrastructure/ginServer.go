@@ -64,6 +64,7 @@ func (s *ginServer)Start(){
 			routev1.BusinessRouter(routerV1)
 			routev1.WalletRouter(routerV1)
 			routev1.TransactionRouter(routerV1)
+			routev1.SupportRouter(routerV1)
 		}
 
 		webRouterV1 := v1.Group("/v1/web")

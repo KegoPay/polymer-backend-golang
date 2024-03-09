@@ -19,5 +19,5 @@ type UpdatePhoneDTO struct {
 }
 
 type LinkNINDTO struct {
-	NIN 	  string     `bson:"nin" json:"nin" validate:"required,alpha"`
+	NIN 	  string     `bson:"nin" json:"nin" validate:"required,numeric,len=11"`
 }

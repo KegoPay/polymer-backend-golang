@@ -48,7 +48,7 @@ func UserRouter(router *gin.RouterGroup) {
 			controllers.UpdateAddress(&appContext)
 		})
 
-		userRouter.PATCH("/nin/update", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+		userRouter.POST("/nin/update", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.LinkNINDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {

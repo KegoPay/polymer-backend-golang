@@ -188,16 +188,16 @@ func UpdateAddress(ctx *interfaces.ApplicationContext[dto.UpdateAddressDTO]) {
 func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 	attemptsLeft := cache.Cache.FindOne(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")))
 	if attemptsLeft == nil {
-		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		apperrors.ClientError(ctx.Ctx, `You cannot link your NIN to this account at this point, most likely because it has already been done before. If you think this is a mistake and want a manual review please click the button below`, nil)
 		return
 	}
 	parsedAttemptsLeft, err := strconv.Atoi(*attemptsLeft)
 	if err != nil {
-		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual please click the button below`, nil)
 		return
 	}
 	if parsedAttemptsLeft == 0 {
-		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual please click the button below`, nil)
 		return
 	}
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
@@ -205,23 +205,31 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
 		return
 	}
-	ninDetails, err := identityverification.IdentityVerifier.FetchNINDetails(ctx.Body.NIN)
-	if err != nil {
-		apperrors.CustomError(ctx.Ctx, err.Error())
-	}
 	userRepo := repository.UserRepo()
 	account, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
 		"profileImage": 1,
+		"phone": 1,
+		"address": 1,
 	}))
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	ninDetails, err := identityverification.IdentityVerifier.FetchNINDetails(ctx.Body.NIN)
+	if err != nil {
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 )
+		apperrors.CustomError(ctx.Ctx, err.Error())
+		return
+	}
 	result, err := biometric.BiometricService.FaceMatch(account.ProfileImage, ninDetails.Base64Image)
 	if err != nil {
-		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
 		apperrors.ClientError(ctx.Ctx, err.Error(), nil)
 		return
 	}
 	if *result < 80 {
-		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual please click the button below"), nil)
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+		apperrors.ClientError(ctx.Ctx, "NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual please click the button below", nil)
 		return
 	}
 	encryptedNIN, err := cryptography.SymmetricEncryption(ctx.Body.NIN)
@@ -230,14 +238,19 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 		return
 	}
 	userUpdatedInfo := map[string]any{
-		"NIN": encryptedNIN,
+		"nin": *encryptedNIN,
+	}
+	if account == nil {
+		apperrors.NotFoundError(ctx.Ctx, "this account no longer exists")
+		return
 	}
 	if account.Phone.IsVerified && account.Address.Verified {
 		userUpdatedInfo["tier"] = 2
 	}
 	userRepo.UpdatePartialByFilter(map[string]interface{}{
-		"email": ctx.GetStringContextData("Email"),
+		"id": ctx.GetStringContextData("UserID"),
 	}, userUpdatedInfo)
+	cache.Cache.DeleteOne(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")))
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "NIN verified", nil, nil)
 }
 
