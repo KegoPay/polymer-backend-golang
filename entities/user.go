@@ -44,6 +44,7 @@ type User struct {
 	Address							*Address				`bson:"address" json:"address"`
 	DOB		  		  				string 	  	 			`bson:"dob" json:"dob"`
 	WatchListed		  		  		bool 	  	 			`bson:"watchListed" json:"-"`
+	NINLinked		  		  		bool 	  	 			`bson:"ninLinked" json:"ninLinked"`
 	Nationality		  		  		string 	  	 			`bson:"nationality" json:"nationality"`
 	ProfileImage		  		  	string 	  	 			`bson:"profileImage" json:"profileImage"`
 	Tag		  		  				string 	  			 	`bson:"tag" json:"tag"`

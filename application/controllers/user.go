@@ -239,6 +239,7 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 	}
 	userUpdatedInfo := map[string]any{
 		"nin": *encryptedNIN,
+		"ninLinked": true
 	}
 	if account == nil {
 		apperrors.NotFoundError(ctx.Ctx, "this account no longer exists")
