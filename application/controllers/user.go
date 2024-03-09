@@ -193,11 +193,11 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 	}
 	parsedAttemptsLeft, err := strconv.Atoi(*attemptsLeft)
 	if err != nil {
-		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual please click the button below`, nil)
+		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual review please click the button below`, nil)
 		return
 	}
 	if parsedAttemptsLeft == 0 {
-		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual please click the button below`, nil)
+		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual review please click the button below`, nil)
 		return
 	}
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
@@ -229,7 +229,7 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 	}
 	if *result < 80 {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-		apperrors.ClientError(ctx.Ctx, "NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual please click the button below", nil)
+		apperrors.ClientError(ctx.Ctx, "NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual review please click the button below", nil)
 		return
 	}
 	encryptedNIN, err := cryptography.SymmetricEncryption(ctx.Body.NIN)

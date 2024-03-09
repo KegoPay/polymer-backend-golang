@@ -66,6 +66,9 @@ func (div *DojahIdentityVerification) FetchNINDetails(nin string) (*identity_ver
 			Key: "data",
 			Data: dojahResponse,
 		})
+		if dojahResponse.Error == "Wrong NIN Inputted" {
+			return nil, errors.New("NIN not found. Crosscheck the number inputed")
+		}
 		return nil, errors.New("error retireving bvn")
 	}
 	logger.Info("BVN information retireved by Dojah")

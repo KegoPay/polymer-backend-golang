@@ -8,6 +8,7 @@ type DojahBVNResponse struct {
 
 type DojahNINResponse struct {
 	Data        	identity_verification_types.NINData `json:"entity"`
+	Error        	string `json:"error"`
 }
 
 type DojahEmailVerification struct {
