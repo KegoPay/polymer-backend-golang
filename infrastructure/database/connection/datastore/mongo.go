@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"kego.com/application/utils"
 	"kego.com/infrastructure/logger"
 )
 
@@ -20,6 +19,7 @@ var (
 	FrozenWalletLogModel *mongo.Collection
 	BusinessModel *mongo.Collection
 	EmailSubs *mongo.Collection
+	ErrorSupportRequestModel *mongo.Collection
 )
 
 func connectMongo() *context.CancelFunc {
@@ -32,10 +32,11 @@ func connectMongo() *context.CancelFunc {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 
-	client, err := mongo.Connect(ctx, &options.ClientOptions{
-		MinPoolSize: utils.GetUInt64Pointer(20),
-		MaxPoolSize: utils.GetUInt64Pointer(200),
-	})
+	clientOpts := options.Client().ApplyURI(url)
+	clientOpts.SetMinPoolSize(5)
+	clientOpts.SetMaxPoolSize(10)
+
+	client, err := mongo.Connect(ctx, clientOpts)
 
 	if err != nil {
 		logger.Warning("an error occured while starting the database", logger.LoggerOptions{Key: "error", Data: err})
@@ -81,8 +82,14 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 	FrozenWalletLogModel = db.Collection("FrozenWalletLogs")
 
 	TransactionModel = db.Collection("Transactions")
+	TransactionModel.Indexes().CreateMany(ctx, []mongo.IndexModel{{
+		Keys:    bson.D{{Key: "walletID", Value: 1}},
+		Options: options.Index(),
+	}})
 
 	EmailSubs = db.Collection("EmailSubs")
+
+	ErrorSupportRequestModel = db.Collection("ErrorSupportRequest")
 	
 	logger.Info("mongodb indexes set up successfully")
 }

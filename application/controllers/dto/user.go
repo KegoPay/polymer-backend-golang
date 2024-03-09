@@ -17,3 +17,7 @@ type UpdatePhoneDTO struct {
 	Phone 	  string     `bson:"phone" json:"phone" validate:"required,numeric,len=11"`
 	WhatsApp  bool       `bson:"whatsapp" json:"whatsapp"`
 }
+
+type LinkNINDTO struct {
+	NIN 	  string     `bson:"nin" json:"nin" validate:"required,alpha"`
+}

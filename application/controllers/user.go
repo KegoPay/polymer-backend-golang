@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/mongo/options"
 	apperrors "kego.com/application/appErrors"
 	"kego.com/application/constants"
 	"kego.com/application/controllers/dto"
@@ -16,6 +18,7 @@ import (
 	"kego.com/application/repository"
 	userusecases "kego.com/application/usecases/userUseCases"
 	"kego.com/entities"
+	"kego.com/infrastructure/biometric"
 	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
 	identityverification "kego.com/infrastructure/identity_verification"
@@ -180,6 +183,62 @@ func UpdateAddress(ctx *interfaces.ApplicationContext[dto.UpdateAddressDTO]) {
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address set", nil, nil)
+}
+
+func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
+	attemptsLeft := cache.Cache.FindOne(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")))
+	if attemptsLeft == nil {
+		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		return
+	}
+	parsedAttemptsLeft, err := strconv.Atoi(*attemptsLeft)
+	if err != nil {
+		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		return
+	}
+	if parsedAttemptsLeft == 0 {
+		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		return
+	}
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		return
+	}
+	ninDetails, err := identityverification.IdentityVerifier.FetchNINDetails(ctx.Body.NIN)
+	if err != nil {
+		apperrors.CustomError(ctx.Ctx, err.Error())
+	}
+	userRepo := repository.UserRepo()
+	account, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
+		"profileImage": 1,
+	}))
+	result, err := biometric.BiometricService.FaceMatch(account.ProfileImage, ninDetails.Base64Image)
+	if err != nil {
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+		apperrors.ClientError(ctx.Ctx, err.Error(), nil)
+		return
+	}
+	if *result < 80 {
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual please click the button below"), nil)
+		return
+	}
+	encryptedNIN, err := cryptography.SymmetricEncryption(ctx.Body.NIN)
+	if err != nil {
+		apperrors.UnknownError(ctx.Ctx, err)
+		return
+	}
+	userUpdatedInfo := map[string]any{
+		"NIN": encryptedNIN,
+	}
+	if account.Phone.IsVerified && account.Address.Verified {
+		userUpdatedInfo["tier"] = 2
+	}
+	userRepo.UpdatePartialByFilter(map[string]interface{}{
+		"email": ctx.GetStringContextData("Email"),
+	}, userUpdatedInfo)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "NIN verified", nil, nil)
 }
 
 

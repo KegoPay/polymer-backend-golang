@@ -48,6 +48,21 @@ func UserRouter(router *gin.RouterGroup) {
 			controllers.UpdateAddress(&appContext)
 		})
 
+		userRouter.PATCH("/nin/update", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.LinkNINDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx)
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.LinkNINDTO]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.LinkNIN(&appContext)
+		})
+
 		userRouter.PATCH("/phone/update", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.UpdatePhoneDTO

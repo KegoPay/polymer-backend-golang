@@ -123,6 +123,7 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 		DeviceID:       ctx.Body.DeviceID,
 		AppVersion: 	ctx.Body.AppVersion,
 		PushNotificationToken: ctx.Body.PushNotificationToken,
+		Tier: 0,
 	})
 	if err != nil {
 		return
@@ -133,6 +134,7 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 		return
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), 2, time.Hour * 24 * 365 ) // keep data cached for a year
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", account.Email), 2, time.Hour * 24 * 365 ) // keep data cached for a year
 	background.Scheduler.Emit("send_email", map[string]any{
 		"email": account.Email,
 		"subject": "Welcome to Kego! Verify your account to continue",
@@ -562,6 +564,11 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 			watchListed = true
 		}
 	}
+	encryptedBVN, err := cryptography.SymmetricEncryption(*ctx.Body.BVN)
+	if err != nil {
+		apperrors.UnknownError(ctx.Ctx, err)
+		return
+	}
 	userUpdatedInfo := map[string]any{
 		"gender": kycDetails.Gender,
 		"dob": kycDetails.DateOfBirth,
@@ -587,12 +594,13 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		}(),
 		"profileImage": ctx.Body.ProfileImage,
 		"kycCompleted": true,
-		"bvn": ctx.Body.BVN,
+		"bvn": *encryptedBVN,
 		"nin": ctx.Body.NIN,
 		"accountRestricted": watchListed,
 		"address": entities.Address{
 			FullAddress: &kycDetails.Address,
 		},
+		"tier": 1,
 	}
 	userRepo.UpdatePartialByFilter(map[string]interface{}{
 		"email": ctx.GetStringContextData("Email"),

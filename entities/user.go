@@ -47,6 +47,7 @@ type User struct {
 	Nationality		  		  		string 	  	 			`bson:"nationality" json:"nationality"`
 	ProfileImage		  		  	string 	  	 			`bson:"profileImage" json:"profileImage"`
 	Tag		  		  				string 	  			 	`bson:"tag" json:"tag"`
+	Tier		  		  			uint 	  			 	`bson:"tier" json:"tier"`
 	NotificationOptions		  		NotificationOptions  	`bson:"notificationOptions" json:"notificationOptions"`
 
 	ID        string    `bson:"_id" json:"id"`
@@ -55,10 +56,11 @@ type User struct {
 }
 
 func (user User) ParseModel() any {
+	now := time.Now()
 	if user.ID == "" {
-		user.CreatedAt = time.Now()
+		user.CreatedAt = now
 		user.ID = utils.GenerateUUIDString()
 	}
-	user.UpdatedAt = time.Now()
+	user.UpdatedAt = now
 	return &user
 }
