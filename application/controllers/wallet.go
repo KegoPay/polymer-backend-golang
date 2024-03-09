@@ -485,7 +485,35 @@ func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificat
 	}, nil)
 }
 
-func FetchPastTransactions(ctx *interfaces.ApplicationContext[any]){
+func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]){
+	transactionsRepo := repository.TransactionRepo()
+	transactions, err := transactionsRepo.FindMany(map[string]interface{}{
+		"userID": ctx.GetStringContextData("UserID"),
+		"businessID": ctx.GetStringParameter("businessID"),
+	}, &options.FindOptions{
+		Limit: utils.GetInt64Pointer(15),
+		Sort: map[string]any{
+			"createdAt": -1,
+		},
+	}, options.Find().SetProjection(map[string]any{
+		"transactionReference": 1,
+		"amount": 1,
+		"amountInNGN": 1,
+		"fee": 1,
+		"description": 1,
+		"amountInUSD": 1,
+		"transactionRecepient": 1,
+		"currency": 1,
+	}))
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err)
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil)
+}
+
+
+func FetchPastPersonalTransactions(ctx *interfaces.ApplicationContext[any]){
 	transactionsRepo := repository.TransactionRepo()
 	transactions, err := transactionsRepo.FindMany(map[string]interface{}{
 		"userID": ctx.GetStringContextData("UserID"),

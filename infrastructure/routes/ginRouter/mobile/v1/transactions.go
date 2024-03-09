@@ -12,7 +12,15 @@ func TransactionRouter(router *gin.RouterGroup) {
 	{
 		transactionRouter.GET("/:businessID/latest", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContext, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
-			controllers.FetchPastTransactions(appContext)
+			appContext.Param = map[string]any{
+				"businessID": ctx.Param("businessID"),
+			}
+			controllers.FetchPastBusinessTransactions(appContext)
+		})
+
+		transactionRouter.GET("/latest", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContext, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			controllers.FetchPastPersonalTransactions(appContext)
 		})
 	}
 }
