@@ -15,13 +15,13 @@ import (
 
 
 func OTPTokenMiddleware(ctx *interfaces.ApplicationContext[any], ipAddress string, intent string) (*interfaces.ApplicationContext[any], bool) {
-	otp_token := ctx.GetHeader("Otp-Token")
-	if otp_token == nil {
+	otpToken := ctx.GetHeader("Otp-Token")
+	if otpToken == nil {
 		apperrors.AuthenticationError(ctx.Ctx, "missing otp token")
 		return nil, false
 	}
 
-	valid_access_token, err := auth.DecodeAuthToken(otp_token.(string))
+	valid_access_token, err := auth.DecodeAuthToken(otpToken.(string))
 	if err != nil {
 		apperrors.AuthenticationError(ctx.Ctx, err.Error())
 		return nil, false
@@ -30,7 +30,7 @@ func OTPTokenMiddleware(ctx *interfaces.ApplicationContext[any], ipAddress strin
 		apperrors.AuthenticationError(ctx.Ctx, "invalid access token used")
 		return nil, false
 	}
-	invalidToken := cache.Cache.FindOne(otp_token.(string))
+	invalidToken := cache.Cache.FindOne(otpToken.(string))
 	if invalidToken != nil {
 		apperrors.AuthenticationError(ctx.Ctx, "expired access token used")
 		return nil, false
@@ -59,7 +59,7 @@ func OTPTokenMiddleware(ctx *interfaces.ApplicationContext[any], ipAddress strin
 		apperrors.ClientError(ctx.Ctx, "incorrect intent", nil)
 		return nil, false
 	}
-	ctx.SetContextData("OTPToken", otp_token)
+	ctx.SetContextData("OTPToken", otpToken)
 	ctx.SetContextData("OTPEmail", auth_token_claims["email"])
 	ctx.SetContextData("OTPPhone", auth_token_claims["phoneNum"])
 	return ctx, true

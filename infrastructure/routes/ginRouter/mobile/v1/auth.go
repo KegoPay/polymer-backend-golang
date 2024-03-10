@@ -15,7 +15,7 @@ func AuthRouter(router *gin.RouterGroup) {
 	authRouter := router.Group("/auth")
 	{
 
-		authRouter.POST("/key-exchange", func(ctx *gin.Context) {
+		authRouter.POST("/key-exchange", middlewares.AttestationMiddleware(false, false), func(ctx *gin.Context) {
 
 		})
 
