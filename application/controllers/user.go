@@ -18,6 +18,7 @@ import (
 	"kego.com/application/repository"
 	userusecases "kego.com/application/usecases/userUseCases"
 	"kego.com/entities"
+	"kego.com/infrastructure/auth"
 	"kego.com/infrastructure/biometric"
 	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
@@ -280,7 +281,15 @@ func UpdatePhone(ctx *interfaces.ApplicationContext[dto.UpdatePhoneDTO]) {
 		return
 	}
 
-	ref := sms.SMSService.SendOTP(fmt.Sprintf("%s%s", "234", ctx.Body.Phone), ctx.Body.WhatsApp)
+	var otp *string
+	if ctx.Body.WhatsApp {
+		otp, err = auth.GenerateOTP(6, ctx.Body.Phone)
+		if err != nil {
+			apperrors.FatalServerError(ctx.Ctx, err)
+			return
+		}
+	}
+	ref := sms.SMSService.SendOTP(fmt.Sprintf("%s%s", "234", ctx.Body.Phone), ctx.Body.WhatsApp, otp)
 	encryptedRef, err := cryptography.SymmetricEncryption(*ref)
 	if err != nil {
 		apperrors.UnknownError(ctx.Ctx, err)

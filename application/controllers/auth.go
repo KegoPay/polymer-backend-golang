@@ -81,18 +81,35 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 	}else {
 		channel = *ctx.Body.Phone
 		filter["phone.localNumber"] = channel
-		otpRef := cache.Cache.FindOne(fmt.Sprintf("%s-sms-otp-ref", channel))
-		if otpRef == nil {
-			apperrors.NotFoundError(ctx.Ctx, "otp has expired")
-			return
-		}
-		d, _ :=cryptography.DecryptData(*otpRef)
-		success := sms.SMSService.VerifyOTP(*d, ctx.Body.OTP)
+		msg, success := auth.VerifyOTP(channel, ctx.Body.OTP)
 		if !success {
-			apperrors.ClientError(ctx.Ctx, "wrong otp", nil)
-			return
+			logger.Info("possible sms otp attempted to be verified as whatsapp otp", logger.LoggerOptions{
+				Key: "message",
+				Data: msg,
+			})
+			otpRef := cache.Cache.FindOne(fmt.Sprintf("%s-sms-otp-ref", channel))
+			if otpRef == nil {
+				apperrors.NotFoundError(ctx.Ctx, "otp has expired")
+				return
+			}
+			d, err :=cryptography.DecryptData(*otpRef)
+			logger.Error(errors.New("error dcrypting sms otp ref"), logger.LoggerOptions{
+				Key: "ref",
+				Data: *otpRef,
+			}, logger.LoggerOptions{
+				Key: "channel",
+				Data: channel,
+			}, logger.LoggerOptions{
+				Key: "error",
+				Data: err,
+			})
+			success := sms.SMSService.VerifyOTP(*d, ctx.Body.OTP)
+			if !success {
+				apperrors.ClientError(ctx.Ctx, "wrong otp", nil)
+				return
+			}
+			cache.Cache.DeleteOne(fmt.Sprintf("%s-sms-otp-ref", channel))
 		}
-		cache.Cache.DeleteOne(fmt.Sprintf("%s-sms-otp-ref", channel))
 	}
 	otpIntent := cache.Cache.FindOne(fmt.Sprintf("%s-otp-intent", channel))
 	if otpIntent == nil {
@@ -357,7 +374,18 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 			},
 		})
 	}else if ctx.Body.Phone != nil {
-		ref := sms.SMSService.SendOTP(fmt.Sprintf("%s%s", account.Phone.Prefix, account.Phone.LocalNumber), account.Phone.WhatsApp)
+		var otp *string
+		var err error
+		if ctx.Body.Whatsapp != nil || account.Phone.WhatsApp{
+			if account.Phone.WhatsApp || (ctx.Body.Whatsapp != nil && *ctx.Body.Whatsapp) {
+				otp, err = auth.GenerateOTP(6, channel)
+				if err != nil {
+					apperrors.FatalServerError(ctx.Ctx, err)
+					return
+				}
+			}
+		}
+		ref := sms.SMSService.SendOTP(fmt.Sprintf("%s%s", account.Phone.Prefix, account.Phone.LocalNumber), account.Phone.WhatsApp || (ctx.Body.Whatsapp != nil && *ctx.Body.Whatsapp), otp)
 		encryptedRef, err := cryptography.SymmetricEncryption(*ref)
 		if err != nil {
 			apperrors.UnknownError(ctx.Ctx, err)

@@ -1,10 +1,11 @@
 package sms
 
 type TermiiOTPResponse struct {
-	PinID		string `json:"pinId"`
-	Recipient	string `json:"to"`
-	SmsStatus	string `json:"smsStatus"`
-	Msg			string `json:"message"`
+	PinID		*string `json:"pinId"`
+	Recipient	*string `json:"to"`
+	SmsStatus	*string `json:"smsStatus"`
+	Msg			*string `json:"message"`
+	Code		*string `json:"code"`
 }
 
 type TermiiOTPVerifiedResponse struct {
@@ -14,6 +15,6 @@ type TermiiOTPVerifiedResponse struct {
 }
 
 type SMSServiceType interface {
-	SendOTP(phone string, whatsapp bool) *string
+	SendOTP(phone string, whatsapp bool, otp *string) *string
 	VerifyOTP(otpID string, otp string) bool
 }

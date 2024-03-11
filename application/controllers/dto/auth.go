@@ -76,7 +76,8 @@ type FileUploadOptions struct {
 }
 
 type ResendOTP struct {
-	Email 	*string		`json:"email"`
-	Phone 	*string		`json:"phone"`
-	Intent 	string		`json:"intent" validate:"required,oneof=verify_account update_password verify_phone"`
+	Email 		*string		`json:"email"`
+	Phone 		*string		`json:"phone"`
+	Whatsapp 	*bool		`json:"whatsapp"`
+	Intent 		string		`json:"intent" validate:"required,oneof=verify_account update_password verify_phone"`
 }
