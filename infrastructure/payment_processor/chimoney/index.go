@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"kego.com/entities"
+	"kego.com/infrastructure/database/repository/cache"
 	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/network"
 )
@@ -29,6 +31,12 @@ func (chimoneyPP *ChimoneyPaymentProcessor) InitialisePaymentProcessor() {
 
 
 func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(amount *uint64) (*map[string]entities.ParsedExchangeRates, int, error){
+	cachedRate := cache.Cache.FindOne("fx_rates")
+	if cachedRate != nil {
+		var chimoneyResponse map[string]entities.ParsedExchangeRates
+		json.Unmarshal([]byte(*cachedRate), &chimoneyResponse)
+		return &chimoneyResponse, 200, nil
+	}
 	response, statusCode, err := chimoneyPP.Network.Get("/info/exchange-rates", &map[string]string{
 		"X-API-KEY": chimoneyPP.AuthToken,
 		"Content-Type": "application/json",
@@ -53,8 +61,11 @@ func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(amount *uint64) (*ma
 		})
 		return nil, *statusCode, nil
 	}
-	formattedRates := chimoneyResponse.Data.FormatAllRates(amount)
-	return &formattedRates, *statusCode, nil
+	rates := chimoneyResponse.Data.FormatAllRates(amount)
+	durationSeconds := chimoneyResponse.ValidTill/1000
+	duration := (time.Duration(durationSeconds) * time.Second) - 1*time.Minute // expire 1 min before just to be safe
+	cache.Cache.CreateEntry("fx_rates", *rates, duration)
+	return rates, *statusCode, nil
 }
 
 func (chimoneyPP *ChimoneyPaymentProcessor)GetSupportedInternationalBanks(countryCode string) (*[]entities.Bank,  int, error) {

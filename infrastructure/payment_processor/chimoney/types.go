@@ -7,6 +7,7 @@ type ChimoneyExchangeRateDTO struct {
 	Error 	string	   			    `json:"error"`
 	Status 	string					`json:"status"`
 	Data	entities.ExchangeRates	`json:"data"`
+	ValidTill	 int64				`json:"expiresAtTimestamp"`
 }
 
 type ChimoneySupportedBanksDTO struct {

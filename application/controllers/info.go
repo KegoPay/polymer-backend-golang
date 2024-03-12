@@ -58,6 +58,7 @@ func FetchExchangeRates(ctx *interfaces.ApplicationContext[dto.FXRateDTO]){
 		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney failed to return 200 response code"))
 		return
 	}
+	
 	if ctx.Body.Currency != nil {
 		var country entities.Country
 		for _, c := range countriessupported.CountriesSupported {
