@@ -29,5 +29,5 @@ func ErrSupportRequest(ctx *interfaces.ApplicationContext[dto.ErrorSupportReques
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "support request sent", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "support request sent", nil, nil, nil)
 }

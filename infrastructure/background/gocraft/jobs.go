@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/gocraft/work"
+	"kego.com/application/repository"
 	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/messaging/emails"
 )
@@ -21,6 +22,34 @@ func SendEmail(job *work.Job) error {
 		}, logger.LoggerOptions{
 			Key: "template",
 			Data: job.ArgString("templateName"),
+		})
+	}
+	return nil
+}
+
+func LockAccount(job *work.Job) error {
+	userRepo := repository.UserRepo()
+	success, err := userRepo.UpdatePartialByID(job.ArgString("id"), map[string]any{
+		"accountLocked": true,
+	})
+	if err != nil || success == 0 {
+		logger.Error(errors.New("error locking user account"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+	}
+	return nil
+}
+
+func UnlockAccount(job *work.Job) error {
+	userRepo := repository.UserRepo()
+	success, err := userRepo.UpdatePartialByID(job.ArgString("id"), map[string]any{
+		"accountLocked": false,
+	})
+	if err != nil || success == 0 {
+		logger.Error(errors.New("error unlocking user account"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
 		})
 	}
 	return nil

@@ -31,6 +31,8 @@ func (es *GoCraftScheduler) StartScheduler() {
 
 	pool := work.NewWorkerPool(context.Background(), 56, "polymer_jobs", redisPool)
 	pool.Job(string("send_email"),  SendEmail)
+	pool.Job(string("lock_account"),  LockAccount)
+	pool.Job(string("unlock_account"),  UnlockAccount)
    	pool.Start()
 }
 

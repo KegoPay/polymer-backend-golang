@@ -59,7 +59,7 @@ func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 		"account": user,
 		"wallet": wallet,
 		"country": country,
-	}, nil)
+	}, nil, nil)
 }
 
 // func UpdateUserProfile(ctx *interfaces.ApplicationContext[dto.UpdateUserDTO]){
@@ -88,7 +88,7 @@ func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 // 		return
 // 	}
 // 	userRepo.UpdateByID(ctx.GetStringContextData("UserID"), user)
-// 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "update completed", nil, nil)
+// 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "update completed", nil, nil, nil)
 // }
 
 func SetPaymentTag(ctx *interfaces.ApplicationContext[dto.SetPaymentTagDTO]){
@@ -96,7 +96,7 @@ func SetPaymentTag(ctx *interfaces.ApplicationContext[dto.SetPaymentTagDTO]){
 	if err != nil {
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Your payment tag has been set successfully", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Your payment tag has been set successfully", nil, nil, nil)
 }
 
 
@@ -112,7 +112,7 @@ func ToggleNotificationOptions(ctx *interfaces.ApplicationContext[dto.ToggleNoti
 	if affected == 0 {
 		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("Notification setting could not be updated because profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL))
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Notification setting updated", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Notification setting updated", nil, nil, nil)
 }
 
 func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionDTO]) {
@@ -127,12 +127,12 @@ func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionD
 	}
 	if exists != 0 {
 		server_response.Responder.Respond(ctx.Ctx, http.StatusOK,
-			"Seems you have registered with this email previously.\nNot to worry, you still have access to exclusive insights, updates, and special offers delivered straight to your inbox. Thanks for staying connected with us! ", nil, nil)
+			"Seems you have registered with this email previously.\nNot to worry, you still have access to exclusive insights, updates, and special offers delivered straight to your inbox. Thanks for staying connected with us! ", nil, nil, nil)
 		return
 	}
 	found := cache.Cache.FindOne(fmt.Sprintf("%s-email-blacklist", ctx.Body.Email))
 	if found != nil {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("%s was not approved for signup on Polymer", ctx.Body.Email), nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("%s was flagged as a suspicious email and was not approved for signup on Polymer", ctx.Body.Email), nil, nil)
 		return 
 	}
 	valid, err := identityverification.IdentityVerifier.EmailVerification(ctx.Body.Email)
@@ -141,7 +141,7 @@ func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionD
 		return  
 	}
 	if !valid {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("%s was not approved for signup on Polymer", ctx.Body.Email), nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("%s was not approved for signup on Polymer", ctx.Body.Email), nil, nil)
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-email-blacklist", ctx.Body.Email), ctx.Body.Email, time.Minute * 0 )
 		return 
 	}
@@ -155,7 +155,7 @@ func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionD
 		return
 	}
 	emailSubRepo.CreateOne(context.TODO(), payload)
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "You're in! You now have access to exclusive insights, updates, and special offers delivered straight to your inbox.", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "You're in! You now have access to exclusive insights, updates, and special offers delivered straight to your inbox.", nil, nil, nil)
 }
 
 
@@ -183,22 +183,22 @@ func UpdateAddress(ctx *interfaces.ApplicationContext[dto.UpdateAddressDTO]) {
 		apperrors.UnknownError(ctx.Ctx, errors.New("could not update users address"))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address set", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address set", nil, nil, nil)
 }
 
 func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 	attemptsLeft := cache.Cache.FindOne(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")))
 	if attemptsLeft == nil {
-		apperrors.ClientError(ctx.Ctx, `You cannot link your NIN to this account at this point, most likely because it has already been done before. If you think this is a mistake and want a manual review please click the button below`, nil)
+		apperrors.ClientError(ctx.Ctx, `You cannot link your NIN to this account at this point, most likely because it has already been done before. If you think this is a mistake and want a manual review please click the button below`, nil, &constants.NIN_VERIFICATION_FAILED)
 		return
 	}
 	parsedAttemptsLeft, err := strconv.Atoi(*attemptsLeft)
 	if err != nil {
-		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual review please click the button below`, nil)
+		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual review please click the button below`, nil, &constants.NIN_VERIFICATION_FAILED)
 		return
 	}
 	if parsedAttemptsLeft == 0 {
-		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual review please click the button below`, nil)
+		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual review please click the button below`, nil, &constants.NIN_VERIFICATION_FAILED)
 		return
 	}
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
@@ -225,12 +225,12 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 	result, err := biometric.BiometricService.FaceMatch(account.ProfileImage, ninDetails.Base64Image)
 	if err != nil {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-		apperrors.ClientError(ctx.Ctx, err.Error(), nil)
+		apperrors.ClientError(ctx.Ctx, err.Error(), nil, nil)
 		return
 	}
 	if *result < 80 {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-		apperrors.ClientError(ctx.Ctx, "NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual review please click the button below", nil)
+		apperrors.ClientError(ctx.Ctx, "NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual review please click the button below", nil, &constants.NIN_VERIFICATION_FAILED)
 		return
 	}
 	encryptedNIN, err := cryptography.SymmetricEncryption(ctx.Body.NIN)
@@ -253,7 +253,7 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 		"id": ctx.GetStringContextData("UserID"),
 	}, userUpdatedInfo)
 	cache.Cache.DeleteOne(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")))
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "NIN verified", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "NIN verified", nil, nil, nil)
 }
 
 
@@ -297,7 +297,7 @@ func UpdatePhone(ctx *interfaces.ApplicationContext[dto.UpdatePhoneDTO]) {
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", ctx.Body.Phone), *encryptedRef, time.Minute * 10)
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Phone), "verify_phone", time.Minute * 10)
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone set", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone set", nil, nil, nil)
 }
 
 func VerifyCurrentAddress(ctx *interfaces.ApplicationContext[any]) {
@@ -315,5 +315,5 @@ func VerifyCurrentAddress(ctx *interfaces.ApplicationContext[any]) {
 		apperrors.UnknownError(ctx.Ctx, errors.New("could not update users address"))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address verified", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address verified", nil, nil, nil)
 }

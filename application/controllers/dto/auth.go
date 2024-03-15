@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"crypto/ecdh"
+
 	"kego.com/infrastructure/file_upload/types"
 )
 
@@ -11,11 +13,12 @@ type CreateAccountDTO struct {
 	DeviceID  		  				string             `json:"deviceID"`
 	PushNotificationToken  		  	string             `json:"pushNotificationToken"`
 	AppVersion        				string       	   `json:"appVersion"`
+	IPAddress        				string
 }
 
-type GenerateServerPublicKey struct {
-	ClientPubKey	string		`json:"clientPubKey"`
-	SessionID		string		`json:"sessionID"`
+type KeyExchangeDTO struct {
+	ClientPublicKey	*ecdh.PublicKey		`json:"clientPubKey"`
+	DeviceID		string
 }
 
 type VerifyOTPDTO struct {

@@ -28,6 +28,13 @@ func (ac *ApplicationContext[T]) GetStringContextData(key string) (value string)
 	return
 }
 
+func (ac *ApplicationContext[T]) GetFloat64ContextData(key string) (value float64) {
+	if val, ok := ac.GetContextData(key); ok && val != nil {
+		value = val.(float64)
+	}
+	return
+}
+
 func (ac *ApplicationContext[T]) GetBoolContextData(key string) (value bool) {
 	if val, ok := ac.GetContextData(key); ok && val != nil {
 		value = val.(bool)

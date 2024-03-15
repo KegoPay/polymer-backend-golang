@@ -7,9 +7,7 @@ import (
 	"crypto/ecdh"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -181,32 +179,3 @@ func newCipherBlock(key string) (cipher.Block, error){
 	}
 	return aes.NewCipher(bs[:])
  }
-
-// Encrypts data using a secret generated from the Epileptic Curve Diffie Hellman protocol
-func EncryptData(secret []byte, data any) (encryptedData *string, err error) {
-    iv := make([]byte, aes.BlockSize)
-    if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-        return nil, err
-    }
-    block, err := aes.NewCipher(secret)
-    if err != nil {
-        return nil, err
-    }
-    gcm, err := cipher.NewGCM(block)
-    if err != nil {
-        return nil, err
-    }
-	marshaledData, err := json.Marshal(data)
-	if err != nil {
-		e := errors.New("failed to marshal payload for encryption")
-		logger.Error(e, logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
-		return nil, err
-	}
-    ciphertext := gcm.Seal(nil, iv, marshaledData, nil)
-    combined := append(iv, ciphertext...)
-	encodedData := base64.StdEncoding.EncodeToString(combined)
-    return &encodedData, nil
-}

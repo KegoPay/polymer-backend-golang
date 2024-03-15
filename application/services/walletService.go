@@ -177,7 +177,7 @@ func verifyTransactionPinByUserID(ctx any, userID string, pin string) (bool, err
 	} 
 	if user.TransactionPin == "" {
 		err =  errors.New( "Set a transaction pin before attempting to send money")
-		apperrors.ClientError(ctx, err.Error(), nil)
+		apperrors.ClientError(ctx, err.Error(), nil, nil)
 		return false, err
 	}
 	pinMatch := cryptography.CryptoHahser.VerifyData(user.TransactionPin, pin)
@@ -200,7 +200,7 @@ func verifyWalletBalance(ctx any, wallet *entities.Wallet, amount uint64) (bool,
 	}
 	if wallet.Balance < amount {
 		err := fmt.Errorf("Insufficient funds. Credit your account with at least %s%v to complete this transaction.", wallet.Currency, utils.UInt64ToFloat32Currency(amount))
-		apperrors.ClientError(ctx, err.Error(), nil)
+		apperrors.ClientError(ctx, err.Error(), nil, nil)
 		return false, err
 	}
 	return true, nil

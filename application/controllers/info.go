@@ -20,17 +20,17 @@ import (
 
 func FilterCountries(ctx *interfaces.ApplicationContext[dto.CountryFilter]){
 	countries := countriessupported.FilterCountries(ctx.Body.Service)
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "countries fetched", countries, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "countries fetched", countries, nil, nil)
 }
 
 func FetchLocalBanks(ctx *interfaces.ApplicationContext[any]){
 	banks := bankssupported.SupportedLocalBanks
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "banks fetched", banks, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "banks fetched", banks, nil, nil)
 }
 
 func FetchStateData(ctx *interfaces.ApplicationContext[any]){
 	states := constants.States
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "states fetched", states, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "states fetched", states, nil, nil)
 }
 
 func FetchInternationalBanks(ctx *interfaces.ApplicationContext[dto.CountryCode]){
@@ -45,7 +45,7 @@ func FetchInternationalBanks(ctx *interfaces.ApplicationContext[dto.CountryCode]
 	if banks == nil {
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "banks fetched", banks, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "banks fetched", banks, nil, nil)
 }
 
 func FetchExchangeRates(ctx *interfaces.ApplicationContext[dto.FXRateDTO]){
@@ -73,7 +73,7 @@ func FetchExchangeRates(ctx *interfaces.ApplicationContext[dto.FXRateDTO]){
 				break
 			}
 		}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rate fetched", country, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rate fetched", country, nil, nil)
 	return
 	}
 	var countries []entities.Country
@@ -86,5 +86,5 @@ func FetchExchangeRates(ctx *interfaces.ApplicationContext[dto.FXRateDTO]){
 			}
 		}
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rates fetched", countries, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rates fetched", countries, nil, nil)
 }

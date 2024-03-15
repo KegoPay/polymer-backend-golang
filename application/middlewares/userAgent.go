@@ -15,7 +15,7 @@ import (
 func UserAgentMiddleware(ctx *interfaces.ApplicationContext[any], minAppVersion string, clientIP string) (*interfaces.ApplicationContext[any], bool) {
 	agent := ctx.GetHeader("User-Agent")
 	if agent == nil {
-		apperrors.ClientError(ctx.Ctx, "Why your User-Agent header no dey? You be criminal?🤨", []error{errors.New("user agent header missing")})
+		apperrors.ClientError(ctx.Ctx, "Why your User-Agent header no dey? You be criminal?🤨", []error{errors.New("user agent header missing")}, nil)
 		return nil, false
 	}
 
@@ -76,6 +76,9 @@ func UserAgentMiddleware(ctx *interfaces.ApplicationContext[any], minAppVersion 
 		Key: "user-agent",
 		Data: agent,
 	})
+	
+	ctx.SetContextData("Latitude", ipLookupRes.Latitude)
+	ctx.SetContextData("Longitude", ipLookupRes.Longitude)
 
 	return ctx, true
 }

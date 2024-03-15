@@ -1354,6 +1354,8 @@ github.com/iris-contrib/httpexpect/v2 v2.3.1/go.mod h1:ICTf89VBKSD3KB0fsyyHviKF8
 github.com/iris-contrib/httpexpect/v2 v2.12.1/go.mod h1:7+RB6W5oNClX7PTwJgJnsQP3ZuUUYB3u61KCqeSgZ88=
 github.com/iris-contrib/jade v1.1.4/go.mod h1:EDqR+ur9piDl6DUgs6qRrlfzmlx/D5UybogqrXvJTBE=
 github.com/iris-contrib/schema v0.0.6/go.mod h1:iYszG0IOsuIsfzjymw1kMzTL8YQcCWlm65f3wX8J5iA=
+github.com/jftuga/geodist v1.0.0 h1:PFPQlZtj10u8ETAYTyxE0DWMl1bwA+Xzrqb4+oLkkC0=
+github.com/jftuga/geodist v1.0.0/go.mod h1:BohEDxpZ8S5ADAxW/9EKPSKWOVl0+3wHENIT40m4UO4=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/josharian/intern v1.0.0/go.mod h1:5DoeVV0s6jJacbCEi61lwdGj/aVlrQvzHFFd8Hwg//Y=

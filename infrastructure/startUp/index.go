@@ -1,7 +1,7 @@
 package startup
 
 import (
-	"kego.com/application"
+	// "kego.com/application"
 	"kego.com/infrastructure/background"
 	"kego.com/infrastructure/biometric"
 	"kego.com/infrastructure/database"
@@ -29,7 +29,7 @@ func StartServices(){
 	paymentprocessor.InternationalPaymentProcessor.InitialisePaymentProcessor()
 	ipresolver.IPResolverInstance.ConnectToDB()
 	sms.InitSMSService()
-	application.DBGenesis()
+	// application.DBGenesis()
 	biometric.InitialiseBiometricService()
 	background.StartScheduler()
 }

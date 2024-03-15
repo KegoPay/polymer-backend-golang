@@ -37,6 +37,7 @@ type User struct {
 	HasBusiness   					bool         			`bson:"hasBusiness" json:"hasBusiness"`
 	EmailVerified     				bool         			`bson:"emailVerified" json:"emailVerified"`
 	AccountRestricted 				bool         			`bson:"accountRestricted" json:"accountRestricted"`
+	AccountLocked	 				bool         			`bson:"accountLocked" json:"accountLocked"`
 	Deactivated 					bool         			`bson:"deactivated" json:"deactivated"`
 	BVN		  		  				string 	  	 			`bson:"bvn" json:"-"`
 	NIN		  		  				string 	  	 			`bson:"nin" json:"-"`
@@ -48,6 +49,8 @@ type User struct {
 	Nationality		  		  		string 	  	 			`bson:"nationality" json:"nationality"`
 	ProfileImage		  		  	string 	  	 			`bson:"profileImage" json:"profileImage"`
 	Tag		  		  				string 	  			 	`bson:"tag" json:"tag"`
+	Longitude		  		  		float64 	  			`bson:"longitude" json:"longitude"`
+	Latitude		  		  		float64 	  			`bson:"latitude" json:"latitude"`
 	Tier		  		  			uint 	  			 	`bson:"tier" json:"tier"`
 	NotificationOptions		  		NotificationOptions  	`bson:"notificationOptions" json:"notificationOptions"`
 

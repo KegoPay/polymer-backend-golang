@@ -26,7 +26,7 @@ func CreateBusiness(ctx *interfaces.ApplicationContext[dto.BusinessDTO]){
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "business created", map[string]any{
 		"business": business,
 		"wallet": wallet,
-	}, nil)
+	}, nil, nil)
 }
 
 func UpdateBusiness(ctx *interfaces.ApplicationContext[dto.UpdateBusinessDTO]){
@@ -35,7 +35,7 @@ func UpdateBusiness(ctx *interfaces.ApplicationContext[dto.UpdateBusinessDTO]){
 	if err != nil {
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business updated", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business updated", nil, nil, nil)
 }
 
 func DeleteBusiness(ctx *interfaces.ApplicationContext[any]){
@@ -43,7 +43,7 @@ func DeleteBusiness(ctx *interfaces.ApplicationContext[any]){
 	if err != nil {
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business deleted", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business deleted", nil, nil, nil)
 }
 
 func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
@@ -56,7 +56,7 @@ func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
 		return
 	}
 	if business ==  nil {
-		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business fetched", nil, nil)
+		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business fetched", nil, nil, nil)
 		return
 	}
 	walletRepo := repository.WalletRepo()
@@ -70,5 +70,5 @@ func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business fetched", map[string]any{
 		"business": business,
 		"wallet": wallet,
-	}, nil)
+	}, nil, nil)
 }

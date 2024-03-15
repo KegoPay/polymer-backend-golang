@@ -17,11 +17,11 @@ func FetchInternationalBanks(ctx any, countryCode string) *[]entities.Bank {
 		return nil
 	}
 	if len(*response) == 0 {
-		apperrors.ClientError(ctx, fmt.Sprintf("No banks found for %s", countryCode), nil)
+		apperrors.ClientError(ctx, fmt.Sprintf("No banks found for %s", countryCode), nil, nil)
 		return nil
 	}
 	if statusCode >= 400 {
-		apperrors.ClientError(ctx, fmt.Sprintf("No banks found for %s", countryCode), nil)
+		apperrors.ClientError(ctx, fmt.Sprintf("No banks found for %s", countryCode), nil, nil)
 		return nil
 	}
 	return response

@@ -50,13 +50,13 @@ func OTPTokenMiddleware(ctx *interfaces.ApplicationContext[any], ipAddress strin
 	otpIntent := cache.Cache.FindOne(fmt.Sprintf("%s-otp-intent", channel))
 	if otpIntent == nil {
 		logger.Error(errors.New("otp intent missing"))
-		apperrors.ClientError(ctx.Ctx, "otp expired", nil)
+		apperrors.ClientError(ctx.Ctx, "otp expired", nil, nil)
 		return nil, false
 	}
 	if *otpIntent != auth_token_claims["otpIntent"].(string) || auth_token_claims["otpIntent"].(string) != intent{
 		logger.Warning("this should trigger a wallet lock")
 		logger.Error(errors.New("wrong otp intent in token"))
-		apperrors.ClientError(ctx.Ctx, "incorrect intent", nil)
+		apperrors.ClientError(ctx.Ctx, "incorrect intent", nil, nil)
 		return nil, false
 	}
 	ctx.SetContextData("OTPToken", otpToken)

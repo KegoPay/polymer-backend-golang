@@ -104,7 +104,7 @@ func CreateBusiness(ctx any, payload *entities.Business) (*entities.Business, *e
 			apperrors.EntityAlreadyExistsError(ctx, err.Error())
 			return nil, nil, err
 		}else {
-			apperrors.ClientError(ctx, err.Error(), nil)
+			apperrors.ClientError(ctx, err.Error(), nil, nil)
 			return nil, nil, err
 		}
 	}

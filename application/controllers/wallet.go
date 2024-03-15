@@ -55,11 +55,11 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		return
 	}
 	if	fxRate.USDRate < constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil)
 		return
 	}
 	if fxRate.USDRate > constants.MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil)
 		return
 	}
 	internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(fxRate.NGNRate)
@@ -166,7 +166,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 			},
 		})
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil)
 }
 
 func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
@@ -198,11 +198,11 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		return
 	}
 	if	fxRate.USDRate < constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil)
 		return
 	}
 	if fxRate.USDRate > constants.MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil)
 		return
 	}
 	internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(fxRate.NGNRate)
@@ -306,16 +306,16 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 			},
 		})
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil)
 }
 
 func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
 	// if ctx.Body.Amount < constants.MINIMUM_LOCAL_TRANSFER_LIMIT {
-	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than ₦%s", currencyformatter.HumanReadableIntCurrency(constants.MINIMUM_LOCAL_TRANSFER_LIMIT)), nil)
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than ₦%s", currencyformatter.HumanReadableIntCurrency(constants.MINIMUM_LOCAL_TRANSFER_LIMIT)), nil, nil)
 	// 	return
 	// }
 	// if ctx.Body.Amount >= constants.MAXIMUM_LOCAL_TRANSFER_LIMIT {
-	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than ₦%s at a time", currencyformatter.HumanReadableIntCurrency(constants.MAXIMUM_LOCAL_TRANSFER_LIMIT)), nil)
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than ₦%s at a time", currencyformatter.HumanReadableIntCurrency(constants.MAXIMUM_LOCAL_TRANSFER_LIMIT)), nil, nil)
 	// 	return
 	// }
 	// localProcessorFee, polymerFee := utils.GetLocalTransactionFee(ctx.Body.Amount)
@@ -429,39 +429,39 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	// 		"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
 	// 	})
 	// }
-	// server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil)
+	// server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil)
 }
 
 func BusinessLocalPaymentFee(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
 	if ctx.Body.Amount < 1000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil)
+		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil, nil)
 		return
 	}
 	if ctx.Body.Amount >= 30000000000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil)
+		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil, nil)
 		return
 	}
 	localProcessorFee, polymerFee := utils.GetLocalTransactionFee(ctx.Body.Amount)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "fee calculated", map[string]any{
 		"processorFee": utils.Float32ToUint64Currency(localProcessorFee),
 		"polymerFee": utils.Float32ToUint64Currency(polymerFee),
-	}, nil)
+	}, nil, nil)
 }
 
 func BusinessInternationalPaymentFee(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
 	if ctx.Body.Amount < 1000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil)
+		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil, nil)
 		return
 	}
 	if ctx.Body.Amount >= 30000000000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil)
+		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil, nil)
 		return
 	}
 	internationalProcessorFee, polymerFee := utils.GetInternationalTransactionFee(utils.UInt64ToFloat32Currency(ctx.Body.Amount))
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "fee calculated", map[string]any{
 		"processorFee": utils.Float32ToUint64Currency(internationalProcessorFee),
 		"polymerFee": utils.Float32ToUint64Currency(polymerFee),
-	}, nil)
+	}, nil, nil)
 }
 
 func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificationDTO]){
@@ -482,7 +482,7 @@ func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificat
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "name verification complete", map[string]string{
 		"name": *name,
-	}, nil)
+	}, nil, nil)
 }
 
 func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]){
@@ -509,7 +509,7 @@ func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]){
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil, nil)
 }
 
 
@@ -536,5 +536,5 @@ func FetchPastPersonalTransactions(ctx *interfaces.ApplicationContext[any]){
 		apperrors.FatalServerError(ctx.Ctx, err)
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil, nil)
 }

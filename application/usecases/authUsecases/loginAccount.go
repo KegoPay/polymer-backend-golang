@@ -12,24 +12,26 @@ import (
 	"kego.com/application/utils"
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
+	"kego.com/infrastructure/background"
 	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
+	geospatialcalculation "kego.com/infrastructure/geospatial_calculation"
 	"kego.com/infrastructure/logger"
 )
 
-func LoginAccount(ctx any, email *string, phone *string, password *string, appVersion string, userAgent string, deviceID string, pushNotificationToken string) (*entities.User, *entities.Wallet, *string) {
+func LoginAccount(ctx any, email *string, phone *string, password *string, appVersion string, userAgent string, deviceID string, pushNotificationToken string, longitude float64, latitude float64) (*entities.User, *entities.Wallet, *string) {
 	currentTries := cache.Cache.FindOne(fmt.Sprintf("%s-password-tries", *email))
 	if currentTries == nil {
 		currentTries = utils.GetStringPointer("0")
 	}
 	currentTriesInt, err := strconv.Atoi(*currentTries)
 	if err != nil {
-		logger.Error(errors.New("error parsing users transaction pin current tries"), logger.LoggerOptions{
+		logger.Error(errors.New("error parsing users password current tries"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,
 		}, logger.LoggerOptions{
 			Key: "key",
-			Data: fmt.Sprintf("%s-transaction-pin-tries", *email),
+			Data: fmt.Sprintf("%s-password-tries", *email),
 		}, logger.LoggerOptions{
 			Key: "data",
 			Data: currentTries,
@@ -63,11 +65,11 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		return nil, nil, nil
 	}
 	if !account.EmailVerified {
-		apperrors.ClientError(ctx, "verify your email to use it to login", nil)
+		apperrors.ClientError(ctx, "verify your email to use it to login", nil, &constants.EMAIL_UNVERIFIED)
 		return nil, nil, nil
 	}
 	if account.Deactivated {
-		apperrors.ClientError(ctx, "this account has been deactivated", nil)
+		apperrors.ClientError(ctx, "this account has been deactivated", nil, nil)
 		return nil, nil, nil
 	}
 	passwordMatch := cryptography.CryptoHahser.VerifyData(account.Password, *password)
@@ -82,6 +84,13 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		return nil, nil, nil
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-password-tries", *email), 0, 0)
+	distance := geospatialcalculation.GeospatialCalculator.CalculateDistanceInMiles(account.Longitude, longitude, account.Latitude, latitude)
+	if *distance > 2 {
+		logger.Warning("this triggers a wallet lock")
+		background.Scheduler.Emit("lock_account", map[string]any{
+			"id": account.ID,
+		})
+	}
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
 		Email:     &account.Email,
 		Phone:     account.Phone,

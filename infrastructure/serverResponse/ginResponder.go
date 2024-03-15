@@ -10,7 +10,7 @@ import (
 type ginResponder struct{}
 
 // Sends an encrypted payload to the client
-func (gr ginResponder)Respond(ctx interface{}, code int, message string, payload interface{}, errs []error) {
+func (gr ginResponder)Respond(ctx interface{}, code int, message string, payload interface{}, errs []error, response_code *uint) {
 	ginCtx, ok := (ctx).(*gin.Context)
     if !ok {
 		logger.Error(errors.New("could not transform *interface{} to gin.Context in serverResponse package"), logger.LoggerOptions{
@@ -20,24 +20,25 @@ func (gr ginResponder)Respond(ctx interface{}, code int, message string, payload
         return
     }
 	ginCtx.Abort()
-	ginCtx.JSON(code, gin.H{
+	response := map[string]any{
 		"message": message,
 		"body":    payload,
-		"errors": func() interface{} {
-			if len(errs) == 0 {
-				return nil
-			}
-			errMsgs := []string{}
-			for _, err := range errs {
-				errMsgs = append(errMsgs, err.Error())
-			}
-			return errMsgs
-		}(),
-	})
+	}
+	if response_code != nil{
+		response["response_code"] = response_code
+	}
+	if errs != nil{
+		errMsgs := []string{}
+		for _, err := range errs {
+			errMsgs = append(errMsgs, err.Error())
+		}
+		response["errors"] = errMsgs
+	}
+	ginCtx.JSON(code, response)
 }
 
 // Sends a response to the client using plain JSON
-func (gr ginResponder) UnEncryptedRespond(ctx interface{}, code int, message string, payload interface{}, errs []error) {
+func (gr ginResponder) UnEncryptedRespond(ctx interface{}, code int, message string, payload interface{}, errs []error, response_code *uint) {
 	ginCtx, ok := (ctx).(*gin.Context)
     if !ok {
 		logger.Error(errors.New("could not transform *interface{} to gin.Context in serverResponse package"), logger.LoggerOptions{
@@ -47,18 +48,19 @@ func (gr ginResponder) UnEncryptedRespond(ctx interface{}, code int, message str
         return
     }
 	ginCtx.Abort()
-	ginCtx.JSON(code, gin.H{
+	response := map[string]any{
 		"message": message,
 		"body":    payload,
-		"errors": func() interface{} {
-			if len(errs) == 0 {
-				return nil
-			}
-			errMsgs := []string{}
-			for _, err := range errs {
-				errMsgs = append(errMsgs, err.Error())
-			}
-			return errMsgs
-		}(),
-	})
+	}
+	if response_code != nil{
+		response["response_code"] = response_code
+	}
+	if errs != nil{
+		errMsgs := []string{}
+		for _, err := range errs {
+			errMsgs = append(errMsgs, err.Error())
+		}
+		response["errors"] = errMsgs
+	}
+	ginCtx.JSON(code, response)
 }

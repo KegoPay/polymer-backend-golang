@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"crypto/ecdh"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
@@ -40,32 +38,14 @@ import (
 	"kego.com/infrastructure/validator"
 )
 
-func KeyExchange(ctx *interfaces.ApplicationContext[dto.GenerateServerPublicKey]) {
-	keyBytes, err := hex.DecodeString(ctx.Body.ClientPubKey)
-    if err != nil {
-		logger.Error(errors.New("error decoding keys for key exchange"), logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
-		apperrors.UnknownError(ctx.Ctx, errors.New("could not perform key exchange"))
-        return
-    }
-    ClientPubKey, err := ecdh.P256().NewPublicKey(keyBytes)
-    if err != nil {
-		logger.Error(errors.New("error geting public key from key bytes"), logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
-		apperrors.UnknownError(ctx.Ctx, errors.New("could not perform key exchange"))
-        return
-    }
-	serverPubKey := cryptography.GeneratePublicKey(ctx.Body.SessionID, ClientPubKey)
-	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusCreated, "key generated", serverPubKey, nil)
+func KeyExchange(ctx *interfaces.ApplicationContext[dto.KeyExchangeDTO]) {
+	serverPublicKey := authusecases.InitiateKetExchange(ctx.Ctx, ctx.Body.DeviceID, ctx.Body.ClientPublicKey)
+	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusCreated, "key exchanged", serverPublicKey, nil, nil)
 }
 
 func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 	if ctx.Body.Phone == nil && ctx.Body.Email == nil {
-		apperrors.ClientError(ctx.Ctx, "pass in either a phone number or email", nil)
+		apperrors.ClientError(ctx.Ctx, "pass in either a phone number or email", nil, &constants.NIN_VERIFICATION_FAILED)
 		return
 	}
 	var channel = ""
@@ -75,7 +55,7 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 		filter["email"] = channel
 		msg, success := auth.VerifyOTP(channel, ctx.Body.OTP)
 		if !success {
-			apperrors.ClientError(ctx.Ctx, msg, nil)
+			apperrors.ClientError(ctx.Ctx, msg, nil, &constants.NIN_VERIFICATION_FAILED)
 			return
 		}
 	}else {
@@ -105,7 +85,7 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 			})
 			success := sms.SMSService.VerifyOTP(*d, ctx.Body.OTP)
 			if !success {
-				apperrors.ClientError(ctx.Ctx, "wrong otp", nil)
+				apperrors.ClientError(ctx.Ctx, "wrong otp", nil, nil)
 				return
 			}
 			cache.Cache.DeleteOne(fmt.Sprintf("%s-sms-otp-ref", channel))
@@ -114,7 +94,7 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 	otpIntent := cache.Cache.FindOne(fmt.Sprintf("%s-otp-intent", channel))
 	if otpIntent == nil {
 		logger.Error(errors.New("otp intent missing"))
-		apperrors.ClientError(ctx.Ctx, "otp expired", nil)
+		apperrors.ClientError(ctx.Ctx, "otp expired", nil, nil)
 		return
 	}
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
@@ -129,7 +109,7 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 		return
 	}
 
-	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusCreated, "otp verified", token, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp verified", token, nil, nil)
 }
 
 func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
@@ -141,6 +121,8 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 		AppVersion: 	ctx.Body.AppVersion,
 		PushNotificationToken: ctx.Body.PushNotificationToken,
 		Tier: 0,
+		Longitude: ctx.GetFloat64ContextData("Longitude"),
+		Latitude: ctx.GetFloat64ContextData("Latitude"),
 	})
 	if err != nil {
 		return
@@ -162,7 +144,7 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 		},
 	})
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Email), "verify_account", time.Minute * 10)
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "account created", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "account created", nil, nil, nil)
 }
 
 func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
@@ -171,7 +153,7 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 		apperrors.UnsupportedAppVersion(ctx.Ctx)
 		return
 	}
-	account, wallet, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password, *appVersion, ctx.GetHeader("User-Agent").(string), ctx.Body.DeviceID, ctx.Body.PushNotificationToken)
+	account, wallet, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password, *appVersion, ctx.GetHeader("User-Agent").(string), ctx.Body.DeviceID, ctx.Body.PushNotificationToken, ctx.GetFloat64ContextData("Longitude"), ctx.GetFloat64ContextData("Latitude"))
 	if account == nil || token == nil {
 		return
 	}
@@ -214,7 +196,7 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 	if account.TransactionPin == "" {
 		responsePayload["unsetTrxPin"] = true
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "login successful", responsePayload, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "login successful", responsePayload, nil, nil)
 }
 
 func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
@@ -264,7 +246,7 @@ func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
 		return
 	}
 	cache.Cache.CreateEntry(ctx.GetStringContextData("OTPToken"), true, time.Minute * 5)
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password reset", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password reset", nil, nil, nil)
 }
 
 func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
@@ -286,7 +268,7 @@ func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
 	}
 	success := cryptography.CryptoHahser.VerifyData(account.Password, ctx.Body.CurrentPassword)
 	if !success {
-		apperrors.ClientError(ctx.Ctx, "incorrect password", nil)
+		apperrors.ClientError(ctx.Ctx, "incorrect password", nil, nil)
 		return
 	}
 	account.Password = ctx.Body.NewPassword
@@ -321,12 +303,12 @@ func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
 		}, )
 		apperrors.FatalServerError(ctx.Ctx, fmt.Errorf("failed to update users password userID %s", ctx.GetStringContextData("UserID")))
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password updated", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password updated", nil, nil, nil)
 }
 
 func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 	if ctx.Body.Phone == nil && ctx.Body.Email == nil {
-		apperrors.ClientError(ctx.Ctx, "pass in either a phone number or email", nil)
+		apperrors.ClientError(ctx.Ctx, "pass in either a phone number or email", nil, nil)
 		return
 	}
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
@@ -354,7 +336,7 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 		return
 	}
 	if account == nil {
-		server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil)
+		server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil, nil)
 		return
 	}
 
@@ -394,7 +376,7 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", channel), *encryptedRef, time.Minute * 10)
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", channel), ctx.Body.Intent, time.Minute * 10)
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil, nil)
 }
 
 func VerifyEmail(ctx *interfaces.ApplicationContext[any]) {
@@ -411,7 +393,7 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[any]) {
 		return
 	}
 	if account.EmailVerified {
-		apperrors.ClientError(ctx.Ctx, "this email has already been verified", nil)
+		apperrors.ClientError(ctx.Ctx, "this email has already been verified", nil, nil)
 		return
 	}
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
@@ -446,7 +428,7 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[any]) {
 	cache.Cache.CreateEntry(account.ID, hashedToken, time.Minute * time.Duration(10)) // cache authentication token for 10 mins
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", map[string]string{
 		"token": *token,
-	}, nil)
+	}, nil, nil)
 }
 
 
@@ -473,7 +455,7 @@ func VerifyPhone(ctx *interfaces.ApplicationContext[any]) {
 		apperrors.UnknownError(ctx.Ctx, err)
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", nil, nil, nil)
 }
 
 func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
@@ -484,16 +466,16 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 	}
 	attemptsLeft := cache.Cache.FindOne(fmt.Sprintf("%s-kyc-attempts-left", ctx.GetStringContextData("Email")))
 	if attemptsLeft == nil {
-		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil, nil)
 		return
 	}
 	parsedAttemptsLeft, err := strconv.Atoi(*attemptsLeft)
 	if err != nil {
-		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil, nil)
 		return
 	}
 	if parsedAttemptsLeft == 0 {
-		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil)
+		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil, nil)
 		return
 	}
 	userRepo := repository.UserRepo()
@@ -509,12 +491,12 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		return
 	}
 	if !account.EmailVerified {
-		apperrors.ClientError(ctx.Ctx, "verify your email before attempting identity verification", nil)
+		apperrors.ClientError(ctx.Ctx, "verify your email before attempting identity verification", nil, nil)
 		return
 	}
 
 	if account.KYCCompleted {
-		apperrors.ClientError(ctx.Ctx, "you have completed your identity verification", nil)
+		apperrors.ClientError(ctx.Ctx, "you have completed your identity verification", nil, nil)
 		return
 	}
 	kycDetails := struct{
@@ -547,7 +529,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		kycDetails.DateOfBirth = bvnDetails.DateOfBirth
 		kycDetails.Address = bvnDetails.Address
 	}else if ctx.Body.Path == "nin" {
-		apperrors.ClientError(ctx.Ctx, "Verification by NIN is currently not supported", nil)
+		apperrors.ClientError(ctx.Ctx, "Verification by NIN is currently not supported", nil, nil)
 		return
 		ninDetails, err := identityverification.IdentityVerifier.FetchNINDetails(*ctx.Body.NIN)
 		if err != nil {
@@ -573,7 +555,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		// 	apperrors.FatalServerError(ctx.Ctx, cldErr)
 		// 	return
 		// }
-		apperrors.ClientError(ctx.Ctx, err.Error(), nil)
+		apperrors.ClientError(ctx.Ctx, err.Error(), nil, nil)
 		return
 	}
 	if *result < 80 {
@@ -583,7 +565,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		// 	apperrors.FatalServerError(ctx.Ctx, err)
 		// 	return
 		// }
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("The image supplied does not match. If you think this is a mistake please contact support on %s", constants.SUPPORT_EMAIL), nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("The image supplied does not match. If you think this is a mistake please contact support on %s", constants.SUPPORT_EMAIL), nil, nil)
 		return
 	}
 	watchListed := false
@@ -657,13 +639,13 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 	})
 	pushnotification.PushNotificationService.PushOne(account.PushNotificationToken, "Welcome to Polymer!😃",
 	"You now have global payments at your finger tips! Make payments with crypto, Mobile Money and to bank accounts in over 40+ countries!🤯")
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "kyc completed", token, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "kyc completed", token, nil, nil)
 }
 
 func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 	email := ctx.Query["email"]
 	if email == "" {
-		server_response.Responder.Respond(ctx.Ctx, http.StatusBadRequest, "pass in a valid email", nil, nil)
+		server_response.Responder.Respond(ctx.Ctx, http.StatusBadRequest, "pass in a valid email", nil, nil, nil)
 		return
 	}
 	userRepo := repository.UserRepo()
@@ -685,7 +667,7 @@ func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 		response["emailVerified"] = account.EmailVerified
 		response["KYCCompleted"] = account.KYCCompleted
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "success", response, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "success", response, nil, nil)
 }
 
 func GenerateFileURL(ctx *interfaces.ApplicationContext[dto.FileUploadOptions]){
@@ -699,7 +681,7 @@ func GenerateFileURL(ctx *interfaces.ApplicationContext[dto.FileUploadOptions]){
 		apperrors.CustomError(ctx.Ctx, err.Error())
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "url geenraed", url, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "url geenraed", url, nil, nil)
 }
 
 func SetTransactionPin(ctx *interfaces.ApplicationContext[dto.SetTransactionPinDTO]){
@@ -726,7 +708,7 @@ func SetTransactionPin(ctx *interfaces.ApplicationContext[dto.SetTransactionPinD
 		return
 	}
 	if account.TransactionPin != "" {
-		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transaction pin has already been set", nil, nil)
+		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transaction pin has already been set", nil, nil, nil)
 		return
 	}
 	affected, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"),map[string]any{
@@ -740,7 +722,7 @@ func SetTransactionPin(ctx *interfaces.ApplicationContext[dto.SetTransactionPinD
 		apperrors.UnknownError(ctx.Ctx, errors.New("failed to update users transaction pin"))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "pin set", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "pin set", nil, nil, nil)
 }
 
 func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){
@@ -763,7 +745,7 @@ func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){
 		return
 	} 
 	if account.Deactivated {
-		apperrors.ClientError(ctx.Ctx, "account has already been deactivated", nil)
+		apperrors.ClientError(ctx.Ctx, "account has already been deactivated", nil, nil)
 		return
 	}
 	match := services.VerifyPin(ctx.Ctx, account, ctx.Body.Pin, &types.PinSelectionType{
@@ -795,7 +777,7 @@ func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){
 		},)
 		apperrors.FatalServerError(ctx.Ctx, fmt.Errorf("error while deactivating user account userID - %s", ctx.GetStringContextData("UserID")))
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "deactivated", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "deactivated", nil, nil, nil)
 }
 
 func LogOut(ctx *interfaces.ApplicationContext[any]){
@@ -804,5 +786,5 @@ func LogOut(ctx *interfaces.ApplicationContext[any]){
 		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("log out user failed - %s", ctx.GetStringContextData("UserID")))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "deactivated", nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "deactivated", nil, nil, nil)
 }

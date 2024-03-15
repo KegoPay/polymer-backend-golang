@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 	"kego.com/application/repository"
 	"kego.com/application/utils"
 	"kego.com/infrastructure/auth"
+	"kego.com/infrastructure/background"
 	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
 	"kego.com/infrastructure/logger"
@@ -26,7 +26,7 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 		auth_token := strings.Split(auth_token_header.(string), " ")[1]
 		valid_access_token, err := auth.DecodeAuthToken(auth_token)
 		if err != nil {
-			apperrors.AuthenticationError(ctx.Ctx, err.Error())
+			apperrors.AuthenticationError(ctx.Ctx, "this session has expired")
 			return nil, false
 		}
 		if !valid_access_token.Valid {
@@ -35,13 +35,15 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 		}
 		auth_token_claims := valid_access_token.Claims.(jwt.MapClaims)
 		if auth_token_claims["iss"] != os.Getenv("JWT_ISSUER") {
-			logger.Warning("this should trigger a wallet lock")
+			logger.Warning("this triggers a wallet lock")
+			background.Scheduler.Emit("lock_account", map[string]any{
+				"id": auth_token_claims["userID"],
+			})
 			apperrors.AuthenticationError(ctx.Ctx, "this is not an authorized access token")
 			return nil, false
 		}
 		valid_token := cache.Cache.FindOne(auth_token_claims["userID"].(string))
 		if valid_token == nil {
-			fmt.Println(valid_token)
 			apperrors.AuthenticationError(ctx.Ctx, "this session has expired")
 			return nil, false
 		}
@@ -85,6 +87,10 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 				Key: "request appVersion",
 				Data: *utils.ExtractAppVersionFromUserAgentHeader(userAgent),
 			})
+			logger.Warning("this triggers a wallet lock")
+			background.Scheduler.Emit("lock_account", map[string]any{
+				"id": auth_token_claims["userID"],
+			})
 			auth.SignOutUser(ctx.Ctx, account.ID, "client made request using app version different from that in access token")
 			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access")
 			return nil, false
@@ -105,6 +111,10 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 			}, logger.LoggerOptions{
 				Key: "request appVersion",
 				Data: *utils.ExtractAppVersionFromUserAgentHeader(userAgent),
+			})
+			logger.Warning("this triggers a wallet lock")
+			background.Scheduler.Emit("lock_account", map[string]any{
+				"id": auth_token_claims["userID"],
 			})
 			auth.SignOutUser(ctx.Ctx, account.ID, "client made request using device id different from that in access token")
 			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access")

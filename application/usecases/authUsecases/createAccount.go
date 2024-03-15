@@ -46,7 +46,7 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 	if os.Getenv("GIN_MODE") == "release" {
 		found := cache.Cache.FindOne(fmt.Sprintf("%s-email-blacklist", payload.Email))
 		if found != nil {
-			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil)
+			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil, nil)
 			return nil, nil, err
 		}
 		valid, err := identityverification.IdentityVerifier.EmailVerification(payload.Email)
@@ -55,7 +55,7 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 			return nil, nil, err
 		}
 		if !valid {
-			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil)
+			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil, nil)
 			cache.Cache.CreateEntry(fmt.Sprintf("%s-email-blacklist", payload.Email), payload.Email, time.Minute * 0 )
 			return nil, nil, err
 		}
@@ -116,7 +116,7 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 			apperrors.EntityAlreadyExistsError(ctx, err.Error())
 			return nil, nil, err
 		}else {
-			apperrors.ClientError(ctx, err.Error(), nil)
+			apperrors.ClientError(ctx, err.Error(), nil, nil)
 			return nil, nil, err
 		}
 	}

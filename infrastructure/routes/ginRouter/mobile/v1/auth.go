@@ -1,6 +1,8 @@
 package routev1
 
 import (
+	"crypto/ecdh"
+
 	"github.com/gin-gonic/gin"
 	apperrors "kego.com/application/appErrors"
 	"kego.com/application/controllers"
@@ -14,9 +16,17 @@ import (
 func AuthRouter(router *gin.RouterGroup) {
 	authRouter := router.Group("/auth")
 	{
-
-		authRouter.POST("/key-exchange", middlewares.AttestationMiddleware(false, false), func(ctx *gin.Context) {
-
+		authRouter.POST("/key-exchange", func(ctx *gin.Context) {
+			clientPubKeyBytes, _ := ctx.GetRawData()
+			clientPubKey,_:=ecdh.P256().NewPublicKey(clientPubKeyBytes)
+			deviceID := ctx.GetHeader("Polymer-Device-Id")
+			controllers.KeyExchange(&interfaces.ApplicationContext[dto.KeyExchangeDTO]{
+				Ctx: ctx,
+				Body: &dto.KeyExchangeDTO{
+					ClientPublicKey: clientPubKey,
+					DeviceID: deviceID,
+				},
+			})
 		})
 
 		authRouter.POST("/account/create", func(ctx *gin.Context) {
