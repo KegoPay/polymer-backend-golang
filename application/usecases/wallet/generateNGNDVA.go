@@ -13,7 +13,7 @@ import (
 	"kego.com/infrastructure/payment_processor/types"
 )
 
-func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string, email string, bvn string) (accountNumber *string, bankName *string, err error) {
+func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string, email string, bvn string, device_id *string) (accountNumber *string, bankName *string, err error) {
 	dva := services.GenerateDVA(ctx, &types.CreateVirtualAccountPayload{
 		Permanent: os.Getenv("ENV") == "production",
 		Currency: "NGN",
@@ -29,7 +29,7 @@ func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string,
 			}
 			return utils.GetUInt64Pointer(0)
 		}(),
-	})
+	}, device_id)
 	walletRepo := repository.WalletRepo()
 	affected, err := walletRepo.UpdatePartialByID(walletID, map[string]any{
 		"accountNumber": dva.AccountNumber,
@@ -46,7 +46,7 @@ func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string,
 			Key: "dva",
 			Data: dva,
 		})
-		apperrors.FatalServerError(ctx, err)
+		apperrors.FatalServerError(ctx, err, device_id)
 		return nil, nil, err
 	}
 	if affected == 0 {
@@ -60,7 +60,7 @@ func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string,
 			Key: "affected",
 			Data: affected,
 		})
-		apperrors.UnknownError(ctx, errors.New("attempt to updated a users wallet with DVA details failed"))
+		apperrors.UnknownError(ctx, errors.New("attempt to updated a users wallet with DVA details failed"), device_id)
 		return nil, nil, err
 	}
 	return &dva.AccountNumber, &dva.BankName, nil

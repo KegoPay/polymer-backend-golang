@@ -35,9 +35,10 @@ const (
 // these consist of 4 digitsnumbers
 //
 // the 1st 3 are randomly generated but represent specific scenarios
-// 4th indicates if the response requires user interactions. 0 means it does not require. 1 means it requires.
+// 4th indicates if the response requires user interactions through a dialog box. 0 means it does not require. 1 means it requires.
 
 var REQUIRES_FACE_MATCH_UNLOCK uint = 9870 // take the user to the face match page to unlock the account
+var ENCRYPTION_KEY_EXPIRED uint = 6170 // take the user to the face match page to unlock the account
 var NIN_VERIFICATION_FAILED uint = 6511 // show the user the popup to escale the issue for manual review
 var EMAIL_UNVERIFIED uint = 3540 // request a new otp and redirect the user to the otp verification screen
 

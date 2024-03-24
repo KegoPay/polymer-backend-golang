@@ -6,6 +6,7 @@ import (
 	"kego.com/application/controllers"
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
+	"kego.com/application/utils"
 	middlewares "kego.com/infrastructure/middleware"
 )
 
@@ -16,7 +17,7 @@ func SupportRouter(router *gin.RouterGroup) {
 		supportRouter.POST("/error/report", middlewares.AuthenticationMiddleware(false, true),  func(ctx *gin.Context) {
 			var body dto.ErrorSupportRequestDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			controllers.ErrSupportRequest(&interfaces.ApplicationContext[dto.ErrorSupportRequestDTO]{

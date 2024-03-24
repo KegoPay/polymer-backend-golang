@@ -1,16 +1,20 @@
 package server_response
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/gin-gonic/gin"
+	"kego.com/application/constants"
+	"kego.com/infrastructure/cryptography"
+	"kego.com/infrastructure/database/repository/cache"
 	"kego.com/infrastructure/logger"
 )
 
 type ginResponder struct{}
 
 // Sends an encrypted payload to the client
-func (gr ginResponder)Respond(ctx interface{}, code int, message string, payload interface{}, errs []error, response_code *uint) {
+func (gr ginResponder)Respond(ctx interface{}, code int, message string, payload interface{}, errs []error, response_code *uint, device_id *string) {
 	ginCtx, ok := (ctx).(*gin.Context)
     if !ok {
 		logger.Error(errors.New("could not transform *interface{} to gin.Context in serverResponse package"), logger.LoggerOptions{
@@ -34,7 +38,21 @@ func (gr ginResponder)Respond(ctx interface{}, code int, message string, payload
 		}
 		response["errors"] = errMsgs
 	}
-	ginCtx.JSON(code, response)
+	if device_id == nil {
+		ginCtx.JSON(code, response)
+		return
+	}
+	jsonResponse, _ := json.Marshal(response)
+	enc_key := cache.Cache.FindOne(*device_id)
+	if enc_key == nil {
+		ginCtx.JSON(401, map[string]any{
+			"response_code":  constants.ENCRYPTION_KEY_EXPIRED,
+			"message":  "encryption key has expired. initiate key exchange protocol again.",
+		})
+		return
+	}
+	encryptedResponse, _ := cryptography.SymmetricEncryption(string(jsonResponse), enc_key)
+	ginCtx.JSON(code, *encryptedResponse)
 }
 
 // Sends a response to the client using plain JSON

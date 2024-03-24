@@ -20,42 +20,43 @@ import (
 	"kego.com/infrastructure/validator"
 )
 
-func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wallet, error){
+func CreateAccount(ctx any, payload *entities.User, device_id *string) (*entities.User, *entities.Wallet, error){
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(*payload)
 	if valiedationErr != nil {
-		apperrors.ValidationFailedError(ctx, valiedationErr)
+		apperrors.ValidationFailedError(ctx, valiedationErr, device_id)
 		return nil, nil, errors.New("")
 	}
 	userRepo := repository.UserRepo()
 	passwordHash, err := cryptography.CryptoHahser.HashString(payload.Password)
 	if err != nil {
-		apperrors.ValidationFailedError(ctx, &[]error{err})
+		apperrors.ValidationFailedError(ctx, &[]error{err}, device_id)
 		return nil, nil, err
 	}
 	exists, err := userRepo.CountDocs(map[string]any{
 		"email": payload.Email,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx, err)
+		apperrors.FatalServerError(ctx, err, device_id)
 		return nil, nil, err
 	}
 	if exists != 0 {
-		apperrors.EntityAlreadyExistsError(ctx, "User with email already exists")
+		err = errors.New("user with email already exists")
+		apperrors.EntityAlreadyExistsError(ctx, err.Error(), device_id)
 		return nil, nil, err
 	}
 	if os.Getenv("GIN_MODE") == "release" {
 		found := cache.Cache.FindOne(fmt.Sprintf("%s-email-blacklist", payload.Email))
 		if found != nil {
-			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil, nil)
+			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil, nil, device_id)
 			return nil, nil, err
 		}
 		valid, err := identityverification.IdentityVerifier.EmailVerification(payload.Email)
 		if err != nil {
-			apperrors.FatalServerError(ctx, err)
+			apperrors.FatalServerError(ctx, err, device_id)
 			return nil, nil, err
 		}
 		if !valid {
-			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil, nil)
+			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil, nil, device_id)
 			cache.Cache.CreateEntry(fmt.Sprintf("%s-email-blacklist", payload.Email), payload.Email, time.Minute * 0 )
 			return nil, nil, err
 		}
@@ -113,10 +114,10 @@ func CreateAccount(ctx any, payload *entities.User)(*entities.User, *entities.Wa
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists"){
-			apperrors.EntityAlreadyExistsError(ctx, err.Error())
+			apperrors.EntityAlreadyExistsError(ctx, err.Error(), device_id)
 			return nil, nil, err
 		}else {
-			apperrors.ClientError(ctx, err.Error(), nil, nil)
+			apperrors.ClientError(ctx, err.Error(), nil, nil, device_id)
 			return nil, nil, err
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"kego.com/application/controllers"
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
+	"kego.com/application/utils"
 	middlewares "kego.com/infrastructure/middleware"
 )
 
@@ -16,7 +17,7 @@ func InfoRouter(router *gin.RouterGroup) {
 		infoRouter.POST("/countries", middlewares.AuthenticationMiddleware(false, true),  func(ctx *gin.Context) {
 			var body dto.CountryFilter
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			controllers.FilterCountries(&interfaces.ApplicationContext[dto.CountryFilter]{
@@ -42,7 +43,7 @@ func InfoRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.CountryCode
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.CountryCode]{
@@ -57,7 +58,7 @@ func InfoRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.FXRateDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.FXRateDTO]{

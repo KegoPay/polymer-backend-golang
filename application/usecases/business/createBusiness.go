@@ -15,10 +15,10 @@ import (
 	"kego.com/infrastructure/validator"
 )
 
-func CreateBusiness(ctx any, payload *entities.Business) (*entities.Business, *entities.Wallet, error) {
+func CreateBusiness(ctx any, payload *entities.Business, device_id *string) (*entities.Business, *entities.Wallet, error) {
 	validationErr := validator.ValidatorInstance.ValidateStruct(*payload)
 	if validationErr != nil {
-		apperrors.ValidationFailedError(ctx, validationErr)
+		apperrors.ValidationFailedError(ctx, validationErr, device_id)
 		return nil, nil, errors.New("")
 	}
 	businessRepo := repository.BusinessRepo()
@@ -101,10 +101,10 @@ func CreateBusiness(ctx any, payload *entities.Business) (*entities.Business, *e
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists"){
-			apperrors.EntityAlreadyExistsError(ctx, err.Error())
+			apperrors.EntityAlreadyExistsError(ctx, err.Error(), device_id)
 			return nil, nil, err
 		}else {
-			apperrors.ClientError(ctx, err.Error(), nil, nil)
+			apperrors.ClientError(ctx, err.Error(), nil, nil, device_id)
 			return nil, nil, err
 		}
 	}
@@ -122,7 +122,7 @@ func CreateBusiness(ctx any, payload *entities.Business) (*entities.Business, *e
 	})
 	return nil, nil, err
 	}
-	wallet.AccountNumber, wallet.BankName, err = walletUsecases.GenerateNGNDVA(ctx, business.WalletID,  business.Name, "Polymer Software", business.Email, user.BVN)
+	wallet.AccountNumber, wallet.BankName, err = walletUsecases.GenerateNGNDVA(ctx, business.WalletID,  business.Name, "Polymer Software", business.Email, user.BVN, device_id)
 	if err != nil {
 		return business, wallet, nil
 	}

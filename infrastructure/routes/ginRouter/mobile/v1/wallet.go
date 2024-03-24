@@ -6,17 +6,18 @@ import (
 	"kego.com/application/controllers"
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
+	"kego.com/application/utils"
 	middlewares "kego.com/infrastructure/middleware"
 )
 
 func WalletRouter(router *gin.RouterGroup) {
 	walletRouter := router.Group("/wallet")
 	{
-		walletRouter.POST("/:businessID/payment/international/send", middlewares.AttestationMiddleware(false, false), middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+		walletRouter.POST("/:businessID/payment/international/send", middlewares.AttestationMiddleware(), middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SendPaymentDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			body.IPAddress = ctx.ClientIP()
@@ -31,11 +32,11 @@ func WalletRouter(router *gin.RouterGroup) {
 			controllers.InitiateBusinessInternationalPayment(&appContext)
 		})
 
-		walletRouter.POST("/payment/international/send", middlewares.AttestationMiddleware(false, false), middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+		walletRouter.POST("/payment/international/send", middlewares.AttestationMiddleware(), middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SendPaymentDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			body.IPAddress = ctx.ClientIP()
@@ -50,11 +51,11 @@ func WalletRouter(router *gin.RouterGroup) {
 			controllers.InitiatePersonalInternationalPayment(&appContext)
 		})
 
-		walletRouter.POST("/:businessID/payment/local/send", middlewares.AttestationMiddleware(false, false), middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+		walletRouter.POST("/:businessID/payment/local/send", middlewares.AttestationMiddleware(), middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SendPaymentDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			body.IPAddress = ctx.ClientIP()
@@ -73,7 +74,7 @@ func WalletRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SendPaymentDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			body.IPAddress = ctx.ClientIP()
@@ -92,7 +93,7 @@ func WalletRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SendPaymentDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			body.IPAddress = ctx.ClientIP()
@@ -111,7 +112,7 @@ func WalletRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.NameVerificationDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.NameVerificationDTO]{

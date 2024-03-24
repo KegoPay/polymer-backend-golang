@@ -6,6 +6,7 @@ import (
 	"kego.com/application/controllers"
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
+	"kego.com/application/utils"
 	middlewares "kego.com/infrastructure/middleware"
 )
 
@@ -37,7 +38,7 @@ func UserRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.UpdateAddressDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.UpdateAddressDTO]{
@@ -52,7 +53,7 @@ func UserRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.LinkNINDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.LinkNINDTO]{
@@ -67,7 +68,7 @@ func UserRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.UpdatePhoneDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.UpdatePhoneDTO]{
@@ -87,7 +88,7 @@ func UserRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SetPaymentTagDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.SetPaymentTagDTO]{
@@ -102,7 +103,7 @@ func UserRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.ToggleNotificationOptionsDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.ToggleNotificationOptionsDTO]{
@@ -117,7 +118,7 @@ func UserRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.FileUploadOptions
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.FileUploadOptions]{

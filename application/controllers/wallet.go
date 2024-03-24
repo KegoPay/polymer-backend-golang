@@ -29,11 +29,11 @@ import (
 func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
 	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(&ctx.Body.Amount)
 	if err != nil {
-		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
+		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if statusCode != 200 {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney international payment returned with status code %d", statusCode))
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney international payment returned with status code %d", statusCode), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	var fxRate *entities.ParsedExchangeRates = nil
@@ -51,15 +51,15 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}
 	var USDNGN = usdRate / float32(ctx.Body.Amount)
 	if fxRate == nil {
-		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("country %s is not supported", *ctx.Body.DestinationCountryCode))
+		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("country %s is not supported", *ctx.Body.DestinationCountryCode), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if	fxRate.USDRate < constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if fxRate.USDRate > constants.MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(fxRate.NGNRate)
@@ -69,16 +69,16 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		destinationCountry = utils.CountryCodeToCountryName("NG")
 	}
 	if destinationCountry == "" {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", *ctx.Body.DestinationCountryCode))
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", *ctx.Body.DestinationCountryCode), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	trxRef := utils.GenerateUUIDString()
 	businessID := ctx.GetStringParameter("businessID") 
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), utils.Float32ToUint64Currency(totalAmount), ctx.Body.Pin)
+	wallet , err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), utils.Float32ToUint64Currency(totalAmount), ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
-	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(totalAmount), entities.ChimoneyDebitInternational, trxRef)
+	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(totalAmount), entities.ChimoneyDebitInternational, trxRef, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
@@ -88,7 +88,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		BankCode: ctx.Body.BankCode,
 		ValueInUSD: fxRate.USDRate,
 		Reference: trxRef,
-	})
+	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {
 		services.ReverseLockFunds(ctx.Ctx, wallet.ID, trxRef)
 		return
@@ -143,7 +143,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 			Key: "payload",
 			Data: transaction,
 		})
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 
@@ -166,17 +166,17 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 			},
 		})
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
 	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(&ctx.Body.Amount)
 	if err != nil {
-		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
+		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if statusCode != 200 {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney international payment returned with status code %d", statusCode))
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney international payment returned with status code %d", statusCode), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	var fxRate *entities.ParsedExchangeRates = nil
@@ -194,15 +194,15 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}
 	var USDNGN = usdRate / float32(ctx.Body.Amount)
 	if fxRate == nil {
-		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("country %s is not supported", *ctx.Body.DestinationCountryCode))
+		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("country %s is not supported", *ctx.Body.DestinationCountryCode), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if	fxRate.USDRate < constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if fxRate.USDRate > constants.MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(fxRate.NGNRate)
@@ -212,15 +212,15 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		destinationCountry = utils.CountryCodeToCountryName("NG")
 	}
 	if destinationCountry == "" {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", *ctx.Body.DestinationCountryCode))
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", *ctx.Body.DestinationCountryCode), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	trxRef := utils.GenerateUUIDString()
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, nil, ctx.GetStringContextData("UserID"), utils.Float32ToUint64Currency(totalAmount), ctx.Body.Pin)
+	wallet , err := services.InitiatePreAuth(ctx.Ctx, nil, ctx.GetStringContextData("UserID"), utils.Float32ToUint64Currency(totalAmount), ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
-	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(totalAmount), entities.ChimoneyDebitInternational, trxRef)
+	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(totalAmount), entities.ChimoneyDebitInternational, trxRef, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
@@ -230,7 +230,7 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		BankCode: ctx.Body.BankCode,
 		ValueInUSD: fxRate.USDRate,
 		Reference: trxRef,
-	})
+	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {
 		services.ReverseLockFunds(ctx.Ctx, wallet.ID, trxRef)
 		return
@@ -283,7 +283,7 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 			Key: "payload",
 			Data: transaction,
 		})
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 
@@ -306,16 +306,16 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 			},
 		})
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
 	// if ctx.Body.Amount < constants.MINIMUM_LOCAL_TRANSFER_LIMIT {
-	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than ₦%s", currencyformatter.HumanReadableIntCurrency(constants.MINIMUM_LOCAL_TRANSFER_LIMIT)), nil, nil)
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than ₦%s", currencyformatter.HumanReadableIntCurrency(constants.MINIMUM_LOCAL_TRANSFER_LIMIT)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 	// 	return
 	// }
 	// if ctx.Body.Amount >= constants.MAXIMUM_LOCAL_TRANSFER_LIMIT {
-	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than ₦%s at a time", currencyformatter.HumanReadableIntCurrency(constants.MAXIMUM_LOCAL_TRANSFER_LIMIT)), nil, nil)
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than ₦%s at a time", currencyformatter.HumanReadableIntCurrency(constants.MAXIMUM_LOCAL_TRANSFER_LIMIT)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 	// 	return
 	// }
 	// localProcessorFee, polymerFee := utils.GetLocalTransactionFee(ctx.Body.Amount)
@@ -429,39 +429,39 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	// 		"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
 	// 	})
 	// }
-	// server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil)
+	// server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func BusinessLocalPaymentFee(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
 	if ctx.Body.Amount < 1000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil, nil)
+		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if ctx.Body.Amount >= 30000000000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil, nil)
+		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	localProcessorFee, polymerFee := utils.GetLocalTransactionFee(ctx.Body.Amount)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "fee calculated", map[string]any{
 		"processorFee": utils.Float32ToUint64Currency(localProcessorFee),
 		"polymerFee": utils.Float32ToUint64Currency(polymerFee),
-	}, nil, nil)
+	}, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func BusinessInternationalPaymentFee(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
 	if ctx.Body.Amount < 1000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil, nil)
+		apperrors.ClientError(ctx.Ctx, "You cannot send less than ₦10", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if ctx.Body.Amount >= 30000000000 {
-		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil, nil)
+		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	internationalProcessorFee, polymerFee := utils.GetInternationalTransactionFee(utils.UInt64ToFloat32Currency(ctx.Body.Amount))
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "fee calculated", map[string]any{
 		"processorFee": utils.Float32ToUint64Currency(internationalProcessorFee),
 		"polymerFee": utils.Float32ToUint64Currency(polymerFee),
-	}, nil, nil)
+	}, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificationDTO]){
@@ -473,16 +473,16 @@ func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificat
 		}
 	}
 	if bankCode  == "" {
-		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("%s is not a supported bank on our platform yet.", ctx.Body.BankName))
+		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("%s is not a supported bank on our platform yet.", ctx.Body.BankName), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	name := services.NameVerification(ctx.Ctx, ctx.Body.AccountNumber, bankCode)
+	name := services.NameVerification(ctx.Ctx, ctx.Body.AccountNumber, bankCode, ctx.GetHeader("Polymer-Device-Id"))
 	if name == nil {
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "name verification complete", map[string]string{
 		"name": *name,
-	}, nil, nil)
+	}, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]){
@@ -506,10 +506,10 @@ func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]){
 		"currency": 1,
 	}))
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 
@@ -533,8 +533,8 @@ func FetchPastPersonalTransactions(ctx *interfaces.ApplicationContext[any]){
 		"currency": 1,
 	}))
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }

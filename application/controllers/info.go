@@ -20,17 +20,17 @@ import (
 
 func FilterCountries(ctx *interfaces.ApplicationContext[dto.CountryFilter]){
 	countries := countriessupported.FilterCountries(ctx.Body.Service)
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "countries fetched", countries, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "countries fetched", countries, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func FetchLocalBanks(ctx *interfaces.ApplicationContext[any]){
 	banks := bankssupported.SupportedLocalBanks
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "banks fetched", banks, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "banks fetched", banks, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func FetchStateData(ctx *interfaces.ApplicationContext[any]){
 	states := constants.States
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "states fetched", states, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "states fetched", states, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func FetchInternationalBanks(ctx *interfaces.ApplicationContext[dto.CountryCode]){
@@ -39,23 +39,23 @@ func FetchInternationalBanks(ctx *interfaces.ApplicationContext[dto.CountryCode]
 	if ctx.Body.Code == "NG" {
 		banks = &bankssupported.SupportedLocalBanks
 	} else {
-		banks = services.FetchInternationalBanks(ctx.Ctx, ctx.Body.Code)
+		banks = services.FetchInternationalBanks(ctx.Ctx, ctx.Body.Code, ctx.GetHeader("Polymer-Device-Id"))
 	}
 	
 	if banks == nil {
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "banks fetched", banks, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "banks fetched", banks, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func FetchExchangeRates(ctx *interfaces.ApplicationContext[dto.FXRateDTO]){
 	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(ctx.Body.Amount)
 	if err != nil {
-			apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err)
+			apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err, ctx.GetHeader("Polymer-Device-Id"))
 			return
 	}
 	if statusCode != 200 {
-		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney failed to return 200 response code"))
+		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("chimoney failed to return 200 response code"), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	
@@ -73,7 +73,7 @@ func FetchExchangeRates(ctx *interfaces.ApplicationContext[dto.FXRateDTO]){
 				break
 			}
 		}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rate fetched", country, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rate fetched", country, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 	return
 	}
 	var countries []entities.Country
@@ -86,5 +86,5 @@ func FetchExchangeRates(ctx *interfaces.ApplicationContext[dto.FXRateDTO]){
 			}
 		}
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rates fetched", countries, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "rates fetched", countries, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }

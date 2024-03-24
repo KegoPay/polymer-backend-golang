@@ -1,5 +1,7 @@
 package interfaces
 
+import "kego.com/application/utils"
+
 type ApplicationContext[T interface{}] struct{
 	Body *T
 	Keys map[string]any
@@ -57,7 +59,7 @@ func (ac *ApplicationContext[T]) GetBoolParameter(key string) bool {
 	return param.(bool)
 }
 
-func (ac *ApplicationContext[T]) GetHeader(key string) (value any) {
+func (ac *ApplicationContext[T]) GetHeader(key string) (value *string) {
 	header := ac.Header
 	if header == nil {
 		return nil
@@ -65,5 +67,5 @@ func (ac *ApplicationContext[T]) GetHeader(key string) (value any) {
 	if header[key] == nil {
 		return nil
 	}
-	return header[key][0]
+	return utils.GetStringPointer(header[key][0])
 }

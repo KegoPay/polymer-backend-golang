@@ -11,7 +11,7 @@ import (
 	"kego.com/infrastructure/logger"
 )
 
-func DeleteBusiness(ctx any, id string) error {
+func DeleteBusiness(ctx any, id string, device_id *string) error {
 	businessRepo := repository.BusinessRepo()
 	var e error
 	businessRepo.StartTransaction(func(sc mongo.Session, c context.Context) error {
@@ -28,17 +28,17 @@ func DeleteBusiness(ctx any, id string) error {
 				Data: id,
 			})
 			e =  err
-			apperrors.FatalServerError(ctx, err)
+			apperrors.FatalServerError(ctx, err, device_id)
 			return err
 		}
 		if deleted == 0 {
 			(sc).AbortTransaction(c)
 			err = errors.New("business does not exist")
 			e =  err
-			apperrors.NotFoundError(ctx, err.Error())
+			apperrors.NotFoundError(ctx, err.Error(), device_id)
 			return err
 		}
-		err = walletUsecases.DeleteWallet(ctx, c, id)
+		err = walletUsecases.DeleteWallet(ctx, c, id, device_id)
 		if err != nil {
 			e =  err
 		(sc).AbortTransaction(c)

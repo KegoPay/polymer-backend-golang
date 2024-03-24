@@ -29,10 +29,10 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.POST("/account/create", func(ctx *gin.Context) {
+		authRouter.POST("/account/create", middlewares.AttestationMiddleware(), func(ctx *gin.Context) {
 			var body dto.CreateAccountDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			body.DeviceID = ctx.GetHeader("polymer-device-id")
@@ -40,7 +40,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			body.PushNotificationToken = ctx.GetHeader("x-firebase-push-token")
 			appVersion := utils.ExtractAppVersionFromUserAgentHeader(ctx.Request.UserAgent())
 			if appVersion == nil {
-				apperrors.UnsupportedAppVersion(ctx)
+				apperrors.UnsupportedAppVersion(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			body.AppVersion = *appVersion
@@ -50,21 +50,21 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
-		authRouter.POST("/account/login", func(ctx *gin.Context) {
+		authRouter.POST("/account/login", middlewares.AttestationMiddleware(), func(ctx *gin.Context) {
 			var body dto.LoginDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			deviceID := ctx.GetHeader("polymer-device-id")
 			if deviceID == "" {
-				apperrors.AuthenticationError(ctx, "no client id")
+				apperrors.AuthenticationError(ctx, "no client id",  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			body.DeviceID = deviceID
 			pushNotificationToken := ctx.GetHeader("x-firebase-push-token")
 			if pushNotificationToken == "" {
-				apperrors.AuthenticationError(ctx, "no push notification token")
+				apperrors.AuthenticationError(ctx, "no push notification token",  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			body.PushNotificationToken =  pushNotificationToken
@@ -78,7 +78,7 @@ func AuthRouter(router *gin.RouterGroup) {
 		authRouter.POST("/otp/resend", func(ctx *gin.Context) {
 			var body dto.ResendOTP
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			controllers.ResendOTP(&interfaces.ApplicationContext[dto.ResendOTP]{
@@ -91,7 +91,7 @@ func AuthRouter(router *gin.RouterGroup) {
 		authRouter.POST("/otp/verify", func(ctx *gin.Context) {
 			var body dto.VerifyOTPDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			controllers.VerifyOTP(&interfaces.ApplicationContext[dto.VerifyOTPDTO]{
@@ -139,7 +139,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.VerifyAccountData
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			controllers.VerifyAccount(&interfaces.ApplicationContext[dto.VerifyAccountData]{
@@ -152,7 +152,7 @@ func AuthRouter(router *gin.RouterGroup) {
 		authRouter.POST("/account/password/reset", middlewares.OTPTokenMiddleware("update_password"), func(ctx *gin.Context) {
 			var body dto.ResetPasswordDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
@@ -167,7 +167,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.UpdatePassword
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.UpdatePassword]{
@@ -182,7 +182,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.ConfirmPin
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.ConfirmPin]{
@@ -197,7 +197,7 @@ func AuthRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SetTransactionPinDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.SetTransactionPinDTO]{

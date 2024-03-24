@@ -33,17 +33,17 @@ func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 	userRepo := repository.UserRepo()
 	user, err := userRepo.FindByID(ctx.GetStringContextData("UserID"))
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if user == nil {
-		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("This user profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL))
+		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("This user profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	walletRepo := repository.WalletRepo()
 	wallet, err := walletRepo.FindByID(user.WalletID)
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	signupCountries := countriessupported.FilterCountries(entities.SignUp)
@@ -59,7 +59,7 @@ func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 		"account": user,
 		"wallet": wallet,
 		"country": country,
-	}, nil, nil)
+	}, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 // func UpdateUserProfile(ctx *interfaces.ApplicationContext[dto.UpdateUserDTO]){
@@ -70,7 +70,7 @@ func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 // 			Key: "error",
 // 			Data: err,
 // 		})
-// 		apperrors.FatalServerError(ctx.Ctx, err)
+// 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 // 		return
 // 	}
 // 	if ctx.Body.FirstName != nil {
@@ -88,15 +88,15 @@ func FetchUserProfile(ctx *interfaces.ApplicationContext[any]){
 // 		return
 // 	}
 // 	userRepo.UpdateByID(ctx.GetStringContextData("UserID"), user)
-// 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "update completed", nil, nil, nil)
+// 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "update completed", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 // }
 
 func SetPaymentTag(ctx *interfaces.ApplicationContext[dto.SetPaymentTagDTO]){
-	err := userusecases.UpdateUserTag(ctx.Ctx, ctx.GetStringContextData("UserID"), *ctx.Body)
+	err := userusecases.UpdateUserTag(ctx.Ctx, ctx.GetStringContextData("UserID"), *ctx.Body, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Your payment tag has been set successfully", nil, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Your payment tag has been set successfully", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 
@@ -106,13 +106,13 @@ func ToggleNotificationOptions(ctx *interfaces.ApplicationContext[dto.ToggleNoti
 		"notificationOptions": ctx.Body,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if affected == 0 {
-		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("Notification setting could not be updated because profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL))
+		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("Notification setting could not be updated because profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL), ctx.GetHeader("Polymer-Device-Id"))
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Notification setting updated", nil, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "Notification setting updated", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionDTO]) {
@@ -122,26 +122,26 @@ func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionD
 		"channel": ctx.Body.Channel,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if exists != 0 {
 		server_response.Responder.Respond(ctx.Ctx, http.StatusOK,
-			"Seems you have registered with this email previously.\nNot to worry, you still have access to exclusive insights, updates, and special offers delivered straight to your inbox. Thanks for staying connected with us! ", nil, nil, nil)
+			"Seems you have registered with this email previously.\nNot to worry, you still have access to exclusive insights, updates, and special offers delivered straight to your inbox. Thanks for staying connected with us! ", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	found := cache.Cache.FindOne(fmt.Sprintf("%s-email-blacklist", ctx.Body.Email))
 	if found != nil {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("%s was flagged as a suspicious email and was not approved for signup on Polymer", ctx.Body.Email), nil, nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("%s was flagged as a suspicious email and was not approved for signup on Polymer", ctx.Body.Email), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return 
 	}
 	valid, err := identityverification.IdentityVerifier.EmailVerification(ctx.Body.Email)
 	if err != nil {
-		apperrors.FatalServerError(ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return  
 	}
 	if !valid {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("%s was not approved for signup on Polymer", ctx.Body.Email), nil, nil)
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("%s was not approved for signup on Polymer", ctx.Body.Email), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-email-blacklist", ctx.Body.Email), ctx.Body.Email, time.Minute * 0 )
 		return 
 	}
@@ -151,18 +151,18 @@ func EmailSubscription(ctx *interfaces.ApplicationContext[dto.EmailSubscriptionD
 	}
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(payload)
 	if valiedationErr != nil {
-		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	emailSubRepo.CreateOne(context.TODO(), payload)
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "You're in! You now have access to exclusive insights, updates, and special offers delivered straight to your inbox.", nil, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "You're in! You now have access to exclusive insights, updates, and special offers delivered straight to your inbox.", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 
 func UpdateAddress(ctx *interfaces.ApplicationContext[dto.UpdateAddressDTO]) {
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
 	if valiedationErr != nil {
-		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	userRepo := repository.UserRepo()
@@ -176,34 +176,34 @@ func UpdateAddress(ctx *interfaces.ApplicationContext[dto.UpdateAddressDTO]) {
 		},
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if updated != 1 {
-		apperrors.UnknownError(ctx.Ctx, errors.New("could not update users address"))
+		apperrors.UnknownError(ctx.Ctx, errors.New("could not update users address"), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address set", nil, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address set", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 	attemptsLeft := cache.Cache.FindOne(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")))
 	if attemptsLeft == nil {
-		apperrors.ClientError(ctx.Ctx, `You cannot link your NIN to this account at this point, most likely because it has already been done before. If you think this is a mistake and want a manual review please click the button below`, nil, &constants.NIN_VERIFICATION_FAILED)
+		apperrors.ClientError(ctx.Ctx, `You cannot link your NIN to this account at this point, most likely because it has already been done before. If you think this is a mistake and want a manual review please click the button below`, nil, &constants.NIN_VERIFICATION_FAILED, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	parsedAttemptsLeft, err := strconv.Atoi(*attemptsLeft)
 	if err != nil {
-		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual review please click the button below`, nil, &constants.NIN_VERIFICATION_FAILED)
+		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual review please click the button below`, nil, &constants.NIN_VERIFICATION_FAILED, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if parsedAttemptsLeft == 0 {
-		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual review please click the button below`, nil, &constants.NIN_VERIFICATION_FAILED)
+		apperrors.ClientError(ctx.Ctx, `You’ve reached the maximum number of tries allowed for this. If you think this is a mistake and want a manual review please click the button below`, nil, &constants.NIN_VERIFICATION_FAILED, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
 	if valiedationErr != nil {
-		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	userRepo := repository.UserRepo()
@@ -213,29 +213,29 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 		"address": 1,
 	}))
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	ninDetails, err := identityverification.IdentityVerifier.FetchNINDetails(ctx.Body.NIN)
 	if err != nil {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 )
-		apperrors.CustomError(ctx.Ctx, err.Error())
+		apperrors.CustomError(ctx.Ctx, err.Error(), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	result, err := biometric.BiometricService.FaceMatch(account.ProfileImage, ninDetails.Base64Image)
 	if err != nil {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-		apperrors.ClientError(ctx.Ctx, err.Error(), nil, nil)
+		apperrors.ClientError(ctx.Ctx, err.Error(), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if *result < 80 {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-		apperrors.ClientError(ctx.Ctx, "NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual review please click the button below", nil, &constants.NIN_VERIFICATION_FAILED)
+		apperrors.ClientError(ctx.Ctx, "NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual review please click the button below", nil, &constants.NIN_VERIFICATION_FAILED, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	encryptedNIN, err := cryptography.SymmetricEncryption(ctx.Body.NIN)
+	encryptedNIN, err := cryptography.SymmetricEncryption(ctx.Body.NIN, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
-		apperrors.UnknownError(ctx.Ctx, err)
+		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	userUpdatedInfo := map[string]any{
@@ -243,7 +243,7 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 		"ninLinked": true,
 	}
 	if account == nil {
-		apperrors.NotFoundError(ctx.Ctx, "this account no longer exists")
+		apperrors.NotFoundError(ctx.Ctx, "this account no longer exists", ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if account.Phone.IsVerified && account.Address.Verified {
@@ -253,14 +253,14 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 		"id": ctx.GetStringContextData("UserID"),
 	}, userUpdatedInfo)
 	cache.Cache.DeleteOne(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")))
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "NIN verified", nil, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "NIN verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 
 func UpdatePhone(ctx *interfaces.ApplicationContext[dto.UpdatePhoneDTO]) {
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
 	if valiedationErr != nil {
-		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	userRepo := repository.UserRepo()
@@ -273,11 +273,11 @@ func UpdatePhone(ctx *interfaces.ApplicationContext[dto.UpdatePhoneDTO]) {
 		},
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if updated != 1 {
-		apperrors.UnknownError(ctx.Ctx, errors.New("could not update users phone"))
+		apperrors.UnknownError(ctx.Ctx, errors.New("could not update users phone"), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 
@@ -285,19 +285,19 @@ func UpdatePhone(ctx *interfaces.ApplicationContext[dto.UpdatePhoneDTO]) {
 	if ctx.Body.WhatsApp {
 		otp, err = auth.GenerateOTP(6, ctx.Body.Phone)
 		if err != nil {
-			apperrors.FatalServerError(ctx.Ctx, err)
+			apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 			return
 		}
 	}
 	ref := sms.SMSService.SendOTP(fmt.Sprintf("%s%s", "234", ctx.Body.Phone), ctx.Body.WhatsApp, otp)
-	encryptedRef, err := cryptography.SymmetricEncryption(*ref)
+	encryptedRef, err := cryptography.SymmetricEncryption(*ref, nil)
 	if err != nil {
-		apperrors.UnknownError(ctx.Ctx, err)
+		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", ctx.Body.Phone), *encryptedRef, time.Minute * 10)
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Phone), "verify_phone", time.Minute * 10)
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone set", nil, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone set", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func VerifyCurrentAddress(ctx *interfaces.ApplicationContext[any]) {
@@ -308,12 +308,12 @@ func VerifyCurrentAddress(ctx *interfaces.ApplicationContext[any]) {
 		},
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if updated != 1 {
-		apperrors.UnknownError(ctx.Ctx, errors.New("could not update users address"))
+		apperrors.UnknownError(ctx.Ctx, errors.New("could not update users address"), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address verified", nil, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }

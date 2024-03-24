@@ -23,5 +23,5 @@ func FlutterwaveWebhook(ctx *interfaces.ApplicationContext[dto.FlutterwaveWebhoo
 		})
 	}
 
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "processed successfully", nil, nil, nil)
+	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusOK, "processed successfully", nil, nil, nil)
 }

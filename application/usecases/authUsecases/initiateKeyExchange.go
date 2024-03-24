@@ -3,7 +3,6 @@ package authusecases
 import (
 	"crypto/ecdh"
 	"crypto/rand"
-	"fmt"
 	"time"
 
 	apperrors "kego.com/application/appErrors"
@@ -11,31 +10,28 @@ import (
 	"kego.com/infrastructure/database/repository/cache"
 )
 
-func InitiateKetExchange(ctx any, deviceID string, clientPublicKey *ecdh.PublicKey) []byte {
+func InitiateKetExchange(ctx any, deviceID string, clientPublicKey *ecdh.PublicKey, device_id *string) ([]byte, error) {
 	serverPrivateKey, err := ecdh.P256().GenerateKey(rand.Reader)
 	if err != nil {
-		apperrors.FatalServerError(ctx, err)
-		return nil
+		apperrors.FatalServerError(ctx, err, device_id)
+		return nil, err
 	}
 	sharedSecret, err := serverPrivateKey.ECDH(clientPublicKey)
 	if err != nil {
-		apperrors.FatalServerError(ctx, err)
-		return nil
+		apperrors.FatalServerError(ctx, err, device_id)
+		return nil, err
 	}
 	serverPublicKey := serverPrivateKey.PublicKey()
 	parsedSharedSecret := string(sharedSecret)
-	encryptedSecret, err := cryptography.SymmetricEncryption(string(parsedSharedSecret))
+	encryptedSecret, err := cryptography.SymmetricEncryption(string(parsedSharedSecret), nil)
 	if err != nil {
-		apperrors.FatalServerError(ctx, err)
-		return nil
+		apperrors.FatalServerError(ctx, err, device_id)
+		return nil, err
 	}
-	success := cache.Cache.CreateEntry(deviceID, encryptedSecret, time.Minute * 15)
+	success := cache.Cache.CreateEntry(deviceID, *encryptedSecret, time.Minute * 15)
 	if !success {
-		apperrors.FatalServerError(ctx, nil)
-		return nil
+		apperrors.FatalServerError(ctx, nil, device_id)
+		return nil, err
 	}
-	fmt.Println(cache.Cache.FindOne(deviceID))
-	fmt.Println(*cache.Cache.FindOne(deviceID))
-	fmt.Println(parsedSharedSecret)
-	return serverPublicKey.Bytes()
+	return serverPublicKey.Bytes(), nil
 }

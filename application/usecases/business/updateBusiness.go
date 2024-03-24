@@ -9,10 +9,10 @@ import (
 	"kego.com/infrastructure/validator"
 )
 
-func UpdateBusiness(ctx any, payload *dto.UpdateBusinessDTO) error {
+func UpdateBusiness(ctx any, payload *dto.UpdateBusinessDTO, device_id *string) error {
 	validationErr := validator.ValidatorInstance.ValidateStruct(*payload)
 	if validationErr != nil {
-		apperrors.ValidationFailedError(ctx, validationErr)
+		apperrors.ValidationFailedError(ctx, validationErr, device_id)
 		return (*validationErr)[0]
 	}
 
@@ -21,11 +21,11 @@ func UpdateBusiness(ctx any, payload *dto.UpdateBusinessDTO) error {
 		"name": payload.Name,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx, err)
+		apperrors.FatalServerError(ctx, err, device_id)
 		return err
 	}
 	if success == 0 {
-		apperrors.NotFoundError(ctx, "business does not exist")
+		apperrors.NotFoundError(ctx, "business does not exist", device_id)
 		return errors.New("")
 	}
 	return nil

@@ -19,31 +19,31 @@ func CreateBusiness(ctx *interfaces.ApplicationContext[dto.BusinessDTO]){
 		Name: ctx.Body.Name,
 		UserID: ctx.GetStringContextData("UserID"),
 		Email: ctx.Body.Email,
-	})
+	}, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "business created", map[string]any{
 		"business": business,
 		"wallet": wallet,
-	}, nil, nil)
+	}, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func UpdateBusiness(ctx *interfaces.ApplicationContext[dto.UpdateBusinessDTO]){
 	ctx.Body.ID = ctx.GetStringParameter("businessID")
-	err := business.UpdateBusiness(ctx.Ctx, ctx.Body)
+	err := business.UpdateBusiness(ctx.Ctx, ctx.Body, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business updated", nil, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business updated", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func DeleteBusiness(ctx *interfaces.ApplicationContext[any]){
-	err := business.DeleteBusiness(ctx.Ctx, ctx.GetStringParameter("businessID"))
+	err := business.DeleteBusiness(ctx.Ctx, ctx.GetStringParameter("businessID"), ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business deleted", nil, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business deleted", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
@@ -52,11 +52,11 @@ func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
 		"userID": ctx.GetStringContextData("UserID"),
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if business ==  nil {
-		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business fetched", nil, nil, nil)
+		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business fetched", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	walletRepo := repository.WalletRepo()
@@ -64,11 +64,11 @@ func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
 		"businessID": business.ID,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business fetched", map[string]any{
 		"business": business,
 		"wallet": wallet,
-	}, nil, nil)
+	}, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }

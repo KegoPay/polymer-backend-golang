@@ -10,7 +10,6 @@ type LoggerOptions struct{
 	Data interface{}
 }
 
-var MetricMonitor MetricType = (&SentryMonitor{})
 var RequestMetricMonitor  = (&APIToolKitMonitor{})
 
 
@@ -20,7 +19,7 @@ func Info(msg string, payload ...LoggerOptions) {
 	for _, data := range payload{
 		zapFields = append(zapFields, zap.Any(data.Key, data.Data))
 	}
-	MetricMonitor.Log(msg, payload, InfoLevel)
+	// MetricMonitor.Log(msg, payload, InfoLevel)
 	Logger.Info(msg, zapFields...)
 }
 
@@ -30,7 +29,7 @@ func Error(err error, payload ...LoggerOptions) {
 	for _, data := range payload{
 		zapFields = append(zapFields, zap.Any(data.Key, data.Data))
 	}
-	MetricMonitor.ReportError(err, payload)
+	// MetricMonitor.ReportError(err, payload)
 	Logger.Error(err.Error(), zapFields...)
 }
 
@@ -40,6 +39,6 @@ func Warning(msg string, payload ...LoggerOptions) {
 	for _, data := range payload{
 		zapFields = append(zapFields, zap.Any(data.Key, data.Data))
 	}
-	MetricMonitor.Log(msg, payload, InfoLevel)
+	// MetricMonitor.Log(msg, payload, InfoLevel)
 	Logger.Warn(msg, zapFields...)
 }

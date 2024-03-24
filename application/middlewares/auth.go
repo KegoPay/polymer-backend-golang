@@ -18,19 +18,20 @@ import (
 )
 
 func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricted bool) (*interfaces.ApplicationContext[any], bool) {
-	auth_token_header := ctx.GetHeader("Authorization")
-		if auth_token_header == "" || auth_token_header == nil {
-			apperrors.AuthenticationError(ctx.Ctx, "provide an auth token")
+		authTokenHeaderPointer := ctx.GetHeader("Authorization")
+		if authTokenHeaderPointer == nil {
+			apperrors.AuthenticationError(ctx.Ctx, "provide an auth token", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
-		auth_token := strings.Split(auth_token_header.(string), " ")[1]
+		authTokenHeader := *authTokenHeaderPointer
+		auth_token := strings.Split(authTokenHeader, " ")[1]
 		valid_access_token, err := auth.DecodeAuthToken(auth_token)
 		if err != nil {
-			apperrors.AuthenticationError(ctx.Ctx, "this session has expired")
+			apperrors.AuthenticationError(ctx.Ctx, "this session has expired", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
 		if !valid_access_token.Valid {
-			apperrors.AuthenticationError(ctx.Ctx, "invalid access token used")
+			apperrors.AuthenticationError(ctx.Ctx, "invalid access token used", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
 		auth_token_claims := valid_access_token.Claims.(jwt.MapClaims)
@@ -39,44 +40,44 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 			background.Scheduler.Emit("lock_account", map[string]any{
 				"id": auth_token_claims["userID"],
 			})
-			apperrors.AuthenticationError(ctx.Ctx, "this is not an authorized access token")
+			apperrors.AuthenticationError(ctx.Ctx, "this is not an authorized access token", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
 		valid_token := cache.Cache.FindOne(auth_token_claims["userID"].(string))
 		if valid_token == nil {
-			apperrors.AuthenticationError(ctx.Ctx, "this session has expired")
+			apperrors.AuthenticationError(ctx.Ctx, "this session has expired", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
 		match := cryptography.CryptoHahser.VerifyData(*valid_token, auth_token)
 		if !match {
-			apperrors.AuthenticationError(ctx.Ctx, "this session has expired")
+			apperrors.AuthenticationError(ctx.Ctx, "this session has expired", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
 		userRepo := repository.UserRepo()
 		account, err := userRepo.FindByID(auth_token_claims["userID"].(string), options.FindOne().SetProjection(map[string]any{
 			"deactivated": 1,
 			"userAgent": 1,
-			"deviceID": 1,
+			"Polymer-Device-Id": 1,
 			"appVersion": 1,
 			"notificationOptions": 1,
 			"kycCompleted": 1,
 		}))
 		if account == nil {
-			apperrors.NotFoundError(ctx.Ctx, "this account no longer exists")
+			apperrors.NotFoundError(ctx.Ctx, "this account no longer exists", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
 		if account.Deactivated {
-			apperrors.AuthenticationError(ctx.Ctx, "account has been deactivated")
+			apperrors.AuthenticationError(ctx.Ctx, "account has been deactivated", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
 
 		if restricted && !account.KYCCompleted {
-			apperrors.AuthenticationError(ctx.Ctx, "verify your bvn before attempting this action")
+			apperrors.AuthenticationError(ctx.Ctx, "verify your bvn before attempting this action", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
 
-		userAgent := ctx.GetHeader("User-Agent").(string)
-		if auth_token_claims["appVersion"] != account.AppVersion || account.AppVersion != *utils.ExtractAppVersionFromUserAgentHeader(userAgent) ||  auth_token_claims["appVersion"] != *utils.ExtractAppVersionFromUserAgentHeader(userAgent) {
+		userAgent := ctx.GetHeader("User-Agent")
+		if auth_token_claims["appVersion"] != account.AppVersion || account.AppVersion != *utils.ExtractAppVersionFromUserAgentHeader(*userAgent) ||  auth_token_claims["appVersion"] != *utils.ExtractAppVersionFromUserAgentHeader(*userAgent) {
 			logger.Warning("client made request using app version different from that in access token", logger.LoggerOptions{
 				Key: "token appVersion",
 				Data: auth_token_claims["appVersion"],
@@ -85,23 +86,23 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 				Data: account.AppVersion,
 			}, logger.LoggerOptions{
 				Key: "request appVersion",
-				Data: *utils.ExtractAppVersionFromUserAgentHeader(userAgent),
+				Data: *utils.ExtractAppVersionFromUserAgentHeader(*userAgent),
 			})
 			logger.Warning("this triggers a wallet lock")
 			background.Scheduler.Emit("lock_account", map[string]any{
 				"id": auth_token_claims["userID"],
 			})
 			auth.SignOutUser(ctx.Ctx, account.ID, "client made request using app version different from that in access token")
-			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access")
+			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
 		deviceID := ctx.GetHeader("Polymer-Device-Id")
 		if deviceID == nil {
 			auth.SignOutUser(ctx.Ctx, account.ID, "client made request without a device id")
-			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access")
+			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
-		if auth_token_claims["deviceID"] != account.DeviceID || account.DeviceID != deviceID.(string) ||  auth_token_claims["deviceID"] != deviceID.(string) {
+		if auth_token_claims["deviceID"] != account.DeviceID || account.DeviceID != *deviceID ||  auth_token_claims["deviceID"] != *deviceID {
 			logger.Warning("client made request using device id different from that in access token",logger.LoggerOptions{
 				Key: "token appVersion",
 				Data: auth_token_claims["appVersion"],
@@ -110,14 +111,14 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 				Data: account.AppVersion,
 			}, logger.LoggerOptions{
 				Key: "request appVersion",
-				Data: *utils.ExtractAppVersionFromUserAgentHeader(userAgent),
+				Data: *utils.ExtractAppVersionFromUserAgentHeader(*userAgent),
 			})
 			logger.Warning("this triggers a wallet lock")
 			background.Scheduler.Emit("lock_account", map[string]any{
 				"id": auth_token_claims["userID"],
 			})
 			auth.SignOutUser(ctx.Ctx, account.ID, "client made request using device id different from that in access token")
-			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access")
+			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access",  ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
 

@@ -19,7 +19,7 @@ import (
 	"kego.com/infrastructure/logger"
 )
 
-func LoginAccount(ctx any, email *string, phone *string, password *string, appVersion string, userAgent string, deviceID string, pushNotificationToken string, longitude float64, latitude float64) (*entities.User, *entities.Wallet, *string) {
+func LoginAccount(ctx any, email *string, phone *string, password *string, appVersion string, userAgent string, deviceID string, pushNotificationToken string, longitude float64, latitude float64, device_id *string) (*entities.User, *entities.Wallet, *string) {
 	currentTries := cache.Cache.FindOne(fmt.Sprintf("%s-password-tries", *email))
 	if currentTries == nil {
 		currentTries = utils.GetStringPointer("0")
@@ -36,12 +36,12 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 			Key: "data",
 			Data: currentTries,
 		})
-		apperrors.FatalServerError(ctx, err)
+		apperrors.FatalServerError(ctx, err, device_id)
 		return nil, nil, nil
 	}
 	if currentTriesInt == constants.MAX_PASSWORD_TRIES {
 		err = errors.New("you have exceeded the number of tries for your password and your account has been temporarily locked for 5 days")
-		apperrors.AuthenticationError(ctx, err.Error())
+		apperrors.AuthenticationError(ctx, err.Error(), device_id)
 		return nil, nil, nil
 	}
 	userRepo := repository.UserRepo()
@@ -57,19 +57,19 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		})
 	}
 	if err != nil {
-		apperrors.FatalServerError(ctx, err)
+		apperrors.FatalServerError(ctx, err, device_id)
 		return nil, nil, nil
 	}
 	if account == nil {
-		apperrors.NotFoundError(ctx, "this account does not exist")
+		apperrors.NotFoundError(ctx, "this account does not exist", device_id)
 		return nil, nil, nil
 	}
 	if !account.EmailVerified {
-		apperrors.ClientError(ctx, "verify your email to use it to login", nil, &constants.EMAIL_UNVERIFIED)
+		apperrors.ClientError(ctx, "verify your email to use it to login", nil, &constants.EMAIL_UNVERIFIED, device_id)
 		return nil, nil, nil
 	}
 	if account.Deactivated {
-		apperrors.ClientError(ctx, "this account has been deactivated", nil, nil)
+		apperrors.ClientError(ctx, "this account has been deactivated", nil, nil, device_id)
 		return nil, nil, nil
 	}
 	passwordMatch := cryptography.CryptoHahser.VerifyData(account.Password, *password)
@@ -80,7 +80,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		if currentTriesInt == 0 {
 			msg =  "you have exceeded maximum password tries and your account has been locked"
 		}
-		apperrors.AuthenticationError(ctx, msg)
+		apperrors.AuthenticationError(ctx, msg, device_id)
 		return nil, nil, nil
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-password-tries", *email), 0, 0)
@@ -105,7 +105,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		PushNotificationToken: account.PushNotificationToken,
 	})
 	if err != nil {
-		apperrors.UnknownError(ctx, err)
+		apperrors.UnknownError(ctx, err, device_id)
 		return nil, nil, nil
 	}
 	var updateAccountPayload = map[string]any{}
@@ -123,14 +123,14 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 	userRepo.UpdatePartialByID(account.ID,updateAccountPayload)
 	hashedToken, err := cryptography.CryptoHahser.HashString(*token)
 	if err != nil {
-		apperrors.FatalServerError(ctx, err)
+		apperrors.FatalServerError(ctx, err, device_id)
 		return nil, nil, nil
 	}
 	cache.Cache.CreateEntry(account.ID, hashedToken, time.Minute * time.Duration(10)) // cache authentication token for 10 mins
 	walletRepo := repository.WalletRepo()
 	wallet, err := walletRepo.FindByID(account.WalletID)
 	if err != nil {
-		apperrors.FatalServerError(ctx, fmt.Errorf("failed to find user wallet by id on login. walletID %s", account.WalletID))
+		apperrors.FatalServerError(ctx, fmt.Errorf("failed to find user wallet by id on login. walletID %s", account.WalletID), device_id)
 		return nil, nil, nil
 	}
 	return account, wallet, token

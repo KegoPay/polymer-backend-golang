@@ -6,7 +6,7 @@ import (
 	"kego.com/application/middlewares"
 )
 
-func AttestationMiddleware(business_route bool, restricted bool) gin.HandlerFunc {
+func AttestationMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		appContext, next := middlewares.AttestationVerifier(&interfaces.ApplicationContext[any]{
 			Ctx:    ctx,

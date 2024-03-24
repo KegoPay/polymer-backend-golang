@@ -20,7 +20,7 @@ import (
 )
 
 
-func GetWalletByBusinessID(ctx any, id string, userID string) (*entities.Wallet, error) {
+func GetWalletByBusinessID(ctx any, id string, userID string, device_id *string) (*entities.Wallet, error) {
 	walletRepository := repository.WalletRepo()
 	wallet, err := walletRepository.FindOneByFilter(map[string]interface{}{
 		"businessID": id,
@@ -33,18 +33,18 @@ func GetWalletByBusinessID(ctx any, id string, userID string) (*entities.Wallet,
 			Key: "businessID",
 			Data: id,
 		})
-		apperrors.FatalServerError(ctx, err)
+		apperrors.FatalServerError(ctx, err, device_id)
 		return nil, err
 	}
 	if wallet == nil {
 		err := fmt.Errorf("This wallet was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL)
-		apperrors.NotFoundError(ctx, err.Error())
+		apperrors.NotFoundError(ctx, err.Error(), device_id)
 		return nil, err
 	} 
 	return wallet, nil
 }
 
-func GetWalletByUserID(ctx any, id string) (*entities.Wallet, error) {
+func GetWalletByUserID(ctx any, id string, device_id *string) (*entities.Wallet, error) {
 	walletRepository := repository.WalletRepo()
 	wallet, err := walletRepository.FindOneByFilter(map[string]interface{}{
 		"userID": id,
@@ -57,18 +57,18 @@ func GetWalletByUserID(ctx any, id string) (*entities.Wallet, error) {
 			Key: "userID",
 			Data: id,
 		})
-		apperrors.FatalServerError(ctx, err)
+		apperrors.FatalServerError(ctx, err, device_id)
 		return nil, err
 	}
 	if wallet == nil {
 		err := fmt.Errorf("This wallet was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL)
-		apperrors.NotFoundError(ctx, err.Error())
+		apperrors.NotFoundError(ctx, err.Error(), device_id)
 		return nil, err
 	} 
 	return wallet, nil
 }
 
-func FreezeWallet(ctx any, walletID string, userID string, reason wallet_constants.FrozenAccountReason, time wallet_constants.FrozenAccountTime) (bool, error) {
+func FreezeWallet(ctx any, walletID string, userID string, reason wallet_constants.FrozenAccountReason, time wallet_constants.FrozenAccountTime, device_id *string) (bool, error) {
 	walletRepository := repository.WalletRepo()
 	frozenWalletLogRepository := repository.FrozenWalletLogRepo()
 	affected, err := walletRepository.UpdatePartialByID(walletID, map[string]any{
@@ -88,7 +88,7 @@ func FreezeWallet(ctx any, walletID string, userID string, reason wallet_constan
 			Key: "error",
 			Data: err,
 		})
-		apperrors.UnknownError(ctx, err)
+		apperrors.UnknownError(ctx, err, device_id)
 		return false, err
 	}
 	if affected == 0 {
@@ -102,7 +102,7 @@ func FreezeWallet(ctx any, walletID string, userID string, reason wallet_constan
 			Key: "userID",
 			Data: userID,
 		})
-		apperrors.UnknownError(ctx, fmt.Errorf("could not freeze walletID %s | userID %s | reason %s", walletID, userID, reason))
+		apperrors.UnknownError(ctx, fmt.Errorf("could not freeze walletID %s | userID %s | reason %s", walletID, userID, reason), device_id)
 		return false, err
 
 	}
@@ -127,13 +127,13 @@ func FreezeWallet(ctx any, walletID string, userID string, reason wallet_constan
 			Key: "error",
 			Data: err,
 		})
-		apperrors.UnknownError(ctx, err)
+		apperrors.UnknownError(ctx, err, device_id)
 		return false, err
 	}
 	return true, nil
 }
 
-func verifyTransactionPinByUserID(ctx any, userID string, pin string) (bool, error){
+func verifyTransactionPinByUserID(ctx any, userID string, pin string, device_id *string) (bool, error){
 	currentTries := cache.Cache.FindOne(fmt.Sprintf("%s-transaction-pin-tries", userID))
 	if currentTries == nil {
 		currentTries = utils.GetStringPointer("0")
@@ -150,12 +150,12 @@ func verifyTransactionPinByUserID(ctx any, userID string, pin string) (bool, err
 			Key: "data",
 			Data: currentTries,
 		})
-		apperrors.FatalServerError(ctx, err)
+		apperrors.FatalServerError(ctx, err, device_id)
 		return false, err
 	}
 	if currentTriesInt == constants.MAX_TRANSACTION_PIN_TRIES {
 		err = errors.New("You have exceeded the number of tries for your transaction pin and your account has been temporarily locked for 5 days.")
-		apperrors.AuthenticationError(ctx, err.Error())
+		apperrors.AuthenticationError(ctx, err.Error(), device_id)
 		return false, err
 	}
 	userRepository := repository.UserRepo()
@@ -172,12 +172,12 @@ func verifyTransactionPinByUserID(ctx any, userID string, pin string) (bool, err
 	}
 	if user == nil {
 		err = fmt.Errorf("This user profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL)
-		apperrors.NotFoundError(ctx, err.Error())
+		apperrors.NotFoundError(ctx, err.Error(), device_id)
 		return false, err
 	} 
 	if user.TransactionPin == "" {
 		err =  errors.New( "Set a transaction pin before attempting to send money")
-		apperrors.ClientError(ctx, err.Error(), nil, nil)
+		apperrors.ClientError(ctx, err.Error(), nil, nil, device_id)
 		return false, err
 	}
 	pinMatch := cryptography.CryptoHahser.VerifyData(user.TransactionPin, pin)
@@ -185,53 +185,53 @@ func verifyTransactionPinByUserID(ctx any, userID string, pin string) (bool, err
 		currentTriesInt =  currentTriesInt + 1
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-transaction-pin-tries", userID), fmt.Sprintf("%d", currentTriesInt), time.Hour * 24 * 5)
 		err = errors.New("wrong pin")
-		apperrors.NotFoundError(ctx, err.Error())
+		apperrors.NotFoundError(ctx, err.Error(), device_id)
 		return false, err
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-transaction-pin-tries", userID), 0, 0)
 	return pinMatch, nil
 }
 
-func verifyWalletBalance(ctx any, wallet *entities.Wallet, amount uint64) (bool, error) {
+func verifyWalletBalance(ctx any, wallet *entities.Wallet, amount uint64, device_id *string) (bool, error) {
 	if wallet.Frozen {
 		err := fmt.Errorf("This wallet has been frozen and cannot carry out any transaction at the moment. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL)
-		apperrors.AuthenticationError(ctx, err.Error())
+		apperrors.AuthenticationError(ctx, err.Error(), device_id)
 		return false, err
 	}
 	if wallet.Balance < amount {
 		err := fmt.Errorf("Insufficient funds. Credit your account with at least %s%v to complete this transaction.", wallet.Currency, utils.UInt64ToFloat32Currency(amount))
-		apperrors.ClientError(ctx, err.Error(), nil, nil)
+		apperrors.ClientError(ctx, err.Error(), nil, nil, device_id)
 		return false, err
 	}
 	return true, nil
 }
 
-func InitiatePreAuth(ctx any, businessID *string, userID string, amount uint64, pin string) (*entities.Wallet, error) {
+func InitiatePreAuth(ctx any, businessID *string, userID string, amount uint64, pin string, device_id *string) (*entities.Wallet, error) {
 	var wallet *entities.Wallet
 	var err error
 	if businessID != nil {
-		wallet, err = GetWalletByBusinessID(ctx, *businessID, userID)
+		wallet, err = GetWalletByBusinessID(ctx, *businessID, userID, device_id)
 		if err != nil {
 			return nil, err
 		}
 	}else {
-		wallet, err = GetWalletByUserID(ctx, userID)
+		wallet, err = GetWalletByUserID(ctx, userID, device_id)
 		if err != nil {
 			return nil, err
 		}
 	}
-	success, err := verifyTransactionPinByUserID(ctx, userID, pin)
+	success, err := verifyTransactionPinByUserID(ctx, userID, pin, device_id)
 	if err != nil  || !success{
 		return nil, err
 	}
-	success, err = verifyWalletBalance(ctx, wallet, amount)
+	success, err = verifyWalletBalance(ctx, wallet, amount, device_id)
 	if err != nil  || !success {
 		return nil, err
 	}
 	return wallet, nil
 }
 
-func LockFunds(ctx any, wallet *entities.Wallet, amount uint64, intent entities.TransactionIntent, reference string) error {
+func LockFunds(ctx any, wallet *entities.Wallet, amount uint64, intent entities.TransactionIntent, reference string, device_id *string) error {
 	lockedFundsLog := entities.LockedFunds{
 		LockedFundsID: reference,
 		Amount: amount,
@@ -260,7 +260,7 @@ func LockFunds(ctx any, wallet *entities.Wallet, amount uint64, intent entities.
 			Key: "error",
 			Data: err,
 		})
-		apperrors.UnknownError(ctx, err)
+		apperrors.UnknownError(ctx, err, device_id)
 		return err
 	}
 	if affected == 0 {
@@ -271,7 +271,7 @@ func LockFunds(ctx any, wallet *entities.Wallet, amount uint64, intent entities.
 			Key: "wallet",
 			Data: wallet,
 		})
-		apperrors.UnknownError(ctx, fmt.Errorf("could not lock funds for walletID %s | intent %s", wallet.ID, intent))
+		apperrors.UnknownError(ctx, fmt.Errorf("could not lock funds for walletID %s | intent %s", wallet.ID, intent), device_id)
 		return err
 	}
 	return nil

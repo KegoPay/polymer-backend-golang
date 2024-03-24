@@ -49,7 +49,7 @@ func (s *ginServer)Start(){
 	server.Use(ratelimiter.LeakyBucket())
 	server.MaxMultipartMemory =  15 << 20  // 8 MiB
 
-	server.Use(logger.MetricMonitor.MetricMiddleware().(gin.HandlerFunc))
+	// server.Use(logger.MetricMonitor.MetricMiddleware().(gin.HandlerFunc))
 	server.Use(logger.RequestMetricMonitor.RequestMetricMiddleware().(func (*gin.Context)))
 
 	v1 := server.Group("/api",)
@@ -75,11 +75,11 @@ func (s *ginServer)Start(){
 	}
 
 	server.GET("/ping", func(ctx *gin.Context) {
-		server_response.Responder.Respond(ctx, http.StatusOK, "pong!", nil, nil, nil)
+		server_response.Responder.UnEncryptedRespond(ctx, http.StatusOK, "pong!", nil, nil, nil)
 	})
 
 	server.NoRoute(func(ctx *gin.Context) {
-		apperrors.NotFoundError(ctx, fmt.Sprintf("%s %s does not exist", ctx.Request.Method, ctx.Request.URL))
+		apperrors.NotFoundError(ctx, fmt.Sprintf("%s %s does not exist", ctx.Request.Method, ctx.Request.URL), nil)
 	})
 
 	gin_mode := os.Getenv("GIN_MODE")

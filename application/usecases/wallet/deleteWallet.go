@@ -9,7 +9,7 @@ import (
 	"kego.com/infrastructure/logger"
 )
 
-func DeleteWallet(ctx any, transactionCtx context.Context, businessID string) error {
+func DeleteWallet(ctx any, transactionCtx context.Context, businessID string, device_id *string) error {
 	walletRepo := repository.WalletRepo()
 	deleted, err := walletRepo.DeleteOne(transactionCtx, map[string]interface{}{
 		"businessID": businessID,
@@ -19,11 +19,11 @@ func DeleteWallet(ctx any, transactionCtx context.Context, businessID string) er
 			Key: "error",
 			Data: err,
 		})
-		apperrors.FatalServerError(ctx, err)
+		apperrors.FatalServerError(ctx, err, device_id)
 		return err
 	}
 	if deleted == 0 {
-		apperrors.NotFoundError(ctx, "wallet does not exist")
+		apperrors.NotFoundError(ctx, "wallet does not exist", device_id)
 		return errors.New("")
 	}
 	return nil

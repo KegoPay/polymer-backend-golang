@@ -18,7 +18,7 @@ func EmailSubsRouter(router *gin.RouterGroup) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.EmailSubscriptionDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx)
+				apperrors.ErrorProcessingPayload(ctx, nil)
 				return
 			}
 			appContext := interfaces.ApplicationContext[dto.EmailSubscriptionDTO]{

@@ -18,12 +18,12 @@ func WebhookRouter(router *gin.RouterGroup) {
 			var body dto.FlutterwaveWebhookDTO
 			if ctx.Request.Header.Get("Content-Type") == "application/json" {
 				if err := ctx.BindJSON(&body); err != nil {
-					apperrors.ErrorProcessingPayload(ctx)
+					apperrors.ErrorProcessingPayload(ctx, nil)
 					return
 				}
 			}else {
 				if err := ctx.Bind(&body); err != nil {
-					apperrors.ErrorProcessingPayload(ctx)
+					apperrors.ErrorProcessingPayload(ctx, nil)
 					return
 				}
 			}

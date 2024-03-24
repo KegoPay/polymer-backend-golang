@@ -16,7 +16,7 @@ import (
 func ErrSupportRequest(ctx *interfaces.ApplicationContext[dto.ErrorSupportRequestDTO]){
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
 	if valiedationErr != nil {
-		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr)
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	errSupportRequestRepo := repository.ErrorSupportRequestRepo()
@@ -26,8 +26,8 @@ func ErrSupportRequest(ctx *interfaces.ApplicationContext[dto.ErrorSupportReques
 		Email: ctx.GetStringContextData("Email"),
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err)
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "support request sent", nil, nil, nil)
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "support request sent", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
