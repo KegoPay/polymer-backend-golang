@@ -72,10 +72,39 @@ func (fpp *FlutterwavePaymentProcessor) InitiateLocalTransfer(payload *types.Ini
 		return nil, statusCode,  errors.New("an error occured while generating local transfer")
 	}
 
-	var flwResponse types.InitiateLocalTransferPayloadResponse
+	var flwResponse types.InitiateTransferPayloadResponse
 	json.Unmarshal(*response, &flwResponse)
 	if *statusCode != 200 {
 		err = errors.New("failed to initiate local transfer")
+		logger.Error(err, logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key: "body",
+			Data: flwResponse,
+		})
+		return nil, statusCode, err
+	}
+	return &flwResponse.Data, statusCode, nil
+}
+
+func (fpp *FlutterwavePaymentProcessor) InitiateMobileMoneyTransfer(payload *types.InitiateLocalTransferPayload) (*types.InitiateLocalTransferDataField, *int, error) {
+	response, statusCode, err := fpp.Network.Post("/transfers", &map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", fpp.AuthToken),
+		"Content-Type": "application/json",
+	}, payload, nil)
+	if err != nil {
+		logger.Error(errors.New("an error occured while initiating mobile money transfer on flutterwave"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		return nil, statusCode,  errors.New("an error occured while generating mobile money transfer")
+	}
+
+	var flwResponse types.InitiateTransferPayloadResponse
+	json.Unmarshal(*response, &flwResponse)
+	if *statusCode != 200 {
+		err = errors.New("failed to initiate mobile money transfer")
 		logger.Error(err, logger.LoggerOptions{
 			Key: "error",
 			Data: err,

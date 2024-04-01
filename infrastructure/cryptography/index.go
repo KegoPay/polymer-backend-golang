@@ -6,6 +6,7 @@ import (
 	"crypto/ecdh"
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -104,5 +105,9 @@ func SymmetricEncryption(data string, enc_key *string) (*string, error) {
         return nil, err
     }
 	encryptedData := string(gcm.Seal(nonce, nonce, []byte(data), nil))
+	fmt.Println("--")
+	fmt.Println("--")
+	fmt.Println("--")
+	fmt.Println(encryptedData)
     return &encryptedData, nil
 }

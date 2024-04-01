@@ -31,8 +31,9 @@ func GetInt64Pointer(data int64) *int64 {
 	return &data
 }
 
-func GetInternationalTransactionFee(amount float32) (internationalProcessorFee float32, transactionFee float32) {
+func GetInternationalTransactionFee(amount float32) (internationalProcessorFee float32, transactionFee float32, transactionFeeVat float32) {
 	transactionFee = amount * constants.INTERNATIONAL_TRANSACTION_FEE_RATE
+	transactionFeeVat = amount * constants.INTERNATIONAL_TRANSACTION_FEE_VAT
 	internationalProcessorFee = amount * constants.INTERNATIONAL_PROCESSOR_FEE_RATE
     return
 }

@@ -47,7 +47,8 @@ type Transaction struct {
 	TransactionReference string               `bson:"transactionReference" json:"transactionReference" validate:"required"`
 	Amount               uint64               `bson:"amount" json:"amount" validate:"required"`
 	AmountInNGN          uint64          	  `bson:"amountInNGN" json:"amountInNGN" validate:"required"`
-	Fee          		 uint64          	  `bson:"fee" json:"fee" validate:"required"`
+	Fee			         uint64          	  `bson:"fee" json:"fee" validate:"required"`
+	Vat           		 uint64          	  `bson:"vat" json:"vat" validate:"required"`
 	ProcessorFee         uint64          	  `bson:"processorFee" json:"processorFee" validate:"required"`
 	AmountInUSD          *uint64              `bson:"amountInUSD" json:"amountInUSD" validate:"required"`
 	Currency             string               `bson:"currency" json:"currency" validate:"iso4217"`

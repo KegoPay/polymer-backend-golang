@@ -3,6 +3,7 @@ package types
 type LocalPaymentProcessorType interface {
 	InitialisePaymentProcessor()
 	NameVerification(accountNumber string, bankCode string) (*NameVerificationResponseField, *int, error)
+	InitiateMobileMoneyTransfer(payload *InitiateLocalTransferPayload) (*InitiateLocalTransferDataField, *int, error)
 	InitiateLocalTransfer(payload *InitiateLocalTransferPayload) (*InitiateLocalTransferDataField, *int, error)
 	GenerateDVA(payload *CreateVirtualAccountPayload) (*VirtualAccountPayload, *int, error)
 }
@@ -36,7 +37,7 @@ type InitiateLocalTransferMeta struct {
 	UserID		string 	`json:"userID"`
 }
 
-type InitiateLocalTransferPayloadResponse struct {
+type InitiateTransferPayloadResponse struct {
 	Status 		string									`json:"status"`
 	Message 	string									`json:"message"`
 	Data		InitiateLocalTransferDataField			`json:"data"`

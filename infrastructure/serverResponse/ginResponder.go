@@ -51,7 +51,13 @@ func (gr ginResponder)Respond(ctx interface{}, code int, message string, payload
 		})
 		return
 	}
-	encryptedResponse, _ := cryptography.SymmetricEncryption(string(jsonResponse), enc_key)
+	encryptedResponse, err := cryptography.SymmetricEncryption(string(jsonResponse), enc_key)
+	if err != nil {
+		logger.Error(errors.New("error encrypting data"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+	}
 	ginCtx.JSON(code, *encryptedResponse)
 }
 

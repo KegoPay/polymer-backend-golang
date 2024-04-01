@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
 	apperrors "kego.com/application/appErrors"
@@ -27,6 +28,7 @@ import (
 )
 
 func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
+	var wg sync.WaitGroup
 	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(&ctx.Body.Amount)
 	if err != nil {
 		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err, ctx.GetHeader("Polymer-Device-Id"))
@@ -62,8 +64,8 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(fxRate.NGNRate)
-	totalAmount := internationalProcessorFee + transactionFee + fxRate.NGNRate
+	internationalProcessorFee, transactionFee, transactionFeeVat  := utils.GetInternationalTransactionFee(fxRate.NGNRate)
+	totalAmount := internationalProcessorFee + transactionFee + fxRate.NGNRate + transactionFeeVat
 	destinationCountry := utils.CountryCodeToCountryName(*ctx.Body.DestinationCountryCode)
 	if os.Getenv("GIN_MODE") != "release" {
 		destinationCountry = utils.CountryCodeToCountryName("NG")
@@ -78,10 +80,90 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	if err != nil {
 		return
 	}
-	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(totalAmount), entities.ChimoneyDebitInternational, trxRef, ctx.GetHeader("Polymer-Device-Id"))
-	if err != nil {
-		return
-	}
+
+
+	// wg.Add(1)
+	// go func (totalAmount float32, trxRef string, wallet *entities.Wallet, ctx any, deviceID *string)  {
+	// 	defer wg.Done()
+	// 	err = services.LockFunds(ctx, wallet, utils.Float32ToUint64Currency(totalAmount), entities.ChimoneyDebitInternational, trxRef, deviceID)
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// }(totalAmount, trxRef, wallet, ctx.Ctx, ctx.GetHeader("Polymer-Device-Id"))
+
+	errChan := make(chan error, 4)
+	wg.Add(1)
+	// lock amount to be sent
+	go func ()  {
+		defer wg.Done()
+		err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(fxRate.NGNRate), entities.ChimoneyDebitInternational, trxRef, ctx.GetHeader("Polymer-Device-Id"))
+		if err != nil {
+			logger.Error(errors.New("error locking amount to be sent"), logger.LoggerOptions{
+				Key: "error",
+				Data: err,
+			}, logger.LoggerOptions{
+				Key: "payload",
+				Data: ctx.Body,
+			})
+			errChan <- err
+			return
+		}
+	}()
+	// lock chimoney transaction fee
+	wg.Add(1)
+	go func ()  {
+		defer wg.Done()
+		err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(internationalProcessorFee), entities.ChimoneyDebitInternational, trxRef, ctx.GetHeader("Polymer-Device-Id"))
+		if err != nil {
+			logger.Error(errors.New("error locking chimoney transaction fee"), logger.LoggerOptions{
+				Key: "error",
+				Data: err,
+			}, logger.LoggerOptions{
+				Key: "payload",
+				Data: ctx.Body,
+			})
+			errChan <- err
+			return
+		}
+	}()
+	// lock polymer transaction fee
+	wg.Add(1)
+	go func ()  {
+		defer wg.Done()
+		err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(transactionFee), entities.ChimoneyDebitInternational, trxRef, ctx.GetHeader("Polymer-Device-Id"))
+		if err != nil {
+			logger.Error(errors.New("error locking polymer processing fee"), logger.LoggerOptions{
+				Key: "error",
+				Data: err,
+			}, logger.LoggerOptions{
+				Key: "payload",
+				Data: ctx.Body,
+			}, logger.LoggerOptions{
+				Key: "payload",
+				Data: ctx.Body,
+			})
+			errChan <- err
+			return
+		}
+	}()
+	// lock polymer vat
+	wg.Add(1)
+	go func ()  {
+		defer wg.Done()
+		err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(transactionFeeVat), entities.ChimoneyDebitInternational, trxRef, ctx.GetHeader("Polymer-Device-Id"))
+		if err != nil {
+			logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
+				Key: "error",
+				Data: err,
+			}, logger.LoggerOptions{
+				Key: "payload",
+				Data: ctx.Body,
+			})
+			errChan <- err
+			return
+		}
+	}()
+
 	response := services.InitiateInternationalPayment(ctx.Ctx, &international_payment_processor.InternationalPaymentRequestPayload{
 		DestinationCountry: destinationCountry,
 		AccountNumber: ctx.Body.AccountNumber,
@@ -100,6 +182,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		AmountInUSD: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(response.Chimoneys[0].ValueInUSD)),
 		AmountInNGN: utils.Float32ToUint64Currency(totalAmount),
 		Fee: utils.Float32ToUint64Currency(transactionFee),
+		Vat: utils.Float32ToUint64Currency(transactionFeeVat),
 		ProcessorFeeCurrency: "USD",
 		ProcessorFee: utils.Float32ToUint64Currency(internationalProcessorFee),
 		Amount: ctx.Body.Amount,
@@ -116,6 +199,8 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		}(),
 		Location: entities.Location{
 			IPAddress: ctx.Body.IPAddress,
+			Latitude: ctx.GetFloat64ContextData("Latitude"),
+			Longitude: ctx.GetFloat64ContextData("Longitude"),
 		},
 		Intent: entities.ChimoneyDebitInternational,
 		DeviceInfo: &entities.DeviceInfo{
@@ -205,8 +290,8 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency(USDNGN)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	internationalProcessorFee, transactionFee  := utils.GetInternationalTransactionFee(fxRate.NGNRate)
-	totalAmount := internationalProcessorFee + transactionFee + fxRate.NGNRate
+	internationalProcessorFee, transactionFee, transactionFeeVat  := utils.GetInternationalTransactionFee(fxRate.NGNRate)
+	totalAmount := internationalProcessorFee + transactionFee + fxRate.NGNRate + transactionFeeVat
 	destinationCountry := utils.CountryCodeToCountryName(*ctx.Body.DestinationCountryCode)
 	if os.Getenv("GIN_MODE") != "release" {
 		destinationCountry = utils.CountryCodeToCountryName("NG")
@@ -257,6 +342,8 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		}(),
 		Location: entities.Location{
 			IPAddress: ctx.Body.IPAddress,
+			Latitude: ctx.GetFloat64ContextData("Latitude"),
+			Longitude: ctx.GetFloat64ContextData("Longitude"),
 		},
 		Intent: entities.ChimoneyDebitInternational,
 		DeviceInfo: &entities.DeviceInfo{
@@ -457,7 +544,7 @@ func BusinessInternationalPaymentFee(ctx *interfaces.ApplicationContext[dto.Send
 		apperrors.ClientError(ctx.Ctx, "You cannot send more than ₦300,000,000 at a time", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	internationalProcessorFee, polymerFee := utils.GetInternationalTransactionFee(utils.UInt64ToFloat32Currency(ctx.Body.Amount))
+	internationalProcessorFee, polymerFee, _ := utils.GetInternationalTransactionFee(utils.UInt64ToFloat32Currency(ctx.Body.Amount))
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "fee calculated", map[string]any{
 		"processorFee": utils.Float32ToUint64Currency(internationalProcessorFee),
 		"polymerFee": utils.Float32ToUint64Currency(polymerFee),
