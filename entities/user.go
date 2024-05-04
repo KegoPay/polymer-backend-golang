@@ -11,6 +11,12 @@ type NotificationOptions struct {
 	Emails 			 bool `bson:"emails" json:"emails"`
 }
 
+type NextOfKin struct {
+	FirstName 		string `bson:"firstName" json:"firstName"`
+	LastName 		string `bson:"lastName" json:"lastName"`
+	Relationship 	string `bson:"relationship" json:"relationship"`
+}
+
 type Address struct {
 	FullAddress 	*string 	`bson:"fullAddress" json:"fullAddress"`
 	Verified 		bool 	`bson:"verified" json:"verified"`
@@ -53,6 +59,7 @@ type User struct {
 	Latitude		  		  		float64 	  			`bson:"latitude" json:"latitude"`
 	Tier		  		  			uint 	  			 	`bson:"tier" json:"tier"`
 	NotificationOptions		  		NotificationOptions  	`bson:"notificationOptions" json:"notificationOptions"`
+	NextOfKin		  				NextOfKin  				`bson:"nextOfKin" json:"nextOfKin"`
 
 	ID        string    `bson:"_id" json:"id"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`

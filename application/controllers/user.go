@@ -317,3 +317,28 @@ func VerifyCurrentAddress(ctx *interfaces.ApplicationContext[any]) {
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "address verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
+
+func SetNextOfKin(ctx *interfaces.ApplicationContext[dto.SetNextOfKin]) {
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	userRepo := repository.UserRepo()
+	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]any{
+		"nextOfKin": entities.NextOfKin{
+			FirstName: ctx.Body.FirstName,
+			LastName: ctx.Body.LastName,
+			Relationship: ctx.Body.Relationship,
+		},
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if updated != 1 {
+		apperrors.UnknownError(ctx.Ctx, errors.New("could not update next of kin"), ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "next of kin updated", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+}

@@ -6,7 +6,7 @@ type SendPaymentDTO struct {
 	Pin         			string       	 `json:"pin"`
 	FullName         		*string      	 `json:"fullName"`
 	Amount      			uint64      	 `json:"amount"`
-	DestinationCountryCode  *string 		 	 `json:"destinationCountryCode"`
+	DestinationCountryCode  *string 		 `json:"destinationCountryCode"`
 	BankCode				string 		 	 `json:"bankCode"`
 	BranchCode				*string 		 `json:"branchCode"`
 	AccountNumber 			string 			 `json:"accountNumber"`

@@ -128,5 +128,20 @@ func UserRouter(router *gin.RouterGroup) {
 			}
 			controllers.GenerateFileURL(&appContext)
 		})
+
+		userRouter.POST("/nextofkin/set", middlewares.AuthenticationMiddleware(false, false), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.SetNextOfKin
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.SetNextOfKin]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.SetNextOfKin(&appContext)
+		})
 	}
 }

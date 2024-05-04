@@ -21,3 +21,9 @@ type UpdatePhoneDTO struct {
 type LinkNINDTO struct {
 	NIN 	  string     `bson:"nin" json:"nin" validate:"required,numeric,len=11"`
 }
+
+type SetNextOfKin struct {
+	FirstName 			string	`json:"firstName" validate:"required,max=30"`
+	LastName 			string	`json:"lastName" validate:"required,max=30"`
+	Relationship 		string	`json:"relationship" validate:"required,max=30,oneof=mother father brother sister cousin aunt uncle grandparent wife husband child other"`
+}
