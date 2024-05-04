@@ -31,12 +31,12 @@ func (chimoneyPP *ChimoneyPaymentProcessor) InitialisePaymentProcessor() {
 
 
 func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(amount *uint64) (*map[string]entities.ParsedExchangeRates, int, error){
-	cachedRate := cache.Cache.FindOne("fx_rates")
-	if cachedRate != nil {
-		var chimoneyResponse map[string]entities.ParsedExchangeRates
-		json.Unmarshal([]byte(*cachedRate), &chimoneyResponse)
-		return &chimoneyResponse, 200, nil
-	}
+	// cachedRate := cache.Cache.FindOne("fx_rates")
+	// if cachedRate != nil {
+	// 	var chimoneyResponse map[string]entities.ParsedExchangeRates
+	// 	json.Unmarshal([]byte(*cachedRate), &chimoneyResponse)
+	// 	return &chimoneyResponse, 200, nil
+	// }
 	response, statusCode, err := chimoneyPP.Network.Get("/info/exchange-rates", &map[string]string{
 		"X-API-KEY": chimoneyPP.AuthToken,
 		"Content-Type": "application/json",
@@ -64,7 +64,8 @@ func (chimoneyPP *ChimoneyPaymentProcessor)GetExchangeRates(amount *uint64) (*ma
 	rates := chimoneyResponse.Data.FormatAllRates(amount)
 	durationSeconds := chimoneyResponse.ValidTill/1000
 	duration := (time.Duration(durationSeconds) * time.Second) - 1*time.Minute // expire 1 min before just to be safe
-	cache.Cache.CreateEntry("fx_rates", *rates, duration)
+	r, _ := json.Marshal(rates)
+	cache.Cache.CreateEntry("fx_rates", r, duration)
 	return rates, *statusCode, nil
 }
 

@@ -25,7 +25,6 @@ import (
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
 	"kego.com/infrastructure/background"
-	"kego.com/infrastructure/biometric"
 	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
 	fileupload "kego.com/infrastructure/file_upload"
@@ -333,6 +332,7 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 	account, err := userRepo.FindOneByFilter(filter, options.FindOne().SetProjection(map[string]any{
 		"firstName": 1,
 		"phone": 1,
+		"email": 1,
 	}))
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -554,27 +554,27 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		kycDetails.Nationality = ninDetails.Nationality
 		kycDetails.DateOfBirth = ninDetails.DateOfBirth
 	}
-	result, err := biometric.BiometricService.FaceMatch(ctx.Body.ProfileImage, kycDetails.Base64Image)
+	// result, err := biometric.BiometricService.FaceMatch(ctx.Body.ProfileImage, kycDetails.Base64Image)
 	if err != nil {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
 		// _, _ := fileupload.FileUploader.DeleteFileByURL(ctx.Body.ProfileImage)
 		// if cldErr != nil {
 		// 	apperrors.FatalServerError(ctx.Ctx, cldErr)
 		// 	return
-		// }
+		// }1
 		apperrors.ClientError(ctx.Ctx, err.Error(), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	if *result < 80 {
-		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-		// err = fileupload.FileUploader.DeleteSingleFile(account.ID)
-		// if err != nil {
-		// 	apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
-		// 	return
-		// }
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("The image supplied does not match. If you think this is a mistake please contact support on %s", constants.SUPPORT_EMAIL), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-		return
-	}
+	// if *result < 80 {
+	// 	cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+	// 	// err = fileupload.FileUploader.DeleteSingleFile(account.ID)
+	// 	// if err != nil {
+	// 	// 	apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+	// 	// 	return
+	// 	// }
+	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("The image supplied does not match. If you think this is a mistake please contact support on %s", constants.SUPPORT_EMAIL), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+	// 	return
+	// }
 	watchListed := false
 	if  kycDetails.WatchListed  != nil {
 		if *kycDetails.WatchListed == "True" {

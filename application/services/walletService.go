@@ -15,6 +15,7 @@ import (
 	"kego.com/application/utils"
 	"kego.com/entities"
 	"kego.com/infrastructure/cryptography"
+	currencyformatter "kego.com/infrastructure/currency_formatter"
 	"kego.com/infrastructure/database/repository/cache"
 	"kego.com/infrastructure/logger"
 )
@@ -199,7 +200,7 @@ func verifyWalletBalance(ctx any, wallet *entities.Wallet, amount uint64, device
 		return false, err
 	}
 	if wallet.Balance < amount {
-		err := fmt.Errorf("Insufficient funds. Credit your account with at least %s%v to complete this transaction.", wallet.Currency, utils.UInt64ToFloat32Currency(amount))
+		err := fmt.Errorf("Insufficient funds. Credit your account with at least %s%v to complete this transaction.", wallet.Currency, currencyformatter.HumanReadableIntCurrency(amount))
 		apperrors.ClientError(ctx, err.Error(), nil, nil, device_id)
 		return false, err
 	}

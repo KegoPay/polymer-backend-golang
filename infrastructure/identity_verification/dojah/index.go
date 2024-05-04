@@ -40,7 +40,7 @@ func (div *DojahIdentityVerification) FetchBVNDetails(bvn string) (*identity_ver
 		})
 		return nil, errors.New("error retireving bvn")
 	}
-	logger.Info("NIN information retireved by Dojah")
+	logger.Info("BVN information retireved by Dojah")
 	return &dojahResponse.Data, nil
 }
 
@@ -52,14 +52,14 @@ func (div *DojahIdentityVerification) FetchNINDetails(nin string) (*identity_ver
 	var dojahResponse DojahNINResponse
 	json.Unmarshal(*response, &dojahResponse)
 	if err != nil {
-		logger.Error(errors.New("error retireving bvn data from dojah"), logger.LoggerOptions{
+		logger.Error(errors.New("error retireving nin data from dojah"), logger.LoggerOptions{
 			Key: "error",
 			Data: err,
 		})
-		return nil, errors.New("something went wrong while retireving bvn data from dojah")
+		return nil, errors.New("something went wrong while retireving nin data from dojah")
 	}
 	if *statusCode != 200 {
-		logger.Error(errors.New("request to Dojah for BVN fetch was unsuccessful"), logger.LoggerOptions{
+		logger.Error(errors.New("request to Dojah for nin fetch was unsuccessful"), logger.LoggerOptions{
 			Key: "statusCode",
 			Data: fmt.Sprintf("%d", statusCode),
 		}, logger.LoggerOptions{
@@ -69,9 +69,9 @@ func (div *DojahIdentityVerification) FetchNINDetails(nin string) (*identity_ver
 		if dojahResponse.Error == "Wrong NIN Inputted" {
 			return nil, errors.New("NIN not found. Crosscheck the number inputed")
 		}
-		return nil, errors.New("error retireving bvn")
+		return nil, errors.New("error retireving nin")
 	}
-	logger.Info("BVN information retireved by Dojah")
+	logger.Info("NIN information retireved by Dojah")
 	return &dojahResponse.Data, nil
 }
 

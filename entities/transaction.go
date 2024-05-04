@@ -11,9 +11,12 @@ type TransactionIntent string
 const (
 	PaystackDVACredit          TransactionIntent = "paystack_dva_credit"
 	FlutterwaveDVACredit          TransactionIntent = "flutterwave_dva_credit"
-	ChimoneyDebitInternational TransactionIntent = "chimoney_debit_international"
+	InternationalDebit TransactionIntent = "international_debit"
+	InternationalDebitFee 				TransactionIntent = "internation_debit_fee"
 	PaystackDebitLocal         TransactionIntent = "paystack_debit_local"
-	FlutterwaveDebitLocal         TransactionIntent = "flutterwave_debit_local"
+	LocalDebit         TransactionIntent = "local_debit"
+	LocalDebitFee         TransactionIntent = "local_debit_fee"
+	LocalDebitVAT         TransactionIntent = "local_debit_vat"
 	PolymerVAT         TransactionIntent = "polymer_vat"
 	PolymerFee         TransactionIntent = "polymer_fee"
 )
@@ -31,7 +34,7 @@ type TransactionSender struct {
 	BankCode      *string  `bson:"bankCode" json:"bankCode" validate:"required"`
 	BankName      *string  `bson:"bankName" json:"bankName"`
 	BranchCode    *string `bson:"branchCode" json:"branchCode"`
-	AccountNumber string  `bson:"accountNumber" json:"accountNumber" validate:"required"`
+	AccountNumber *string  `bson:"accountNumber" json:"accountNumber" validate:"required"`
 }
 
 type TransactionRecepient struct {
@@ -46,10 +49,12 @@ type TransactionRecepient struct {
 type Transaction struct {
 	TransactionReference string               `bson:"transactionReference" json:"transactionReference" validate:"required"`
 	Amount               uint64               `bson:"amount" json:"amount" validate:"required"`
-	AmountInNGN          uint64          	  `bson:"amountInNGN" json:"amountInNGN" validate:"required"`
+	AmountInNGN          *uint64          	  `bson:"amountInNGN" json:"amountInNGN" validate:"required"`
+	TotalAmountInNGN     *uint64          	  `bson:"totalAmountInNGN" json:"totalAmountInNGN" validate:"required"`
 	Fee			         uint64          	  `bson:"fee" json:"fee" validate:"required"`
 	Vat           		 uint64          	  `bson:"vat" json:"vat" validate:"required"`
 	ProcessorFee         uint64          	  `bson:"processorFee" json:"processorFee" validate:"required"`
+	ProcessorFeeVAT      uint64          	  `bson:"processorFeeVAT" json:"processorFeeVAT" validate:"required"`
 	AmountInUSD          *uint64              `bson:"amountInUSD" json:"amountInUSD" validate:"required"`
 	Currency             string               `bson:"currency" json:"currency" validate:"iso4217"`
 	ProcessorFeeCurrency string               `bson:"processorFeeCurrency" json:"processorFeeCurrency" validate:"iso4217"`

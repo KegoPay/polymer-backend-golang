@@ -48,7 +48,7 @@ func CreditWebHook(body dto.FlutterwaveWebhookDTO) error {
 			services.CreditWallet(*body.TrxRef, utils.Float32ToUint64Currency(*body.Amount), entities.FlutterwaveDVACredit, &entities.Transaction{
 				TransactionReference: *body.TrxRef,
 				Amount: utils.Float32ToUint64Currency(*body.Amount),
-				AmountInNGN: utils.Float32ToUint64Currency(*body.Amount),
+				AmountInNGN: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(*body.Amount)),
 				Fee: 0,
 				ProcessorFee: 0,
 				Currency: *body.Currency,
@@ -62,7 +62,7 @@ func CreditWebHook(body dto.FlutterwaveWebhookDTO) error {
 				Intent: entities.FlutterwaveDVACredit,
 				Sender: entities.TransactionSender{
 					FullName: fmt.Sprintf("%s %s", body.Entity.FirstName, body.Entity.LastName),
-					AccountNumber: body.Entity.AccNumber,
+					AccountNumber: &body.Entity.AccNumber,
 				},
 				Recepient: entities.TransactionRecepient{
 					FullName: body.Customer.FullName,

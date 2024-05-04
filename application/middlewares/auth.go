@@ -57,7 +57,7 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 		account, err := userRepo.FindByID(auth_token_claims["userID"].(string), options.FindOne().SetProjection(map[string]any{
 			"deactivated": 1,
 			"userAgent": 1,
-			"Polymer-Device-Id": 1,
+			"deviceID": 1,
 			"appVersion": 1,
 			"notificationOptions": 1,
 			"kycCompleted": 1,
@@ -99,19 +99,20 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 		deviceID := ctx.GetHeader("Polymer-Device-Id")
 		if deviceID == nil {
 			auth.SignOutUser(ctx.Ctx, account.ID, "client made request without a device id")
+			logger.Info("device id missing from client")
 			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
 		}
 		if auth_token_claims["deviceID"] != account.DeviceID || account.DeviceID != *deviceID ||  auth_token_claims["deviceID"] != *deviceID {
 			logger.Warning("client made request using device id different from that in access token",logger.LoggerOptions{
-				Key: "token appVersion",
-				Data: auth_token_claims["appVersion"],
+				Key: "token device id",
+				Data: auth_token_claims["deviceID"],
 			}, logger.LoggerOptions{
-				Key: "client appVersion",
-				Data: account.AppVersion,
+				Key: "client  device id",
+				Data: account.DeviceID,
 			}, logger.LoggerOptions{
-				Key: "request appVersion",
-				Data: *utils.ExtractAppVersionFromUserAgentHeader(*userAgent),
+				Key: "request  device id",
+				Data: deviceID,
 			})
 			logger.Warning("this triggers a wallet lock")
 			background.Scheduler.Emit("lock_account", map[string]any{

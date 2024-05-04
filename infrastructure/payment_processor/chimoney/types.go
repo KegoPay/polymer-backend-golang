@@ -28,6 +28,7 @@ type InternationalPaymentRequestPayload struct {
 	AccountNumber string `json:"account_number"`
 	Reference string `json:"reference"`
 	ValueInUSD float32 `json:"valueInUSD"`
+	FullName *string `json:"fullname"`
 }
 
 type InternationalPaymentRequestResponseDataPayload struct {
