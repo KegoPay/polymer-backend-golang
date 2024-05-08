@@ -1,12 +1,13 @@
 package validator
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
 	"kego.com/entities"
+	"kego.com/infrastructure/logger"
 )
 
 func validatePasswordStrength(fl validator.FieldLevel) bool {
@@ -55,7 +56,10 @@ func alphaSpace(fl validator.FieldLevel) bool {
 	// Compile the regular expression
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		fmt.Println("Error compiling regular expression:", err)
+		logger.Error(errors.New("Error compiling regular expression:"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
 		return false
 	}
 

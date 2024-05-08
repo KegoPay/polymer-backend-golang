@@ -166,7 +166,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		FullName: ctx.Body.FullName,
 	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {
-		services.ReverseLockFunds(ctx.Ctx, wallet.ID, trxRef)
+		services.ReverseLockFunds(wallet.ID, trxRef)
 		return
 	}
 	transaction := entities.Transaction{
@@ -386,7 +386,7 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		FullName: ctx.Body.FullName,
 	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {
-		services.ReverseLockFunds(ctx.Ctx, wallet.ID, trxRef)
+		services.ReverseLockFunds(wallet.ID, trxRef)
 		return
 	}
 	transaction := entities.Transaction{
@@ -619,7 +619,7 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		},
 	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {
-		services.ReverseLockFunds(ctx.Ctx, wallet.ID, reference)
+		services.ReverseLockFunds(wallet.ID, reference)
 		return
 	}
 	transaction := entities.Transaction{
@@ -834,7 +834,7 @@ func InitiatePersonalLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		},
 	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {
-		services.ReverseLockFunds(ctx.Ctx, wallet.ID, reference)
+		services.ReverseLockFunds(wallet.ID, reference)
 		return
 	}
 	transaction := entities.Transaction{

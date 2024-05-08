@@ -72,8 +72,6 @@ func (ts *TermiiService) SendOTP(phone string, whatsapp bool, otp *string) *stri
 }
 
 func (ts *TermiiService) VerifyOTP(otpID string, otp string) bool {
-	fmt.Println("running")
-	fmt.Println(otpID)
 	response, statusCode, err := ts.Network.Post("/sms/otp/verify", nil, map[string]any{
 		"api_key": ts.API_KEY,
 		"pin": otp,
@@ -83,7 +81,6 @@ func (ts *TermiiService) VerifyOTP(otpID string, otp string) bool {
 	var termiiRespons map[string]any
 	json.Unmarshal(*response, &termiiResponse)
 	json.Unmarshal(*response, &termiiRespons)
-	fmt.Println(termiiRespons)
 	if err != nil {
 		logger.Error(errors.New("error retireving bvn data from dojah"), logger.LoggerOptions{
 			Key: "error",

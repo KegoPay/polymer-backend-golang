@@ -19,7 +19,6 @@ import (
 	userusecases "kego.com/application/usecases/userUseCases"
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
-	"kego.com/infrastructure/biometric"
 	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
 	identityverification "kego.com/infrastructure/identity_verification"
@@ -216,23 +215,23 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	ninDetails, err := identityverification.IdentityVerifier.FetchNINDetails(ctx.Body.NIN)
+	_, err = identityverification.IdentityVerifier.FetchNINDetails(ctx.Body.NIN)
 	if err != nil {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 )
 		apperrors.CustomError(ctx.Ctx, err.Error(), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	result, err := biometric.BiometricService.FaceMatch(account.ProfileImage, ninDetails.Base64Image)
-	if err != nil {
-		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-		apperrors.ClientError(ctx.Ctx, err.Error(), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-		return
-	}
-	if *result < 80 {
-		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-		apperrors.ClientError(ctx.Ctx, "NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual review please click the button below", nil, &constants.NIN_VERIFICATION_FAILED, ctx.GetHeader("Polymer-Device-Id"))
-		return
-	}
+	// result, err := biometric.BiometricService.FaceMatch(account.ProfileImage, ninDetails.Base64Image)
+	// if err != nil {
+	// 	cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+	// 	apperrors.ClientError(ctx.Ctx, err.Error(), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+	// 	return
+	// }
+	// if *result < 80 {
+	// 	cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+	// 	apperrors.ClientError(ctx.Ctx, "NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual review please click the button below", nil, &constants.NIN_VERIFICATION_FAILED, ctx.GetHeader("Polymer-Device-Id"))
+	// 	return
+	// }
 	encryptedNIN, err := cryptography.SymmetricEncryption(ctx.Body.NIN, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -247,7 +246,7 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 		return
 	}
 	if account.Phone.IsVerified && account.Address.Verified {
-		userUpdatedInfo["tier"] = 2
+		userUpdatedInfo["$inc"] = map[string]any{ "tier": 1 } 
 	}
 	userRepo.UpdatePartialByFilter(map[string]interface{}{
 		"id": ctx.GetStringContextData("UserID"),
@@ -325,19 +324,27 @@ func SetNextOfKin(ctx *interfaces.ApplicationContext[dto.SetNextOfKin]) {
 		return
 	}
 	userRepo := repository.UserRepo()
-	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]any{
+	user, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
+		"ninLinked": 1,
+		"nextOfKin": 1,
+	}))
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	payload := map[string]any{
 		"nextOfKin": entities.NextOfKin{
 			FirstName: ctx.Body.FirstName,
 			LastName: ctx.Body.LastName,
 			Relationship: ctx.Body.Relationship,
 		},
-	})
-	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
-		return
 	}
-	if updated != 1 {
-		apperrors.UnknownError(ctx.Ctx, errors.New("could not update next of kin"), ctx.GetHeader("Polymer-Device-Id"))
+	if user.NINLinked {
+		payload["$inc"] = map[string]any{ "tier": 1 }
+	}
+	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), payload)
+	if updated == 0 {
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "next of kin updated", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))

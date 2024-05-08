@@ -278,7 +278,7 @@ func LockFunds(ctx any, wallet *entities.Wallet, amount uint64, intent entities.
 	return nil
 }
 
-func ReverseLockFunds(ctx any, walletID string, lockedFundsReference string) error {
+func ReverseLockFunds(walletID string, lockedFundsReference string) error {
 	walletRepository := repository.WalletRepo()
 	wallet, err := walletRepository.FindByID(walletID)
 	if err != nil {
@@ -314,7 +314,7 @@ func ReverseLockFunds(ctx any, walletID string, lockedFundsReference string) err
 			"lockedFundsLog": wallet.LockedFundsLog,
 		},
 		"$inc": map[string]any {
-			"balance": int64(lockedFund.Amount),
+			"balance": lockedFund.Amount,
 		},
 	})
 
@@ -328,7 +328,7 @@ func ReverseLockFunds(ctx any, walletID string, lockedFundsReference string) err
 	return nil
 }
 
-func RemoveLockFunds(ctx any, walletID string, lockedFundsReference string) error {
+func RemoveLockFunds(walletID string, lockedFundsReference string) error {
 	walletRepository := repository.WalletRepo()
 	wallet, err := walletRepository.FindByID(walletID)
 	if err != nil {
@@ -378,8 +378,8 @@ func CreditWallet(walletID string, amount uint64, intent entities.TransactionInt
 			"_id": walletID,
 		}, map[string]any{
 			"$inc": map[string]any {
-				"balance": int64(amount),
-				"ledgerBalance": int64(amount),
+				"balance": amount,
+				"ledgerBalance": amount,
 			},
 		})
 		if e != nil {

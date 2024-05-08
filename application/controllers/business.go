@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	apperrors "kego.com/application/appErrors"
@@ -9,7 +10,10 @@ import (
 	"kego.com/application/repository"
 	"kego.com/application/usecases/business"
 	"kego.com/entities"
+	cac_service "kego.com/infrastructure/cac"
+	"kego.com/infrastructure/logger"
 	server_response "kego.com/infrastructure/serverResponse"
+	"kego.com/infrastructure/validator"
 )
 
 
@@ -71,4 +75,46 @@ func FetchBusinesses(ctx *interfaces.ApplicationContext[any]){
 		"business": business,
 		"wallet": wallet,
 	}, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+}
+
+func SearchCACByName (ctx *interfaces.ApplicationContext[dto.SearchCACByName]){
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	names, err := cac_service.CACServiceInstance.FetchBusinessDetailsByName(ctx.Body.Name)
+	if err != nil {
+		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business fetched", names, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+}
+
+
+func SetCACInfo (ctx *interfaces.ApplicationContext[dto.SetCACInfo]){
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body.Info)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	businessRepo := repository.BusinessRepo()
+	updated, err := businessRepo.UpdatePartialByID(ctx.GetStringParameter("businessID"), map[string]any{
+		"cacInfo": ctx.Body.Info,
+	},)
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if updated != 1 {
+		logger.Error(errors.New("something went wrong with SetCACInfo"), logger.LoggerOptions{
+			Key: "updated",
+			Data: updated,
+		}, logger.LoggerOptions{
+			Key: "businessID",
+			Data: ctx.GetStringParameter("businessID"),
+		})
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "business details saved", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }

@@ -67,5 +67,38 @@ func BusinessRouter(router *gin.RouterGroup) {
 			}
 			controllers.DeleteBusiness(&appContext)
 		})
+
+		businessRouter.POST("/cac/search/name", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.SearchCACByName
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.SearchCACByName]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			controllers.SearchCACByName(&appContext)
+		})
+
+		businessRouter.PATCH("/:businessID/cac/set", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.SetCACInfo
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
+				return
+			}
+			appContext := interfaces.ApplicationContext[dto.SetCACInfo]{
+				Keys: appContextAny.Keys,
+				Body: &body,
+				Ctx: appContextAny.Ctx,
+			}
+			appContext.Param = map[string]any{
+				"businessID": ctx.Param("businessID"),
+			}
+			controllers.SetCACInfo(&appContext)
+		})
 	}
 }

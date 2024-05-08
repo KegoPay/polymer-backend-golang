@@ -81,8 +81,6 @@ func FetchExchangeRates(ctx *interfaces.ApplicationContext[dto.FXRateDTO]){
 		for c, currency := range *rates {
 			if strings.Contains(c, country.ISOCode) {
 				country.Rate = currencyformatter.HumanReadableFloat32Currency(currency.NGNRate)
-				fmt.Println(country.Name)
-				fmt.Println(currency.NGNRate)
 				countries = append(countries, country)
 				continue
 			}

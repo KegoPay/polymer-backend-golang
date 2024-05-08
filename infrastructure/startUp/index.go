@@ -4,6 +4,7 @@ import (
 	// "kego.com/application"
 	"kego.com/infrastructure/background"
 	"kego.com/infrastructure/biometric"
+	cac_service "kego.com/infrastructure/cac"
 	"kego.com/infrastructure/database"
 	"kego.com/infrastructure/database/connection/datastore"
 	fileupload "kego.com/infrastructure/file_upload"
@@ -32,6 +33,7 @@ func StartServices(){
 	// application.DBGenesis()
 	biometric.InitialiseBiometricService()
 	background.StartScheduler()
+	cac_service.CreateCACServiceInstance()
 }
 
 // Used to clean up after services that have been shutdown.

@@ -3,7 +3,6 @@ package prembly_identity_verification
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	identity_verification_types "kego.com/infrastructure/identity_verification/types"
 	"kego.com/infrastructure/logger"
@@ -25,7 +24,6 @@ func (piv *PremblyIdentityVerification) FetchBVNDetails(bvn string) (*identity_v
 	}, nil)
 	var premblyResponse PremblyBVNResponse
 	json.Unmarshal(*response, &premblyResponse)
-	fmt.Println(premblyResponse)
 	if err != nil {
 		logger.Error(errors.New("error retireving bvn data from prembly"), logger.LoggerOptions{
 			Key: "error",
@@ -54,9 +52,15 @@ func (piv *PremblyIdentityVerification) ValidateEmail(bvn string) (*identity_ver
 	}, map[string]string{
 		"number": bvn,
 	}, nil)
+	if err != nil {
+		logger.Error(errors.New("error retireving bvn data from prembly"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		return nil, errors.New("something went wrong while retireving bvn data from prembly")
+	}
 	var premblyResponse PremblyBVNResponse
-	json.Unmarshal(*response, &premblyResponse)
-	fmt.Println(premblyResponse)
+	err = json.Unmarshal(*response, &premblyResponse)
 	if err != nil {
 		logger.Error(errors.New("error retireving bvn data from prembly"), logger.LoggerOptions{
 			Key: "error",

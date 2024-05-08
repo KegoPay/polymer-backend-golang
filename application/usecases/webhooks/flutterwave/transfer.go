@@ -15,12 +15,12 @@ import (
 	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 )
 
-func FlwTransferWebhook(ctx any, body dto.FlutterwaveWebhookDTO) error {
+func FlwTransferWebhook(body dto.FlutterwaveWebhookDTO) error {
 		var err error
 		if body.Transfer.Status == "SUCCESSFUL" {
-			err = services.RemoveLockFunds(ctx, body.Transfer.Meta.WalletID, body.Transfer.Ref)
+			err = services.RemoveLockFunds(body.Transfer.Meta.WalletID, body.Transfer.Ref)
 		}else if body.Transfer.Status == "FAILED" {
-			err = services.ReverseLockFunds(ctx, body.Transfer.Meta.WalletID, body.Transfer.Ref)
+			err = services.ReverseLockFunds(body.Transfer.Meta.WalletID, body.Transfer.Ref)
 		}
 		if err != nil {
 			logger.Error(errors.New("error removing locked funds after flutterwave webhook call"), logger.LoggerOptions{

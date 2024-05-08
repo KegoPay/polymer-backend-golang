@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -100,7 +99,6 @@ func (network *NetworkController) Post(path string, headers *map[string]string, 
 
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		fmt.Println(err)
 		return nil, nil, err
 	}
 

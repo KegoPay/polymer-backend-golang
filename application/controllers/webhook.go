@@ -13,11 +13,11 @@ import (
 func FlutterwaveWebhook(ctx *interfaces.ApplicationContext[dto.FlutterwaveWebhookDTO]) {
 	event := ctx.Body.EventType
 	if event == "Transfer" {
-		flutterwave.FlwTransferWebhook(ctx.Ctx, *ctx.Body)
+		flutterwave.FlwTransferWebhook(*ctx.Body)
 	} else if event == "BANK_TRANSFER_TRANSACTION" {
 		flutterwave.CreditWebHook(*ctx.Body)
 	} else {
-		logger.Warning("flutterwave webook hit without reaction", logger.LoggerOptions{
+		logger.Warning("flutterwave webhook hit without reaction", logger.LoggerOptions{
 			Key: "payload",
 			Data: ctx.Body,
 		})
