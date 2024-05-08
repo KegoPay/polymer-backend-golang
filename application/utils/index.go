@@ -2,13 +2,15 @@ package utils
 
 import (
 	"regexp"
+	"time"
 
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 	"kego.com/application/constants"
 )
 
+
 func GenerateUUIDString() string {
-	return uuid.NewString()
+	return ulid.MustNew(ulid.Timestamp(time.Now()), ulid.DefaultEntropy()).String()
 }
 
 func GetStringPointer(text string) *string {

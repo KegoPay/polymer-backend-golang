@@ -5,14 +5,17 @@ go 1.21.2
 require (
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.1
+	github.com/MicahParks/keyfunc v1.9.0
 	github.com/apitoolkit/apitoolkit-go v0.0.0-20240226114120-c566af33a4fe
 	github.com/dustin/go-humanize v1.0.1
 	github.com/gin-contrib/cors v1.6.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gocraft/work v0.5.1
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/gomodule/redigo v1.9.2
-	github.com/google/uuid v1.6.0
+	github.com/jftuga/geodist v1.0.0
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/oklog/ulid/v2 v2.1.0
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/rabbitmq/amqp091-go v1.9.0
 	go.uber.org/ratelimit v0.3.1
@@ -31,7 +34,6 @@ require (
 	github.com/AsaiYusuke/jsonpath v1.6.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.10.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.2 // indirect
-	github.com/MicahParks/keyfunc v1.9.0 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/chenzhuoyu/iasm v0.9.1 // indirect
@@ -41,14 +43,13 @@ require (
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gofiber/fiber/v2 v2.52.2 // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.2 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/imroc/req v0.3.2 // indirect
-	github.com/jftuga/geodist v1.0.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/echo/v4 v4.11.4 // indirect
@@ -82,7 +83,7 @@ require (
 	github.com/bytedance/sonic v1.11.2 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
-	github.com/getsentry/sentry-go v0.27.0
+	github.com/getsentry/sentry-go v0.27.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-playground/locales v0.14.1 // indirect
