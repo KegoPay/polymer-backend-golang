@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -111,10 +113,20 @@ func CurrencyCodeToCurrencySymbol(code string) string {
 }
 
 
-func Float32ToUint64Currency(value float32) uint64 {
-	roundUp := (uint64(value * 10000000) % 100000) != 0
+func Float32ToUint64Currency(value float32, round bool) uint64 {
+	var roundUp bool
+	s := fmt.Sprintf("%.6f", value) 
+    parts := strings.Split(s, ".")
+    if len(parts) < 2 { // No decimal part
+        roundUp = false
+    }
+    decimalPart := parts[1]
+    if len(decimalPart) > 3 || (len(decimalPart) == 3 && decimalPart != "000") {
+        roundUp = true
+    }
+    roundUp = false
 	uintValue := uint64(value * 100)
-	if roundUp {
+	if roundUp && round{
 		uintValue++
 	}
 	return uintValue

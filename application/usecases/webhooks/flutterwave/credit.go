@@ -45,10 +45,10 @@ func CreditWebHook(body dto.FlutterwaveWebhookDTO) error {
 			return err
 		}
 		if *body.Status == "successful" {
-			services.CreditWallet(*body.TrxRef, utils.Float32ToUint64Currency(*body.Amount), entities.FlutterwaveDVACredit, &entities.Transaction{
+			services.CreditWallet(*body.TrxRef, utils.Float32ToUint64Currency(*body.Amount, false), entities.FlutterwaveDVACredit, &entities.Transaction{
 				TransactionReference: *body.TrxRef,
-				Amount: utils.Float32ToUint64Currency(*body.Amount),
-				AmountInNGN: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(*body.Amount)),
+				Amount: utils.Float32ToUint64Currency(*body.Amount, false),
+				AmountInNGN: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(*body.Amount, false)),
 				Fee: 0,
 				ProcessorFee: 0,
 				Currency: *body.Currency,

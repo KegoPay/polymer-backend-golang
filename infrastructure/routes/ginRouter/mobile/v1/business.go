@@ -56,7 +56,7 @@ func BusinessRouter(router *gin.RouterGroup) {
 			controllers.FetchBusinesses(&appContext)
 		})
 
-		businessRouter.DELETE("/:businessID/delete", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+		businessRouter.DELETE("/:businessID/delete", middlewares.AuthenticationMiddleware(true, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			appContext := interfaces.ApplicationContext[any]{
 				Keys: appContextAny.Keys,
@@ -83,7 +83,7 @@ func BusinessRouter(router *gin.RouterGroup) {
 			controllers.SearchCACByName(&appContext)
 		})
 
-		businessRouter.PATCH("/:businessID/cac/set", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+		businessRouter.PATCH("/:businessID/cac/set", middlewares.AuthenticationMiddleware(true, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.SetCACInfo
 			if err := ctx.ShouldBindJSON(&body); err != nil {

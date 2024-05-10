@@ -44,3 +44,7 @@ type FlutterwaveWebhookTransferMeta struct {
 	WalletID	string 	`json:"walletID"`
 	UserID		string 	`json:"userID"`
 }
+
+type ChimoneyWebhookDTO struct {
+    
+}

@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/ecdh"
 	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"io"
 	"os"
@@ -45,7 +46,7 @@ func DecryptData(encryptedData string, enc_key *string) (*string, error) {
 	if enc_key == nil {
 		enc_key = utils.GetStringPointer(os.Getenv("ENC_KEY"))
 	}
-	encryptedDataByte := []byte(encryptedData)
+	encryptedDataByte, _ := hex.DecodeString(encryptedData)
     c, err := aes.NewCipher([]byte(*enc_key))
     if err != nil {
 		logger.Error(errors.New("error generating new cipher to decryot data"), logger.LoggerOptions{
@@ -103,6 +104,6 @@ func SymmetricEncryption(data string, enc_key *string) (*string, error) {
     if err != nil {
         return nil, err
     }
-	encryptedData := string(gcm.Seal(nonce, nonce, []byte(data), nil))
+	encryptedData := hex.EncodeToString(gcm.Seal(nonce, nonce, []byte(data), nil))
     return &encryptedData, nil
 }
