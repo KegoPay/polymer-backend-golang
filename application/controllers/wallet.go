@@ -158,6 +158,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		ProcessorFeeCurrency: "USD",
 		ProcessorFee: utils.Float32ToUint64Currency(internationalProcessorFee, false),
 		Amount: ctx.Body.Amount,
+		Status: entities.TransactionPending,
 		Currency: utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
 		WalletID: wallet.ID,
 		UserID: wallet.UserID,
@@ -381,6 +382,7 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		Currency: utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
 		WalletID: wallet.ID,
 		UserID: wallet.UserID,
+		Status: entities.TransactionPending,
 		Description: func () string {
 			if	ctx.Body.Description == nil {
 				des := fmt.Sprintf("International transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), *ctx.Body.FullName)
@@ -585,6 +587,7 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		WalletID: wallet.ID,
 		UserID: wallet.UserID,
 		BusinessID: wallet.BusinessID,
+		Status: entities.TransactionPending,
 		Description: narration,
 		Location: entities.Location{
 			IPAddress: ctx.Body.IPAddress,
@@ -803,6 +806,7 @@ func InitiatePersonalLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		Location: entities.Location{
 			IPAddress: ctx.Body.IPAddress,
 		},
+		Status: entities.TransactionPending,
 		Intent: entities.LocalDebit,
 		DeviceInfo: &entities.DeviceInfo{
 			IPAddress: ctx.Body.IPAddress,

@@ -7,6 +7,7 @@ import (
 )
 
 type TransactionIntent string
+type TransactionStatus string
 
 const (
 	PaystackDVACredit          TransactionIntent = "paystack_dva_credit"
@@ -19,6 +20,10 @@ const (
 	LocalDebitVAT         TransactionIntent = "local_debit_vat"
 	PolymerVAT         TransactionIntent = "polymer_vat"
 	PolymerFee         TransactionIntent = "polymer_fee"
+
+	TransactionPending TransactionStatus = "pending"
+	TransactionCompleted TransactionStatus = "completed"
+	TransactionFailed TransactionStatus = "failed"
 )
 
 type DeviceInfo struct {
@@ -62,6 +67,7 @@ type Transaction struct {
 	UserID               string               `bson:"userID" json:"userID" validate:"required"`
 	BusinessID           *string              `bson:"businessID" json:"businessID"`
 	Description          string               `bson:"description" json:"description" validate:"required"`
+	Status          	 TransactionStatus    `bson:"status" json:"status" validate:"required"`
 	MetaData          	 any               	  `bson:"metadata" json:"metadata" validate:"required"`
 	Location             Location          	  `bson:"location" json:"location" validate:"required"`
 	Intent               TransactionIntent 	  `bson:"intent" json:"intent" validate:"required"`
