@@ -66,6 +66,7 @@ type Transaction struct {
 	WalletID             string               `bson:"walletID" json:"walletID" validate:"required"`
 	UserID               string               `bson:"userID" json:"userID" validate:"required"`
 	BusinessID           *string              `bson:"businessID" json:"businessID"`
+	Message		         *string              `bson:"message" json:"message"`
 	Description          string               `bson:"description" json:"description" validate:"required"`
 	Status          	 TransactionStatus    `bson:"status" json:"status" validate:"required"`
 	MetaData          	 any               	  `bson:"metadata" json:"metadata" validate:"required"`

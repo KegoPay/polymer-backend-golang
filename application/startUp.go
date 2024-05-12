@@ -25,41 +25,26 @@ func DBGenesis() {
 		})
 		panic("error counting genesis wallets")
 	}
-	if count == 5 {
+	if count == 2 {
 		return
 	}
-	if  count > 0 {
-		logger.Warning(fmt.Sprintf("default wallet count - %d", count))
+	if count > 0 {
+		logger.Warning("wrong default wallet count", logger.LoggerOptions{
+			Key: "wallet count",
+			Data: count,
+		})
 		panic(fmt.Sprintf("default wallet count - %d", count))
 	}
 	created, err := walletRepo.CreateBulk([]entities.Wallet{
 		{
 			Currency: "NGN",
-			BusinessName: utils.GetStringPointer("Polymer Intl Fee Wallet"),
+			BusinessName: utils.GetStringPointer("Polymer Fee Wallet"),
 			BusinessID: nil,
 			UserID: os.Getenv("POLYMER_WALLET_USER_ID"),
 		},
 		{
 			Currency: "NGN",
-			BusinessName: utils.GetStringPointer("Polymer Local VAT Wallet"),
-			BusinessID: nil,
-			UserID: os.Getenv("POLYMER_WALLET_USER_ID"),
-		},
-		{
-			Currency: "NGN",
-			BusinessName: utils.GetStringPointer("Polymer Local Fee Wallet"),
-			BusinessID: nil,
-			UserID: os.Getenv("POLYMER_WALLET_USER_ID"),
-		},
-		{
-			Currency: "NGN",
-			BusinessName: utils.GetStringPointer("Polymer Intl VAT Wallet"),
-			BusinessID: nil,
-			UserID: os.Getenv("POLYMER_WALLET_USER_ID"),
-		},
-		{
-			Currency: "NGN",
-			BusinessName: utils.GetStringPointer("Polymer Local Stamp Duty Wallet"),
+			BusinessName: utils.GetStringPointer("Polymer VAT Wallet"),
 			BusinessID: nil,
 			UserID: os.Getenv("POLYMER_WALLET_USER_ID"),
 		},
@@ -71,8 +56,8 @@ func DBGenesis() {
 		})
 		panic("error creating genesis wallets")
 	}
-	if len(*created) != 5 {
-		logger.Error(errors.New("failed to create the expeted 5 genesis wallets"), logger.LoggerOptions{
+	if len(*created) != 2 {
+		logger.Error(errors.New("failed to create the expeted 2 genesis wallets"), logger.LoggerOptions{
 			Key: "created",
 			Data: created,
 		})

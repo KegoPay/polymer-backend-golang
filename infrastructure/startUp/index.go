@@ -1,7 +1,7 @@
 package startup
 
 import (
-	// "kego.com/application"
+	"kego.com/application"
 	"kego.com/infrastructure/background"
 	"kego.com/infrastructure/biometric"
 	cac_service "kego.com/infrastructure/cac"
@@ -30,7 +30,7 @@ func StartServices(){
 	paymentprocessor.InternationalPaymentProcessor.InitialisePaymentProcessor()
 	ipresolver.IPResolverInstance.ConnectToDB()
 	sms.InitSMSService()
-	// application.DBGenesis()
+	application.DBGenesis()
 	biometric.InitialiseBiometricService()
 	background.StartScheduler()
 	cac_service.CreateCACServiceInstance()

@@ -48,7 +48,7 @@ type InitiateLocalTransferDataField struct {
 	FullName 	string			`json:"full_name"`
 	Fee			float32			`json:"fee"`
 	BankCode	string			`json:"bank_code"`
-	PaymentID	string			`json:"id"`
+	PaymentID	uint			`json:"id"`
 }
 
 type CreateVirtualAccountPayload struct {

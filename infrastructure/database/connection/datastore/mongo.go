@@ -85,6 +85,9 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 	TransactionModel.Indexes().CreateMany(ctx, []mongo.IndexModel{{
 		Keys:    bson.D{{Key: "walletID", Value: 1}},
 		Options: options.Index(),
+	}, {
+		Keys:    bson.D{{Key: "status", Value: 1}},
+		Options: options.Index(),
 	}})
 
 	EmailSubs = db.Collection("EmailSubs")

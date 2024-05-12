@@ -75,6 +75,9 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", *ctx.Body.DestinationCountryCode), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
+	if os.Getenv("ENV") != "production" {
+		destinationCountry = "Nigeria"
+	}
 	trxRef := utils.GenerateUUIDString()
 	businessID := ctx.GetStringParameter("businessID") 
 	wallet , err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), utils.Float32ToUint64Currency(totalAmount, true), ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
@@ -273,6 +276,9 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	if destinationCountry == "" {
 		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("unsupported country code used %s", *ctx.Body.DestinationCountryCode), ctx.GetHeader("Polymer-Device-Id"))
 		return
+	}
+	if os.Getenv("ENV") != "production" {
+		destinationCountry = "Ghana"
 	}
 	trxRef := utils.GenerateUUIDString()
 	wallet , err := services.InitiatePreAuth(ctx.Ctx, nil, ctx.GetStringContextData("UserID"), utils.Float32ToUint64Currency(totalAmount, true), ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
