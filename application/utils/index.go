@@ -31,6 +31,10 @@ func GetUInt64Pointer(data uint64) *uint64 {
 	return &data
 }
 
+func GetUIntPointer(data uint) *uint {
+	return &data
+}
+
 func GetInt64Pointer(data int64) *int64 {
 	return &data
 }

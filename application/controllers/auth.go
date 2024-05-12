@@ -1,9 +1,14 @@
 package controllers
 
 import (
+	"bytes"
+	"encoding/gob"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -38,12 +43,56 @@ import (
 )
 
 func KeyExchange(ctx *interfaces.ApplicationContext[dto.KeyExchangeDTO]) {
-	serverPublicKey, err := authusecases.InitiateKetExchange(ctx.Ctx, ctx.Body.DeviceID, ctx.Body.ClientPublicKey, ctx.GetHeader("Polymer-Device-Id"))
+	serverPublicKey, secretKey, err := authusecases.InitiateKeyExchange(ctx.Ctx, ctx.Body.DeviceID, ctx.Body.ClientPublicKey, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
-	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusCreated, "key exchanged", serverPublicKey, nil, nil)
+	payload := map[string]any{
+		"pubKey": hex.EncodeToString(serverPublicKey),
+	}
+	if os.Getenv("ENV") != "prod" {
+		payload["secret"] = secretKey
+	}
+	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusCreated, "key exchanged", payload, nil, nil)
 }
+
+func EncryptForStaging(ctx *interfaces.ApplicationContext[dto.EncryptForStagingDTO]) {
+	if os.Getenv("ENV") == "prod" {
+		apperrors.ClientError(ctx.Ctx, "this endpoint cannot be used in a production environment", nil, utils.GetUIntPointer(401), nil)
+		return
+	}
+	payloadByte, err := json.Marshal(ctx.Body.Payload)
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, nil)
+		return
+	}
+	encrypted, err := cryptography.SymmetricEncryption(hex.EncodeToString(payloadByte),  &ctx.Body.EncKey)
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, nil)
+		return
+	}
+	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusOK, "encrypted", encrypted, nil, nil)
+}
+
+func DecryptForStaging(ctx *interfaces.ApplicationContext[dto.DecryptForStagingDTO]) {
+	if os.Getenv("ENV") == "prod" {
+		apperrors.ClientError(ctx.Ctx, "this endpoint cannot be used in a production environment", nil, utils.GetUIntPointer(401), nil)
+		return
+	}
+	decrypted, err := cryptography.DecryptData(ctx.Body.Payload, &ctx.Body.EncKey)
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, nil)
+		return
+	}
+	byteBuffer := bytes.NewBuffer([]byte(decrypted))
+	dec := gob.NewDecoder(byteBuffer) // Will read from byteBuffer
+	var person map[string]string
+	err = dec.Decode(&person)
+	fmt.Println(person)
+	fmt.Println(decrypted)
+	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusOK, "decrypted", person, nil, nil)
+}
+
 
 func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 	if ctx.Body.Phone == nil && ctx.Body.Email == nil {
@@ -85,7 +134,7 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 				Key: "error",
 				Data: err,
 			})
-			success := sms.SMSService.VerifyOTP(*d, ctx.Body.OTP)
+			success := sms.SMSService.VerifyOTP(d, ctx.Body.OTP)
 			if !success {
 				apperrors.ClientError(ctx.Ctx, "wrong otp", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 				return
@@ -376,7 +425,7 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 			apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 			return
 		}
-		cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", channel), *encryptedRef, time.Minute * 10)
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", channel), encryptedRef, time.Minute * 10)
 	}
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", channel), ctx.Body.Intent, time.Minute * 10)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
@@ -611,7 +660,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		}(),
 		"profileImage": ctx.Body.ProfileImage,
 		"kycCompleted": true,
-		"bvn": *encryptedBVN,
+		"bvn": encryptedBVN,
 		"nin": ctx.Body.NIN,
 		"accountRestricted": watchListed,
 		"address": entities.Address{

@@ -238,7 +238,7 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 		return
 	}
 	userUpdatedInfo := map[string]any{
-		"nin": *encryptedNIN,
+		"nin": encryptedNIN,
 		"ninLinked": true,
 	}
 	if account == nil {
@@ -294,7 +294,7 @@ func UpdatePhone(ctx *interfaces.ApplicationContext[dto.UpdatePhoneDTO]) {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", ctx.Body.Phone), *encryptedRef, time.Minute * 10)
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", ctx.Body.Phone), encryptedRef, time.Minute * 10)
 	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Phone), "verify_phone", time.Minute * 10)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone set", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }

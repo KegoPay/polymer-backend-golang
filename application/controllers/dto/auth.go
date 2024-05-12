@@ -21,6 +21,24 @@ type KeyExchangeDTO struct {
 	DeviceID		string
 }
 
+type EncryptForStagingDTO struct {
+	EncKey			string	`json:"enc_key"`
+	Payload			any		`json:"payload"`
+	DeviceID		string
+}
+
+type DecryptForStagingDTO struct {
+	Payload			string		`json:"payload"`
+	EncKey			string		`json:"enc_key"`
+	DeviceID		string
+}
+
+type ClientKeyExchangeMockDTO struct {
+	ServerPublicKey	*ecdh.PublicKey		`json:"serverPubKey"`
+	ClientPublicKey	*ecdh.PublicKey		`json:"clientPubKey"`
+	DeviceID		string
+}
+
 type VerifyOTPDTO struct {
 	OTP		string		`json:"otp"`
 	Email	*string		`json:"email"`

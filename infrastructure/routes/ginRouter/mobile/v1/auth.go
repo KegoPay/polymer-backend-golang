@@ -29,6 +29,32 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
+		authRouter.POST("/staging/encrypt", func(ctx *gin.Context) {
+			var body dto.EncryptForStagingDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx,  nil)
+				return
+			}
+			body.DeviceID = ctx.GetHeader("Polymer-Device-Id")
+			controllers.EncryptForStaging(&interfaces.ApplicationContext[dto.EncryptForStagingDTO]{
+				Ctx: ctx,
+				Body: &body,
+			})
+		})
+
+		authRouter.POST("/staging/decrypt", func(ctx *gin.Context) {
+			var body dto.DecryptForStagingDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx,  nil)
+				return
+			}
+			body.DeviceID = ctx.GetHeader("Polymer-Device-Id")
+			controllers.DecryptForStaging(&interfaces.ApplicationContext[dto.DecryptForStagingDTO]{
+				Ctx: ctx,
+				Body: &body,
+			})
+		})
+
 		authRouter.POST("/account/create", middlewares.AttestationMiddleware(), func(ctx *gin.Context) {
 			var body dto.CreateAccountDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {

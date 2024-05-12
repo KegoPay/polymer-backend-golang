@@ -13,6 +13,7 @@ require (
 	github.com/gocraft/work v0.5.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/gomodule/redigo v1.9.2
+	github.com/google/uuid v1.6.0
 	github.com/jftuga/geodist v1.0.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/oklog/ulid/v2 v2.1.0
@@ -105,6 +106,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
+	github.com/resend/resend-go/v2 v2.6.0
 	github.com/sendgrid/sendgrid-go v3.14.0+incompatible
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect

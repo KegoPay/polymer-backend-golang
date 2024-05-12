@@ -5,13 +5,13 @@ import (
 	"crypto/cipher"
 	"crypto/ecdh"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
-	"os"
 	"time"
 
-	"kego.com/application/utils"
 	"kego.com/infrastructure/database/repository/cache"
 	"kego.com/infrastructure/logger"
 )
@@ -42,68 +42,56 @@ func GeneratePublicKey(sessionID string, clientPubKey *ecdh.PublicKey) *ecdh.Pub
 	return serverPubKey
 }
 
-func DecryptData(encryptedData string, enc_key *string) (*string, error) {
-	if enc_key == nil {
-		enc_key = utils.GetStringPointer(os.Getenv("ENC_KEY"))
-	}
-	encryptedDataByte, _ := hex.DecodeString(encryptedData)
-    c, err := aes.NewCipher([]byte(*enc_key))
-    if err != nil {
-		logger.Error(errors.New("error generating new cipher to decryot data"), logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
-        return nil, err
-    }
+func DecryptData(stringToDecrypt string, keyString *string) (string, error) {
+	key, _ := hex.DecodeString(*keyString)
+	ciphertext, _ := base64.URLEncoding.DecodeString(stringToDecrypt)
 
-    gcm, err := cipher.NewGCM(c)
-    if err != nil {
-		logger.Error(errors.New("error generating new gcm to decryot data"), logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
-        return nil, err
-    }
-
-    nonceSize := gcm.NonceSize()
-    nonce, encryptedDataByte := encryptedDataByte[:nonceSize], encryptedDataByte[nonceSize:]
-
-	decryptedData, err := gcm.Open(nil, nonce, encryptedDataByte, nil)
+	block, err := aes.NewCipher(key)
 	if err != nil {
-		logger.Error(errors.New("error decryptingg encrypted data"), logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
-		return nil, err
+		panic(err)
 	}
-    return  utils.GetStringPointer(string(decryptedData)), nil
+
+	// The IV needs to be unique, but not secure. Therefore it's common to
+	// include it at the beginning of the ciphertext.
+	if len(ciphertext) < aes.BlockSize {
+		panic("ciphertext too short")
+	}
+	iv := ciphertext[:aes.BlockSize]
+	ciphertext = ciphertext[aes.BlockSize:]
+
+	stream := cipher.NewCFBDecrypter(block, iv)
+
+	// XORKeyStream can work in-place if the two arguments are the same.
+	stream.XORKeyStream(ciphertext, ciphertext)
+
+	return fmt.Sprintf("%s", ciphertext), nil
+
 }
 
-func SymmetricEncryption(data string, enc_key *string) (*string, error) {
-	if enc_key == nil {
-		enc_key = utils.GetStringPointer(os.Getenv("ENC_KEY"))
-	}
-	c, err := aes.NewCipher([]byte(*enc_key))
+func SymmetricEncryption( payload string, keyString *string) (encryptedString string, err error) {
+	// convert key to bytes
+	key, _ := hex.DecodeString(*keyString)
+	plaintext := []byte(payload)
+
+	//Create a new Cipher Block from the key
+	block, err := aes.NewCipher(key)
 	if err != nil {
-		logger.Error(errors.New("error generating cipher to encrypt data"), logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
-		return nil, err
+		panic(err.Error())
 	}
-    gcm, err := cipher.NewGCM(c)
-    if err != nil {
-		logger.Error(errors.New("error generating new gcm to encrypt data"), logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
-        return nil, err
-    }
-    nonce := make([]byte, gcm.NonceSize())
-    _, err = io.ReadFull(rand.Reader, nonce)
-    if err != nil {
-        return nil, err
-    }
-	encryptedData := hex.EncodeToString(gcm.Seal(nonce, nonce, []byte(data), nil))
-    return &encryptedData, nil
+
+	// The IV needs to be unique, but not secure. Therefore it's common to
+	// include it at the beginning of the ciphertext.
+	ciphertext := make([]byte, aes.BlockSize+len(plaintext))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		panic(err)
+	}
+
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
+
+	// convert to base64
+	return base64.URLEncoding.EncodeToString(ciphertext), nil
 }
+
+

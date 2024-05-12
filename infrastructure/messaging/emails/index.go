@@ -1,3 +1,3 @@
 package emails
 
-var EmailService =  SendGridService{}
+var EmailService =  ResendService{}
