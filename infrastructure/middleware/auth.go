@@ -12,7 +12,7 @@ func AuthenticationMiddleware(business_route bool, restricted bool) gin.HandlerF
 			Ctx:    ctx,
 			Keys:   ctx.Keys,
 			Header: ctx.Request.Header,
-		}, restricted)
+		}, restricted, business_route)
 		if next {
 			ctx.Set("AppContext", appContext)
 			ctx.Next()

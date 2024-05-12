@@ -17,7 +17,7 @@ import (
 	"kego.com/infrastructure/logger"
 )
 
-func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricted bool) (*interfaces.ApplicationContext[any], bool) {
+func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricted bool, business_route bool) (*interfaces.ApplicationContext[any], bool) {
 		authTokenHeaderPointer := ctx.GetHeader("Authorization")
 		if authTokenHeaderPointer == nil {
 			apperrors.AuthenticationError(ctx.Ctx, "provide an auth token", ctx.GetHeader("Polymer-Device-Id"))
@@ -62,6 +62,10 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 			"notificationOptions": 1,
 			"kycCompleted": 1,
 		}))
+		if err != nil {
+			apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+			return nil, false
+		}
 		if account == nil {
 			apperrors.NotFoundError(ctx.Ctx, "this account no longer exists", ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
@@ -121,6 +125,22 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 			auth.SignOutUser(ctx.Ctx, account.ID, "client made request using device id different from that in access token")
 			apperrors.AuthenticationError(ctx.Ctx, "unauthorized access",  ctx.GetHeader("Polymer-Device-Id"))
 			return nil, false
+		}
+
+		if business_route {
+			businessRepo := repository.BusinessRepo()
+			exists, err := businessRepo.CountDocs(map[string]interface{}{
+				"_id": ctx.GetStringParameter("businessID"),
+				"userID": account.ID,
+			})
+			if err != nil {
+				apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+				return nil, false
+			}
+			if exists == 0 {
+				apperrors.NotFoundError(ctx.Ctx, "business", ctx.GetHeader("Polymer-Device-Id"))
+				return nil, false
+			}
 		}
 
 		ctx.SetContextData("UserID", auth_token_claims["userID"])
