@@ -102,4 +102,19 @@ func WalletRouter(router *gin.RouterGroup) {
 			controllers.VerifyLocalAccountName(&appContext)
 		})
 	}
+
+	walletRouter.POST("/:businessID/request-statement", middlewares.AuthenticationMiddleware(true, true), func(ctx *gin.Context) {
+		appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+		var body dto.RequestAccountStatementDTO
+		if err := ctx.ShouldBindJSON(&body); err != nil {
+			apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
+			return
+		}
+		appContext := interfaces.ApplicationContext[dto.RequestAccountStatementDTO]{
+			Keys: appContextAny.Keys,
+			Body: &body,
+			Ctx: appContextAny.Ctx,
+		}
+		controllers.RequestAccountStatement(&appContext)
+	})
 }

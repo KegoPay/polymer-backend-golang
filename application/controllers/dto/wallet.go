@@ -32,3 +32,10 @@ type EmailSubscriptionDTO struct {
 	Email 	 string 					   `json:"email"`
 	Channel	 entities.SubscriptionChannels `json:"channel"`
 }
+
+type RequestAccountStatementDTO struct {
+	Start 		string  `json:"start"`
+	Email 		string  `json:"email"`
+	End	  	 	string  `json:"end"`
+	WalletID	string  `json:"walletID"`
+}

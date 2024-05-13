@@ -54,7 +54,7 @@ func (s *ginServer)Start(){
 
 	v1 := server.Group("/api",)
 
-	{
+	
 		routerV1 := v1.Group("/v1")
 		routerV1.Use(middlewares.UserAgentMiddleware(true))
 		{
@@ -72,7 +72,7 @@ func (s *ginServer)Start(){
 			webroutev1.EmailSubsRouter(webRouterV1)
 			webroutev1.WebhookRouter(webRouterV1)
 		}
-	}
+	
 
 	server.GET("/ping", func(ctx *gin.Context) {
 		server_response.Responder.UnEncryptedRespond(ctx, http.StatusOK, "pong!", nil, nil, nil)

@@ -14,6 +14,7 @@ import (
 	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 	sms "kego.com/infrastructure/messaging/whatsapp"
 	paymentprocessor "kego.com/infrastructure/payment_processor"
+	"kego.com/infrastructure/services"
 )
 
 // Used to start services such as loggers, databases, queues, etc.
@@ -33,6 +34,7 @@ func StartServices(){
 	application.DBGenesis()
 	biometric.InitialiseBiometricService()
 	background.StartScheduler()
+	services.InitialiseBackgroundService()
 	cac_service.CreateCACServiceInstance()
 }
 

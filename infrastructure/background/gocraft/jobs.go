@@ -7,6 +7,7 @@ import (
 	"kego.com/application/repository"
 	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/messaging/emails"
+	"kego.com/infrastructure/services"
 )
 
 func SendEmail(job *work.Job) error {
@@ -51,6 +52,18 @@ func UnlockAccount(job *work.Job) error {
 			Key: "error",
 			Data: err,
 		})
+	}
+	return nil
+}
+
+func RequestAccountStatement(job *work.Job) error {
+	err := services.BackgroundServiceInstance.RequestAccountStatementGeneration(job.ArgString("walletID"), job.ArgString("email"), job.ArgString("start"), job.ArgString("end"))
+	if err != nil {
+		logger.Error(errors.New("generating account statement failed"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
+		return err
 	}
 	return nil
 }

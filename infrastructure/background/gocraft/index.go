@@ -33,6 +33,7 @@ func (es *GoCraftScheduler) StartScheduler() {
 	pool.Job(string("send_email"),  SendEmail)
 	pool.Job(string("lock_account"),  LockAccount)
 	pool.Job(string("unlock_account"),  UnlockAccount)
+	pool.Job(string("generate_account_statement"),  RequestAccountStatement)
    	pool.Start()
 }
 

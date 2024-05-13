@@ -879,7 +879,6 @@ func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]){
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-
 func FetchPastPersonalTransactions(ctx *interfaces.ApplicationContext[any]){
 	transactionsRepo := repository.TransactionRepo()
 	transactions, err := transactionsRepo.FindMany(map[string]interface{}{
@@ -904,4 +903,28 @@ func FetchPastPersonalTransactions(ctx *interfaces.ApplicationContext[any]){
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+}
+
+func RequestAccountStatement(ctx *interfaces.ApplicationContext[dto.RequestAccountStatementDTO]){
+	walletRepo := repository.WalletRepo()
+	exists, err := walletRepo.CountDocs(map[string]interface{}{
+		"_id": ctx.Body.WalletID,
+		"userID": ctx.GetStringContextData("UserID"),
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if exists != 1 {
+		apperrors.NotFoundError(ctx.Ctx, "wallet not found", ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	background.Scheduler.Emit("generate_account_statement", map[string]any{
+		"walletID": ctx.Body.WalletID,
+		"email": ctx.Body.Email,
+		"start": ctx.Body.Start,
+		"end": ctx.Body.End,
+	})
+	
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "statement is being generated", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
