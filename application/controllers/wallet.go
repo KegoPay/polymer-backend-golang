@@ -870,6 +870,8 @@ func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]){
 		"description": 1,
 		"amountInUSD": 1,
 		"transactionRecepient": 1,
+		"transactionSender": 1,
+		"status": 1,
 		"currency": 1,
 	}))
 	if err != nil {
@@ -881,7 +883,7 @@ func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]){
 
 func FetchPastPersonalTransactions(ctx *interfaces.ApplicationContext[any]){
 	transactionsRepo := repository.TransactionRepo()
-	transactions, err := transactionsRepo.FindMany(map[string]interface{}{
+	transactions, err := transactionsRepo.FindManyStripped(map[string]interface{}{
 		"userID": ctx.GetStringContextData("UserID"),
 	}, &options.FindOptions{
 		Limit: utils.GetInt64Pointer(15),
@@ -896,6 +898,8 @@ func FetchPastPersonalTransactions(ctx *interfaces.ApplicationContext[any]){
 		"description": 1,
 		"amountInUSD": 1,
 		"transactionRecepient": 1,
+		"transactionSender": 1,
+		"status": 1,
 		"currency": 1,
 	}))
 	if err != nil {
