@@ -172,6 +172,7 @@ func AuthRouter(router *gin.RouterGroup) {
 				Ctx: ctx,
 				Body: &body,
 				Keys: appContextAny.Keys,
+				Header: ctx.Request.Header,
 			})
 		})
 

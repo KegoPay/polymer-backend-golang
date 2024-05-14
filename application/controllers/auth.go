@@ -630,7 +630,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 			watchListed = true
 		}
 	}
-	encryptedBVN, err := cryptography.SymmetricEncryption(*ctx.Body.BVN, ctx.GetHeader("Polymer-Device-Id"))
+	encryptedBVN, err := cryptography.SymmetricEncryption(*ctx.Body.BVN, nil)
 	if err != nil {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return

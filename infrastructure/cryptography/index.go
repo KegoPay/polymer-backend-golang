@@ -10,8 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"time"
 
+	"kego.com/application/utils"
 	"kego.com/infrastructure/database/repository/cache"
 	"kego.com/infrastructure/logger"
 )
@@ -43,6 +45,9 @@ func GeneratePublicKey(sessionID string, clientPubKey *ecdh.PublicKey) *ecdh.Pub
 }
 
 func DecryptData(stringToDecrypt string, keyString *string) (string, error) {
+	if keyString == nil {
+		keyString = utils.GetStringPointer(os.Getenv("ENC_KEY"))
+	}
 	key, _ := hex.DecodeString(*keyString)
 	ciphertext, _ := base64.URLEncoding.DecodeString(stringToDecrypt)
 
@@ -70,12 +75,16 @@ func DecryptData(stringToDecrypt string, keyString *string) (string, error) {
 
 func SymmetricEncryption( payload string, keyString *string) (encryptedString string, err error) {
 	// convert key to bytes
+	if keyString == nil {
+		keyString = utils.GetStringPointer(os.Getenv("ENC_KEY"))
+	}
 	key, _ := hex.DecodeString(*keyString)
 	plaintext := []byte(payload)
 
 	//Create a new Cipher Block from the key
 	block, err := aes.NewCipher(key)
 	if err != nil {
+		logger.Error(err)
 		panic(err.Error())
 	}
 
