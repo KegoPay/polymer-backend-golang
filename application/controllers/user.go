@@ -302,9 +302,7 @@ func UpdatePhone(ctx *interfaces.ApplicationContext[dto.UpdatePhoneDTO]) {
 func VerifyCurrentAddress(ctx *interfaces.ApplicationContext[any]) {
 	userRepo := repository.UserRepo()
 	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]any{
-		"address": entities.Address{
-			Verified: true,
-		},
+		"address.verified": true,
 	})
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
