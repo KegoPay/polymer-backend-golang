@@ -106,7 +106,7 @@ func (chimoneyPP *ChimoneyPaymentProcessor)InitiateInternationalPayment(payload 
 		"banks": []InternationalPaymentRequestPayload{
 			*payload,
 		},
-	}, nil)
+	}, nil, false, nil)
 
 	var chimoneyResponse InternationalPaymentRequestResponsePayload
 	json.Unmarshal(*response, &chimoneyResponse)

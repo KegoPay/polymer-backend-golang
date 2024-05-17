@@ -17,7 +17,7 @@ type CACService struct {
 func (cacs *CACService) FetchBusinessDetailsByName(name string) (*[]CACBusiness, error) {
 	response, _, err := cacs.Network.Post("/searchapp/api/public-search/company-business-name-it", nil, map[string]any{
 		"searchTerm": name,
-	}, nil)
+	}, nil, false, nil)
 	if err != nil {
 		logger.Error(errors.New("an error occured while retrieving data from cac server"), logger.LoggerOptions{
 			Key: "error",

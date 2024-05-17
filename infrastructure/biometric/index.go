@@ -3,18 +3,17 @@ package biometric
 import (
 	"os"
 
-	"kego.com/infrastructure/biometric/prembly"
+	faceapi "kego.com/infrastructure/biometric/faceAPI"
 	"kego.com/infrastructure/network"
 )
 
 var BiometricService BiometricServiceType
 
 func InitialiseBiometricService(){
-	BiometricService = &prembly.PremblyBiometricService{
+	BiometricService = &faceapi.FaceAPIBiometricService{
 		Network: &network.NetworkController{
-			BaseUrl: os.Getenv("PREMBLY_BASE_URL"),
+			BaseUrl: os.Getenv("FACEAPI_BASE_URL"),
 		},
-		API_KEY: os.Getenv("PREMBLY_API_KEY"),
-		APP_ID: os.Getenv("PREMBLY_APP_ID"),
+		API_KEY: os.Getenv("FACEAPI_API_KEY"),
 	}
 }

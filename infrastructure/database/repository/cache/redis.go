@@ -74,6 +74,29 @@ func (redisRepo *RedisRepository) FindOne(key string) *string {
 	return &result
 }
 
+func (redisRepo *RedisRepository) FindOneByteArray(key string) *[]byte {
+	redisRepo.preRequest()
+
+	result, err := redisRepo.Clinet.Get(key).Bytes()
+
+	if err != nil {
+		if err.Error() == "redis: nil" {
+			return nil
+		}
+		logger.Error(errors.New("redis error occured while running FindOneByteArray"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key: "key",
+			Data: key,
+		})
+		return nil
+	}
+
+	logger.Info("redis FindOneByteArray completed")
+	return &result
+}
+
 func (redisRepo *RedisRepository) DeleteOne(key string) bool {
 	redisRepo.preRequest()
 

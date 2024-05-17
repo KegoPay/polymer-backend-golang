@@ -64,8 +64,11 @@ type SetBVNDTOO struct {
 type VerifyAccountData struct {
 	ProfileImage     string `json:"profileImage" validate:"required,url"`
 	Path     		 string `json:"path" validate:"required,oneof=nin bvn"`
-	BVN    			 *string `json:"bvn"`
-	NIN    			 *string `json:"nin"`
+}
+
+type SetIDForBiometricVerificationDTO struct {
+	ID    			 string `json:"id"`
+	Path    		 string `json:"path" validate:"required,oneof=nin bvn"`
 }
 
 type SetTransactionPinDTO struct {
@@ -92,7 +95,6 @@ type ConfirmPin struct {
 }
 
 type FileUploadOptions struct {
-	Type 		string					  `json:"type" validate:"required,oneof=biometric profile_image"`
 	Permissions types.SignedURLPermission `json:"permissions" validate:"required"`
 }
 

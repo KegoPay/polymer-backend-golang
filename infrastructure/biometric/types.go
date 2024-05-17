@@ -1,5 +1,7 @@
 package biometric
 
+import faceapi "kego.com/infrastructure/biometric/faceAPI"
+
 type BiometricServiceType interface {
-	FaceMatch(img1 string, img2 string) (*float32, error)
+	FaceMatchWithLiveness(referenceImg []byte, deviceID string) (*faceapi.FaceAPIFaceMatchWithLivenessResponse, error)
 }

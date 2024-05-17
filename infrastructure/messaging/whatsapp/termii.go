@@ -27,7 +27,7 @@ func (ts *TermiiService) SendOTP(phone string, whatsapp bool, otp *string) *stri
 			"type": "plain",
 			"channel": "whatsapp_otp",
 			"time_in_minutes": "10 minutes",
-		}, nil)
+		}, nil, false, nil)
 	}else {
 		response, statusCode, err = ts.Network.Post("/sms/otp/send", nil, map[string]any{
 			"api_key": ts.API_KEY,
@@ -40,7 +40,7 @@ func (ts *TermiiService) SendOTP(phone string, whatsapp bool, otp *string) *stri
 			"pin_length": 6,
 			"pin_placeholder": "< 123456 >",
 			"message_text": "Your Polymer confirmation code is < 123456 >. Valid for 10 minutes, one-time use only.",
-		}, nil)
+		}, nil, false, nil)
 	}
 	var termiiResponse TermiiOTPResponse	
 	json.Unmarshal(*response, &termiiResponse)
@@ -76,7 +76,7 @@ func (ts *TermiiService) VerifyOTP(otpID string, otp string) bool {
 		"api_key": ts.API_KEY,
 		"pin": otp,
 		"pin_id": otpID,
-	}, nil)
+	}, nil, false, nil)
 	var termiiResponse TermiiOTPVerifiedResponse
 	var termiiRespons map[string]any
 	json.Unmarshal(*response, &termiiResponse)

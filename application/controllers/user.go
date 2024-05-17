@@ -21,6 +21,7 @@ import (
 	"kego.com/infrastructure/auth"
 	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
+	fileupload "kego.com/infrastructure/file_upload"
 	identityverification "kego.com/infrastructure/identity_verification"
 	sms "kego.com/infrastructure/messaging/whatsapp"
 	server_response "kego.com/infrastructure/serverResponse"
@@ -255,7 +256,6 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "NIN verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-
 func UpdatePhone(ctx *interfaces.ApplicationContext[dto.UpdatePhoneDTO]) {
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
 	if valiedationErr != nil {
@@ -331,7 +331,7 @@ func SetNextOfKin(ctx *interfaces.ApplicationContext[dto.SetNextOfKin]) {
 		return
 	}
 	payload := map[string]any{
-		"nextOfKin": entities.NextOfKin{
+		"nextOfKin": &entities.NextOfKin{
 			FirstName: ctx.Body.FirstName,
 			LastName: ctx.Body.LastName,
 			Relationship: ctx.Body.Relationship,
@@ -346,4 +346,22 @@ func SetNextOfKin(ctx *interfaces.ApplicationContext[dto.SetNextOfKin]) {
 		return
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "next of kin updated", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+}
+
+func GenerateFileURL(ctx *interfaces.ApplicationContext[dto.FileUploadOptions]){
+	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
+	if valiedationErr != nil {
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	fileName := fmt.Sprintf("%s/%s", ctx.GetStringContextData("UserID"), ctx.GetStringContextData("UserID"))
+	url, err := fileupload.FileUploader.GeneratedSignedURL(fileName, ctx.Body.Permissions)
+	if err != nil {
+		apperrors.CustomError(ctx.Ctx, err.Error(), ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "url geenraed", map[string]string{
+		"url": *url,
+		"fileName": fileName,
+	}, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }

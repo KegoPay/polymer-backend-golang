@@ -176,6 +176,21 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
+		authRouter.POST("/account/id/set", middlewares.AuthenticationMiddleware(false, false), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.SetIDForBiometricVerificationDTO
+			if err := ctx.ShouldBindJSON(&body); err != nil {
+				apperrors.ErrorProcessingPayload(ctx,  utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
+				return
+			}
+			controllers.SetIDForBiometricVerification(&interfaces.ApplicationContext[dto.SetIDForBiometricVerificationDTO]{
+				Ctx: ctx,
+				Body: &body,
+				Keys: appContextAny.Keys,
+				Header: ctx.Request.Header,
+			})
+		})
+
 		authRouter.POST("/account/password/reset", middlewares.OTPTokenMiddleware("update_password"), func(ctx *gin.Context) {
 			var body dto.ResetPasswordDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {

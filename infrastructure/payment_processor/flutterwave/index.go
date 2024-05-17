@@ -31,7 +31,7 @@ func (fpp *FlutterwavePaymentProcessor) GenerateDVA(payload *types.CreateVirtual
 	response, statusCode, err := fpp.Network.Post("/virtual-account-numbers", &map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", fpp.AuthToken),
 		"Content-Type": "application/json",
-	}, payload, nil)
+	}, payload, nil, false, nil)
 	if err != nil {
 		logger.Error(errors.New("an error occured while generating account number on flutterwave"), logger.LoggerOptions{
 			Key: "error",
@@ -63,7 +63,7 @@ func (fpp *FlutterwavePaymentProcessor) InitiateLocalTransfer(payload *types.Ini
 	response, statusCode, err := fpp.Network.Post("/transfers", &map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", fpp.AuthToken),
 		"Content-Type": "application/json",
-	}, payload, nil)
+	}, any(payload).(map[string]any), nil, false, nil)
 	if err != nil {
 		logger.Error(errors.New("an error occured while initiating local transfer on flutterwave"), logger.LoggerOptions{
 			Key: "error",
@@ -92,7 +92,7 @@ func (fpp *FlutterwavePaymentProcessor) InitiateMobileMoneyTransfer(payload *typ
 	response, statusCode, err := fpp.Network.Post("/transfers", &map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", fpp.AuthToken),
 		"Content-Type": "application/json",
-	}, payload, nil)
+	}, any(payload).(map[string]any), nil, false, nil)
 	if err != nil {
 		logger.Error(errors.New("an error occured while initiating mobile money transfer on flutterwave"), logger.LoggerOptions{
 			Key: "error",
@@ -121,10 +121,10 @@ func (fpp *FlutterwavePaymentProcessor) NameVerification(accountNumber string, b
 	response, statusCode, err := fpp.Network.Post("/accounts/resolve", &map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", fpp.AuthToken),
 		"Content-Type": "application/json",
-	}, map[string]string{
+	}, map[string]any{
 		"account_number": accountNumber,
 		"account_bank": bankCode,
-	}, nil)
+	}, nil, false, nil)
 	if err != nil {
 		logger.Error(errors.New("an error occured while initiating local transfer on flutterwave"), logger.LoggerOptions{
 			Key: "error",

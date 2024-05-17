@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
@@ -30,6 +31,7 @@ import (
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
 	"kego.com/infrastructure/background"
+	"kego.com/infrastructure/biometric"
 	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
 	fileupload "kego.com/infrastructure/file_upload"
@@ -123,7 +125,7 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 				apperrors.NotFoundError(ctx.Ctx, "otp has expired", ctx.GetHeader("Polymer-Device-Id"))
 				return
 			}
-			d, err :=cryptography.DecryptData(*otpRef, nil)
+			d, err := cryptography.DecryptData(*otpRef, nil)
 			logger.Error(errors.New("error dcrypting sms otp ref"), logger.LoggerOptions{
 				Key: "ref",
 				Data: *otpRef,
@@ -498,7 +500,7 @@ func VerifyPhone(ctx *interfaces.ApplicationContext[any]) {
 		return
 	}
 	if account == nil {
-		apperrors.NotFoundError(ctx.Ctx, "this account no longer exists", ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.NotFoundError(ctx.Ctx, "this number is not assigned to any account", ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	account.Phone.IsVerified = true
@@ -514,7 +516,7 @@ func VerifyPhone(ctx *interfaces.ApplicationContext[any]) {
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
+func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDForBiometricVerificationDTO]){
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
 	if valiedationErr != nil {
 		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
@@ -567,8 +569,9 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		Base64Image       string 
 		Address		      string 
 	}{}
+
 	if ctx.Body.Path == "bvn" {
-		bvnDetails, err := identityverification.IdentityVerifier.FetchBVNDetails(*ctx.Body.BVN)
+		bvnDetails, err := identityverification.IdentityVerifier.FetchBVNDetails(ctx.Body.ID)
 		if err != nil {
 			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
 			apperrors.CustomError(ctx.Ctx, err.Error(), ctx.GetHeader("Polymer-Device-Id"))
@@ -585,52 +588,58 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		kycDetails.DateOfBirth = bvnDetails.DateOfBirth
 		kycDetails.Address = bvnDetails.Address
 	}else if ctx.Body.Path == "nin" {
-		apperrors.ClientError(ctx.Ctx, "Verification by NIN is currently not supported", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.ClientError(ctx.Ctx, "this id verification is not available at this time", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
-		ninDetails, err := identityverification.IdentityVerifier.FetchNINDetails(*ctx.Body.NIN)
-		if err != nil {
-			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-			apperrors.CustomError(ctx.Ctx, err.Error(), ctx.GetHeader("Polymer-Device-Id"))
-			return
-		}
-		kycDetails.Base64Image = ninDetails.Base64Image
-		kycDetails.WatchListed = nil
-		kycDetails.FirstName = ninDetails.FirstName
-		kycDetails.MiddleName = ninDetails.MiddleName
-		kycDetails.LastName = ninDetails.LastName
-		kycDetails.Gender = ninDetails.Gender
-		kycDetails.PhoneNumber = ninDetails.PhoneNumber
-		kycDetails.Nationality = ninDetails.Nationality
-		kycDetails.DateOfBirth = ninDetails.DateOfBirth
+	} else {
+		apperrors.ClientError(ctx.Ctx, "unknown id type selected", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
 	}
-	// result, err := biometric.BiometricService.FaceMatch(ctx.Body.ProfileImage, kycDetails.Base64Image)
+	data, err := base64.StdEncoding.DecodeString(kycDetails.Base64Image)
 	if err != nil {
-		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-		// _, _ := fileupload.FileUploader.DeleteFileByURL(ctx.Body.ProfileImage)
-		// if cldErr != nil {
-		// 	apperrors.FatalServerError(ctx.Ctx, cldErr)
-		// 	return
-		// }1
-		apperrors.ClientError(ctx.Ctx, err.Error(), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		logger.Error(errors.New("error converting base64 file to []byte"), logger.LoggerOptions{
+			Key: "error",
+			Data: err,
+		})
 		return
 	}
-	// if *result < 80 {
-	// 	cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-	// 	// err = fileupload.FileUploader.DeleteSingleFile(account.ID)
-	// 	// if err != nil {
-	// 	// 	apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
-	// 	// 	return
-	// 	// }
-	// 	apperrors.ClientError(ctx.Ctx, fmt.Sprintf("The image supplied does not match. If you think this is a mistake please contact support on %s", constants.SUPPORT_EMAIL), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-	// 	return
-	// }
+	parsedKycInfo, _ := json.Marshal(kycDetails)
+	success := cache.Cache.CreateEntry(fmt.Sprintf("%s-%s-info", ctx.Body.Path, account.Email), parsedKycInfo, time.Minute * 10)
+	if !success {
+		err := errors.New("could not save kyc details to cache")
+		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	encryptedID, err := cryptography.SymmetricEncryption(ctx.Body.ID, nil)
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-%s-cache", ctx.Body.Path, account.Email), encryptedID, time.Minute * 12)
+	response , err := biometric.BiometricService.FaceMatchWithLiveness(data, *ctx.GetHeader("Polymer-Device-Id"))
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "verification information saved", response, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+}
+
+func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
+	idDetails := cache.Cache.FindOneByteArray(fmt.Sprintf("%s-%s-info", ctx.Body.Path, ctx.GetStringContextData("Email")))
+	var kycDetails struct{
+		Gender            string
+		WatchListed       *string
+		FirstName         string
+		MiddleName        *string 
+		LastName          string
+		DateOfBirth       string 
+		PhoneNumber       *string
+		Nationality       string
+		Base64Image       string 
+		Address		      string 
+	}
+	json.Unmarshal(*idDetails, &kycDetails)
+	profileImageFilePath := fmt.Sprintf("%s/%s", ctx.GetStringContextData("UserID"), utils.GenerateUUIDString())
+	fileupload.FileUploader.UploadBase64File(profileImageFilePath, &kycDetails.Base64Image)
 	watchListed := false
 	if  kycDetails.WatchListed  != nil {
 		if *kycDetails.WatchListed == "True" {
 			watchListed = true
 		}
 	}
-	encryptedBVN, err := cryptography.SymmetricEncryption(*ctx.Body.BVN, nil)
+	cachedID := cache.Cache.FindOne(fmt.Sprintf("%s-%s-cache", ctx.Body.Path, ctx.GetStringContextData("Email")))
+	id, err := cryptography.DecryptData(*cachedID, nil)
 	if err != nil {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
@@ -658,46 +667,66 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 			}	
 			return nil
 		}(),
-		"profileImage": ctx.Body.ProfileImage,
+		"profileImage": profileImageFilePath,
 		"kycCompleted": true,
-		"bvn": encryptedBVN,
-		"nin": ctx.Body.NIN,
+		"bvn": func () *string {
+			if ctx.Body.Path == "bvn" {
+				return &id
+			}	
+			return nil
+		}(),
+		"nin": func () *string {
+			if ctx.Body.Path == "nin" {
+				return &id
+			}	
+			return nil
+		}(),
 		"accountRestricted": watchListed,
 		"address": entities.Address{
 			FullAddress: &kycDetails.Address,
 		},
 		"tier": 1,
 	}
+	userRepo := repository.UserRepo()
 	userRepo.UpdatePartialByFilter(map[string]interface{}{
 		"email": ctx.GetStringContextData("Email"),
 	}, userUpdatedInfo)
-	if ctx.Body.Path == "bvn" {
-	wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID,  account.FirstName, account.LastName, account.Email, *ctx.Body.BVN, ctx.GetHeader("Polymer-Device-Id"))
+	account, err := userRepo.FindOneByFilter(map[string]interface{}{
+		"email": ctx.GetStringContextData("Email"),
+	}, options.FindOne().SetProjection(map[string]any{
+		"walletID": 1,
+	}))
+	if err != nil {
+		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
 	}
-	cache.Cache.DeleteOne(fmt.Sprintf("%s-kyc-attempts-left", account.Email))
+	if ctx.Body.Path == "bvn" {
+	wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID,  ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), ctx.GetStringContextData("Email"), id, ctx.GetHeader("Polymer-Device-Id"))
+	}
+	cache.Cache.DeleteOne(fmt.Sprintf("%s-kyc-attempts-left", ctx.GetStringContextData("Email")))
 	now := time.Now()
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
-		Email:     &account.Email,
+		Email:     utils.GetStringPointer(ctx.GetStringContextData("Email")),
 		Phone:     &entities.PhoneNumber{
 			Prefix: "234",
 			ISOCode: "NG",
 			LocalNumber: *kycDetails.PhoneNumber,
 		},
-		UserID:    account.ID,
+		UserID:    ctx.GetStringContextData("UserID"),
 		IssuedAt:  now.Unix(),
 		ExpiresAt: now.Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
-		UserAgent: account.UserAgent,
+		UserAgent: ctx.GetStringContextData("UserAgent"),
 		FirstName: userUpdatedInfo["firstName"].(string),
 		LastName: userUpdatedInfo["lastName"].(string),
-		DeviceID:   account.DeviceID,
-		PushNotificationToken: account.PushNotificationToken,
-		AppVersion: account.AppVersion,
+		DeviceID:   ctx.GetStringContextData("DeviceID"),
+		PushNotificationToken: ctx.GetStringContextData("PushNotificationToken"),
+		AppVersion: ctx.GetStringContextData("AppVersion"),
 	})
 	if err != nil {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	pushnotification.PushNotificationService.PushOne(account.PushNotificationToken, "Welcome to Polymer!😃",
+	pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Welcome to Polymer!😃",
 	"You now have global payments at your finger tips! Make payments with crypto, Mobile Money and to bank accounts in over 40+ countries!🤯")
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "kyc completed", token, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
@@ -728,20 +757,6 @@ func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 		response["KYCCompleted"] = account.KYCCompleted
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "success", response, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-}
-
-func GenerateFileURL(ctx *interfaces.ApplicationContext[dto.FileUploadOptions]){
-	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
-	if valiedationErr != nil {
-		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
-		return
-	}
-	url, err := fileupload.FileUploader.GeneratedSignedURL(fmt.Sprintf("%s/%s", ctx.Body.Type, ctx.GetStringContextData("UserID")), ctx.Body.Permissions)
-	if err != nil {
-		apperrors.CustomError(ctx.Ctx, err.Error(), ctx.GetHeader("Polymer-Device-Id"))
-		return
-	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "url geenraed", url, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func SetTransactionPin(ctx *interfaces.ApplicationContext[dto.SetTransactionPinDTO]){

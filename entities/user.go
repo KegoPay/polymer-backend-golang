@@ -59,7 +59,7 @@ type User struct {
 	Latitude		  		  		float64 	  			`bson:"latitude" json:"latitude"`
 	Tier		  		  			uint 	  			 	`bson:"tier" json:"tier"`
 	NotificationOptions		  		NotificationOptions  	`bson:"notificationOptions" json:"notificationOptions"`
-	NextOfKin		  				NextOfKin  				`bson:"nextOfKin" json:"nextOfKin"`
+	NextOfKin		  				*NextOfKin  				`bson:"nextOfKin" json:"nextOfKin"`
 
 	ID        string    `bson:"_id" json:"id"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`

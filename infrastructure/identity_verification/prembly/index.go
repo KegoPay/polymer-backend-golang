@@ -19,9 +19,9 @@ func (piv *PremblyIdentityVerification) FetchBVNDetails(bvn string) (*identity_v
 	response, _, err := piv.Network.Post("/identitypass/verification/bvn", &map[string]string{
 		"x-api-key": piv.API_KEY,
 		"app-id": piv.APP_ID,
-	}, map[string]string{
+	}, map[string]any{
 		"number": bvn,
-	}, nil)
+	}, nil, false, nil)
 	var premblyResponse PremblyBVNResponse
 	json.Unmarshal(*response, &premblyResponse)
 	if err != nil {
@@ -49,9 +49,9 @@ func (piv *PremblyIdentityVerification) FetchBVNDetails(bvn string) (*identity_v
 func (piv *PremblyIdentityVerification) ValidateEmail(bvn string) (*identity_verification_types.BVNData, error) {
 	response, _, err := piv.Network.Post("/identityradar/api/v1/email-intelligence", &map[string]string{
 		"api-key": piv.API_KEY,
-	}, map[string]string{
+	}, map[string]any{
 		"number": bvn,
-	}, nil)
+	}, nil, false, nil)
 	if err != nil {
 		logger.Error(errors.New("error retireving bvn data from prembly"), logger.LoggerOptions{
 			Key: "error",

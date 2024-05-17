@@ -31,7 +31,7 @@ func (bs *BackgroundService)RequestAccountStatementGeneration(walletID string, e
 		"email": email,
 		"start": start,
 		"end": end,
-	}, nil)
+	}, nil, false, nil)
 	if err != nil {
 		return err
 	}
