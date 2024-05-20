@@ -6,6 +6,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo/options"
 	apperrors "kego.com/application/appErrors"
+	"kego.com/application/constants"
 	"kego.com/application/controllers/dto"
 	"kego.com/application/interfaces"
 	"kego.com/application/repository"
@@ -112,7 +113,7 @@ func SetCACInfo(ctx *interfaces.ApplicationContext[dto.SetCACInfo]) {
 		return
 	}
 	if business.CACInfo.Verified {
-		apperrors.ClientError(ctx.Ctx, "Your business has already been verified! If you wish to update it's details please contact support", nil, )
+		apperrors.ClientError(ctx.Ctx, "Your business has already been verified! If you wish to update it's details please contact support", nil, &constants.BUSINESS_ALREADY_VERIFIED,  ctx.GetHeader("Polymer-Device-Id"))
 	}
 	updated, err := businessRepo.UpdatePartialByID(ctx.GetStringParameter("businessID"), map[string]any{
 		"cacInfo": (*names)[0],
