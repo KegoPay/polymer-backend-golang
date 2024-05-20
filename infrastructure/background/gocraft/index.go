@@ -9,9 +9,8 @@ import (
 	"kego.com/infrastructure/logger"
 )
 
-
 type GoCraftScheduler struct {
-	Emitter 	 *work.Enqueuer
+	Emitter       *work.Enqueuer
 	CacheAddress  string
 	CachePassword string
 }
@@ -27,25 +26,25 @@ func (es *GoCraftScheduler) StartScheduler() {
 				redis.DialUseTLS(true))
 		},
 	}
-    es.Emitter = work.NewEnqueuer("polymer_jobs", redisPool)
+	es.Emitter = work.NewEnqueuer("polymer_jobs", redisPool)
 
 	pool := work.NewWorkerPool(context.Background(), 56, "polymer_jobs", redisPool)
-	pool.Job(string("send_email"),  SendEmail)
-	pool.Job(string("lock_account"),  LockAccount)
-	pool.Job(string("unlock_account"),  UnlockAccount)
-	pool.Job(string("generate_account_statement"),  RequestAccountStatement)
-   	pool.Start()
+	pool.Job(string("send_email"), SendEmail)
+	pool.Job(string("lock_account"), LockAccount)
+	pool.Job(string("unlock_account"), UnlockAccount)
+	pool.Job(string("generate_account_statement"), RequestAccountStatement)
+	pool.Job(string("verify_business"), VerifyBusiness)
+	pool.Start()
 }
-
 
 func (es *GoCraftScheduler) Emit(channel string, payload map[string]any) error {
 	_, err := es.Emitter.Enqueue(channel, payload)
 	if err != nil {
 		logger.Error(errors.New("error scheduling job"), logger.LoggerOptions{
-			Key: "channel",
+			Key:  "channel",
 			Data: channel,
 		}, logger.LoggerOptions{
-			Key: "payload",
+			Key:  "payload",
 			Data: payload,
 		})
 		return err

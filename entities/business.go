@@ -7,12 +7,27 @@ import (
 	cac_service "kego.com/infrastructure/cac"
 )
 
+type ShareHolder struct {
+	Name   string `bson:"name" json:"name" validate:"required"`
+	ID     string `bson:"id" json:"id"`
+	IDType string `bson:"idType" json:"idType"`
+	Shares string  `bson:"shares" json:"shares"`
+}
+
+type Director struct {
+	Name   string `bson:"name" json:"name" validate:"required"`
+	ID     string `bson:"id" json:"id"`
+	IDType string `bson:"idType" json:"idType"`
+}
+
 type Business struct {
-	Name      	string    				   `bson:"name" json:"name" validate:"required"`
-	UserID    	string      			   `bson:"userID" json:"userID" validate:"required"`
-	WalletID  	string   				   `bson:"walletID" json:"walletID"`
-	Email	  	string     				   `bson:"email" json:"email" validate:"required,email"`
-	CACInfo	  	*cac_service.CACBusiness    `bson:"cacInfo" json:"cacInfo"`
+	Name         string                   `bson:"name" json:"name" validate:"required"`
+	UserID       string                   `bson:"userID" json:"userID" validate:"required"`
+	WalletID     string                   `bson:"walletID" json:"walletID"`
+	Email        string                   `bson:"email" json:"email" validate:"required,email"`
+	CACInfo      *cac_service.CACBusiness `bson:"cacInfo" json:"cacInfo"`
+	Directors    *[]Director              `bson:"directors" json:"directors"`
+	ShareHolders *[]ShareHolder           `bson:"shareholders" json:"shareholders"`
 
 	ID        string    `bson:"_id" json:"id"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`

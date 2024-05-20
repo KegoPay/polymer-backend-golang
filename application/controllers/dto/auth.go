@@ -7,78 +7,78 @@ import (
 )
 
 type CreateAccountDTO struct {
-	Email      		  				string             `json:"email"`
-	Password      		  			string             `json:"password"`
-	UserAgent 						string     		   `json:"deviceType"`
-	DeviceID  		  				string             `json:"deviceID"`
-	PushNotificationToken  		  	string             `json:"pushNotificationToken"`
-	AppVersion        				string       	   `json:"appVersion"`
-	IPAddress        				string
+	Email                 string `json:"email"`
+	Password              string `json:"password"`
+	UserAgent             string `json:"deviceType"`
+	DeviceID              string `json:"deviceID"`
+	PushNotificationToken string `json:"pushNotificationToken"`
+	AppVersion            string `json:"appVersion"`
+	IPAddress             string
 }
 
 type KeyExchangeDTO struct {
-	ClientPublicKey	*ecdh.PublicKey		`json:"clientPubKey"`
-	DeviceID		string
+	ClientPublicKey *ecdh.PublicKey `json:"clientPubKey"`
+	DeviceID        string
 }
 
 type EncryptForStagingDTO struct {
-	EncKey			string	`json:"enc_key"`
-	Payload			any		`json:"payload"`
-	DeviceID		string
+	EncKey   string `json:"enc_key"`
+	Payload  any    `json:"payload"`
+	DeviceID string
 }
 
 type DecryptForStagingDTO struct {
-	Payload			string		`json:"payload"`
-	EncKey			string		`json:"enc_key"`
-	DeviceID		string
+	Payload  string `json:"payload"`
+	EncKey   string `json:"enc_key"`
+	DeviceID string
 }
 
 type ClientKeyExchangeMockDTO struct {
-	ServerPublicKey	*ecdh.PublicKey		`json:"serverPubKey"`
-	ClientPublicKey	*ecdh.PublicKey		`json:"clientPubKey"`
-	DeviceID		string
+	ServerPublicKey *ecdh.PublicKey `json:"serverPubKey"`
+	ClientPublicKey *ecdh.PublicKey `json:"clientPubKey"`
+	DeviceID        string
 }
 
 type VerifyOTPDTO struct {
-	OTP		string		`json:"otp"`
-	Email	*string		`json:"email"`
-	Phone	*string		`json:"phone"`
+	OTP   string  `json:"otp"`
+	Email *string `json:"email"`
+	Phone *string `json:"phone"`
 }
 
 type LoginDTO struct {
-	Email      				*string            `json:"email,omitempty"`
-	Phone      				*string  		   `json:"phone,omitempty"`
-	Password   				string             `json:"password"`
-	DeviceID   				string             `json:"deviceID"`
-	PushNotificationToken   string             `json:"pushNotificationToken"`
+	Email                 *string `json:"email,omitempty"`
+	Phone                 *string `json:"phone,omitempty"`
+	Password              string  `json:"password"`
+	DeviceID              string  `json:"deviceID"`
+	PushNotificationToken string  `json:"pushNotificationToken"`
 }
 
 type VerifyEmailData struct {
-	Otp     string `json:"otp"`
-	Email	string `json:"email"`
+	Otp   string `json:"otp"`
+	Email string `json:"email"`
 }
 
 type SetBVNDTOO struct {
 }
 
 type VerifyAccountData struct {
-	ProfileImage     string `json:"profileImage" validate:"required,url"`
-	Path     		 string `json:"path" validate:"required,oneof=nin bvn"`
+	ProfileImage string `json:"profileImage" validate:"required,url"`
+	Path         string `json:"path" validate:"required,oneof=nin bvn"`
 }
 
 type SetIDForBiometricVerificationDTO struct {
-	ID    			 string `json:"id"`
-	Path    		 string `json:"path" validate:"required,oneof=nin bvn"`
+	ID   string `json:"id"`
+	Path string `json:"path" validate:"required,oneof=nin bvn"`
 }
 
 type SetTransactionPinDTO struct {
-	TransactionPin   string `json:"transactionPin" validate:"required,min=4,max=4"`
-	UserImage     string
-	Email 			 string
+	TransactionPin string `json:"transactionPin" validate:"required,min=4,max=4"`
+	UserImage      string
+	Email          string
 }
 
 type VerifyPassword struct {
-	Password  string `json:"password"`
+	Password string `json:"password"`
 }
 
 type ResetPasswordDTO struct {
@@ -91,7 +91,7 @@ type UpdatePassword struct {
 }
 
 type ConfirmPin struct {
-	Pin    string           		 `json:"pin"`
+	Pin string `json:"pin"`
 }
 
 type FileUploadOptions struct {
@@ -99,8 +99,8 @@ type FileUploadOptions struct {
 }
 
 type ResendOTP struct {
-	Email 		*string		`json:"email"`
-	Phone 		*string		`json:"phone"`
-	Whatsapp 	*bool		`json:"whatsapp"`
-	Intent 		string		`json:"intent" validate:"required,oneof=verify_account update_password verify_phone"`
+	Email    *string `json:"email"`
+	Phone    *string `json:"phone"`
+	Whatsapp *bool   `json:"whatsapp"`
+	Intent   string  `json:"intent" validate:"required,oneof=verify_account update_password verify_phone"`
 }

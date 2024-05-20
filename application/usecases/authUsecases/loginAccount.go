@@ -96,7 +96,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		Phone:     account.Phone,
 		UserID:    account.ID,
 		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
+		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(10)).Unix(), //lasts for 10 mins
 		UserAgent: account.UserAgent,
 		FirstName: account.FirstName,
 		LastName: account.LastName,

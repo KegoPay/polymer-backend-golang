@@ -68,7 +68,7 @@ func EncryptForStaging(ctx *interfaces.ApplicationContext[dto.EncryptForStagingD
 		apperrors.FatalServerError(ctx.Ctx, err, nil)
 		return
 	}
-	encrypted, err := cryptography.SymmetricEncryption(hex.EncodeToString(payloadByte),  &ctx.Body.EncKey)
+	encrypted, err := cryptography.SymmetricEncryption(hex.EncodeToString(payloadByte), &ctx.Body.EncKey)
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, nil)
 		return
@@ -95,7 +95,6 @@ func DecryptForStaging(ctx *interfaces.ApplicationContext[dto.DecryptForStagingD
 	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusOK, "decrypted", person, nil, nil)
 }
 
-
 func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 	if ctx.Body.Phone == nil && ctx.Body.Email == nil {
 		apperrors.ClientError(ctx.Ctx, "pass in either a phone number or email", nil, &constants.NIN_VERIFICATION_FAILED, ctx.GetHeader("Polymer-Device-Id"))
@@ -111,13 +110,13 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 			apperrors.ClientError(ctx.Ctx, msg, nil, &constants.NIN_VERIFICATION_FAILED, ctx.GetHeader("Polymer-Device-Id"))
 			return
 		}
-	}else {
+	} else {
 		channel = *ctx.Body.Phone
 		filter["phone.localNumber"] = channel
 		msg, success := auth.VerifyOTP(channel, ctx.Body.OTP)
 		if !success {
 			logger.Info("possible sms otp attempted to be verified as whatsapp otp", logger.LoggerOptions{
-				Key: "message",
+				Key:  "message",
 				Data: msg,
 			})
 			otpRef := cache.Cache.FindOne(fmt.Sprintf("%s-sms-otp-ref", channel))
@@ -127,13 +126,13 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 			}
 			d, err := cryptography.DecryptData(*otpRef, nil)
 			logger.Error(errors.New("error dcrypting sms otp ref"), logger.LoggerOptions{
-				Key: "ref",
+				Key:  "ref",
 				Data: *otpRef,
 			}, logger.LoggerOptions{
-				Key: "channel",
+				Key:  "channel",
 				Data: channel,
 			}, logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: err,
 			})
 			success := sms.SMSService.VerifyOTP(d, ctx.Body.OTP)
@@ -151,8 +150,8 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 		return
 	}
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
-		Email: ctx.Body.Email,
-		PhoneNum: ctx.Body.Phone,
+		Email:     ctx.Body.Email,
+		PhoneNum:  ctx.Body.Phone,
 		OTPIntent: *otpIntent,
 		IssuedAt:  time.Now().Unix(),
 		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
@@ -167,15 +166,15 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 
 func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 	account, _, err := authusecases.CreateAccount(ctx.Ctx, &entities.User{
-		Email:          ctx.Body.Email,
-		Password: 		ctx.Body.Password,
-		UserAgent:      ctx.Body.UserAgent,
-		DeviceID:       ctx.Body.DeviceID,
-		AppVersion: 	ctx.Body.AppVersion,
+		Email:                 ctx.Body.Email,
+		Password:              ctx.Body.Password,
+		UserAgent:             ctx.Body.UserAgent,
+		DeviceID:              ctx.Body.DeviceID,
+		AppVersion:            ctx.Body.AppVersion,
 		PushNotificationToken: ctx.Body.PushNotificationToken,
-		Tier: 0,
-		Longitude: ctx.GetFloat64ContextData("Longitude"),
-		Latitude: ctx.GetFloat64ContextData("Latitude"),
+		Tier:                  0,
+		Longitude:             ctx.GetFloat64ContextData("Longitude"),
+		Latitude:              ctx.GetFloat64ContextData("Latitude"),
 	}, &ctx.Body.DeviceID)
 	if err != nil {
 		return
@@ -185,25 +184,25 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), 2, time.Hour * 24 * 365 ) // keep data cached for a year
-	cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", account.Email), 2, time.Hour * 24 * 365 ) // keep data cached for a year
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), 2, time.Hour*24*365)     // keep data cached for a year
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", account.Email), 2, time.Hour*24*365) // keep data cached for a year
 	background.Scheduler.Emit("send_email", map[string]any{
-		"email": account.Email,
-		"subject": "Welcome to Kego! Verify your account to continue",
+		"email":        account.Email,
+		"subject":      "Welcome to Kego! Verify your account to continue",
 		"templateName": "otp",
 		"opts": map[string]interface{}{
 			"FIRSTNAME": account.FirstName,
-			"OTP":      otp,
+			"OTP":       otp,
 		},
 	})
-	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Email), "verify_account", time.Minute * 10)
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Email), "verify_account", time.Minute*10)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "account created", nil, nil, nil, &ctx.Body.DeviceID)
 }
 
-func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
+func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]) {
 	appVersion := utils.ExtractAppVersionFromUserAgentHeader(*ctx.GetHeader("User-Agent"))
 	if appVersion == nil {
-		apperrors.UnsupportedAppVersion(ctx.Ctx,  ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.UnsupportedAppVersion(ctx.Ctx, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	account, wallet, token := authusecases.LoginAccount(ctx.Ctx, ctx.Body.Email, ctx.Body.Phone, &ctx.Body.Password, *appVersion, *ctx.GetHeader("User-Agent"), ctx.Body.DeviceID, ctx.Body.PushNotificationToken, ctx.GetFloat64ContextData("Longitude"), ctx.GetFloat64ContextData("Latitude"), ctx.GetHeader("Polymer-Device-Id"))
@@ -224,7 +223,7 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 		"userID": account.ID,
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err,  ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	walletRepo := repository.WalletRepo()
@@ -234,16 +233,16 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 			"businessID": business.ID,
 		})
 		if err != nil {
-			apperrors.FatalServerError(ctx.Ctx, err,  ctx.GetHeader("Polymer-Device-Id"))
+			apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 			return
 		}
 	}
 	responsePayload := map[string]interface{}{
-		"account": account,
-		"wallet": wallet,
-		"token":   token,
-		"country": country,
-		"business": business,
+		"account":        account,
+		"wallet":         wallet,
+		"token":          token,
+		"country":        country,
+		"business":       business,
 		"businessWallet": businessWallet,
 	}
 	if account.TransactionPin == "" {
@@ -255,11 +254,11 @@ func LoginUser(ctx *interfaces.ApplicationContext[dto.LoginDTO]){
 func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
 	userRepo := repository.UserRepo()
 	account, err := userRepo.FindOneByFilter(map[string]interface{}{
-		"email":  ctx.GetStringContextData("OTPEmail"),
+		"email": ctx.GetStringContextData("OTPEmail"),
 	})
 	if err != nil {
 		logger.Error(errors.New("error fetching a user account to reset password"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -272,33 +271,33 @@ func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
 	account.Password = ctx.Body.NewPassword
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(*account)
 	if valiedationErr != nil {
-		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr,  ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	hashedPassword, err := cryptography.CryptoHahser.HashString(ctx.Body.NewPassword)
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err,  ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	success, err := userRepo.UpdatePartialByFilter(map[string]interface{}{
-		"email":  ctx.GetStringContextData("OTPEmail"),
+		"email": ctx.GetStringContextData("OTPEmail"),
 	}, map[string]interface{}{
 		"password": string(hashedPassword),
 	})
 	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err,  ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	
+
 	if !success {
 		logger.Error(errors.New("could not reset password"), logger.LoggerOptions{
-			Key: "email",
+			Key:  "email",
 			Data: ctx.GetStringContextData("OTPEmail"),
 		})
-		apperrors.UnknownError(ctx.Ctx, err,  ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	cache.Cache.CreateEntry(ctx.GetStringContextData("OTPToken"), true, time.Minute * 5)
+	cache.Cache.CreateEntry(ctx.GetStringContextData("OTPToken"), true, time.Minute*5)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password reset", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
@@ -309,7 +308,7 @@ func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
 	})
 	if err != nil {
 		logger.Error(errors.New("error fetching a user account to reset password"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -333,7 +332,7 @@ func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
 	hashed_password, err := cryptography.CryptoHahser.HashString(ctx.Body.NewPassword)
 	if err != nil {
 		logger.Error(errors.New("error hashing users new password"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -344,16 +343,16 @@ func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
 	})
 	if err != nil {
 		logger.Error(errors.New("error while updating user password"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 	}
 	if modified == 0 {
-		logger.Error(errors.New("error while updating user password"),  logger.LoggerOptions{
-			Key: "modified",
+		logger.Error(errors.New("error while updating user password"), logger.LoggerOptions{
+			Key:  "modified",
 			Data: modified,
-		}, )
+		})
 		apperrors.FatalServerError(ctx.Ctx, fmt.Errorf("failed to update users password userID %s", ctx.GetStringContextData("UserID")), ctx.GetHeader("Polymer-Device-Id"))
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "password updated", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
@@ -374,23 +373,23 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 	if ctx.Body.Email != nil {
 		channel = *ctx.Body.Email
 		filter["email"] = channel
-	}else {
+	} else {
 		channel = *ctx.Body.Phone
 		filter["phone.localNumber"] = channel
 	}
-	
+
 	userRepo := repository.UserRepo()
 	account, err := userRepo.FindOneByFilter(filter, options.FindOne().SetProjection(map[string]any{
 		"firstName": 1,
-		"phone": 1,
-		"email": 1,
+		"phone":     1,
+		"email":     1,
 	}))
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if account == nil {
-		server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.NotFoundError(ctx.Ctx, "User not found", ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 
@@ -401,18 +400,18 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 			return
 		}
 		background.Scheduler.Emit("send_email", map[string]any{
-			"email": account.Email,
-			"subject": "An OTP was requested for your account",
+			"email":        account.Email,
+			"subject":      "An OTP was requested for your account",
 			"templateName": "otp",
 			"opts": map[string]interface{}{
 				"FIRSTNAME": account.FirstName,
-				"OTP":      otp,
+				"OTP":       otp,
 			},
 		})
-	}else if ctx.Body.Phone != nil {
+	} else if ctx.Body.Phone != nil {
 		var otp *string
 		var err error
-		if ctx.Body.Whatsapp != nil || account.Phone.WhatsApp{
+		if ctx.Body.Whatsapp != nil || account.Phone.WhatsApp {
 			if account.Phone.WhatsApp || (ctx.Body.Whatsapp != nil && *ctx.Body.Whatsapp) {
 				otp, err = auth.GenerateOTP(6, channel)
 				if err != nil {
@@ -427,9 +426,9 @@ func ResendOTP(ctx *interfaces.ApplicationContext[dto.ResendOTP]) {
 			apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 			return
 		}
-		cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", channel), encryptedRef, time.Minute * 10)
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-sms-otp-ref", channel), encryptedRef, time.Minute*10)
 	}
-	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", channel), ctx.Body.Intent, time.Minute * 10)
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", channel), ctx.Body.Intent, time.Minute*10)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "otp sent", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
@@ -451,16 +450,16 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[any]) {
 		return
 	}
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
-		Email:     &account.Email,
-		Phone:     account.Phone,
-		UserID:    account.ID,
-		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 15 mins
-		UserAgent: account.UserAgent,
-		FirstName: account.FirstName,
-		LastName: account.LastName,
-		DeviceID:   account.DeviceID,
-		AppVersion: account.AppVersion,
+		Email:                 &account.Email,
+		Phone:                 account.Phone,
+		UserID:                account.ID,
+		IssuedAt:              time.Now().Unix(),
+		ExpiresAt:             time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 15 mins
+		UserAgent:             account.UserAgent,
+		FirstName:             account.FirstName,
+		LastName:              account.LastName,
+		DeviceID:              account.DeviceID,
+		AppVersion:            account.AppVersion,
 		PushNotificationToken: account.PushNotificationToken,
 	})
 	if err != nil {
@@ -477,18 +476,17 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[any]) {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	cache.Cache.CreateEntry(ctx.GetStringContextData("OTPToken"), true, time.Minute * 5)
+	cache.Cache.CreateEntry(ctx.GetStringContextData("OTPToken"), true, time.Minute*5)
 	hashedToken, err := cryptography.CryptoHahser.HashString(*token)
 	if err != nil {
 		apperrors.FatalServerError(ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	cache.Cache.CreateEntry(account.ID, hashedToken, time.Minute * time.Duration(10)) // cache authentication token for 10 mins
+	cache.Cache.CreateEntry(account.ID, hashedToken, time.Minute*time.Duration(10)) // cache authentication token for 10 mins
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", map[string]string{
 		"token": *token,
 	}, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
-
 
 func VerifyPhone(ctx *interfaces.ApplicationContext[any]) {
 	userRepo := repository.UserRepo()
@@ -516,7 +514,7 @@ func VerifyPhone(ctx *interfaces.ApplicationContext[any]) {
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDForBiometricVerificationDTO]){
+func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDForBiometricVerificationDTO]) {
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
 	if valiedationErr != nil {
 		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
@@ -557,23 +555,23 @@ func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDF
 		apperrors.ClientError(ctx.Ctx, "you have completed your identity verification", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	kycDetails := struct{
-		Gender            string
-		WatchListed       *string
-		FirstName         string
-		MiddleName        *string 
-		LastName          string
-		DateOfBirth       string 
-		PhoneNumber       *string
-		Nationality       string
-		Base64Image       string 
-		Address		      string 
+	kycDetails := struct {
+		Gender      string
+		WatchListed *string
+		FirstName   string
+		MiddleName  *string
+		LastName    string
+		DateOfBirth string
+		PhoneNumber *string
+		Nationality string
+		Base64Image string
+		Address     string
 	}{}
 
 	if ctx.Body.Path == "bvn" {
 		bvnDetails, err := identityverification.IdentityVerifier.FetchBVNDetails(ctx.Body.ID)
 		if err != nil {
-			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
+			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft-1, time.Hour*24*365) // keep data cached for a year
 			apperrors.CustomError(ctx.Ctx, err.Error(), ctx.GetHeader("Polymer-Device-Id"))
 			return
 		}
@@ -587,7 +585,7 @@ func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDF
 		kycDetails.Nationality = bvnDetails.Nationality
 		kycDetails.DateOfBirth = bvnDetails.DateOfBirth
 		kycDetails.Address = bvnDetails.Address
-	}else if ctx.Body.Path == "nin" {
+	} else if ctx.Body.Path == "nin" {
 		apperrors.ClientError(ctx.Ctx, "this id verification is not available at this time", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	} else {
@@ -597,43 +595,43 @@ func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDF
 	data, err := base64.StdEncoding.DecodeString(kycDetails.Base64Image)
 	if err != nil {
 		logger.Error(errors.New("error converting base64 file to []byte"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return
 	}
 	parsedKycInfo, _ := json.Marshal(kycDetails)
-	success := cache.Cache.CreateEntry(fmt.Sprintf("%s-%s-info", ctx.Body.Path, account.Email), parsedKycInfo, time.Minute * 10)
+	success := cache.Cache.CreateEntry(fmt.Sprintf("%s-%s-info", ctx.Body.Path, account.Email), parsedKycInfo, time.Minute*10)
 	if !success {
 		err := errors.New("could not save kyc details to cache")
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	encryptedID, err := cryptography.SymmetricEncryption(ctx.Body.ID, nil)
-	cache.Cache.CreateEntry(fmt.Sprintf("%s-%s-cache", ctx.Body.Path, account.Email), encryptedID, time.Minute * 12)
-	response , err := biometric.BiometricService.FaceMatchWithLiveness(data, *ctx.GetHeader("Polymer-Device-Id"))
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-%s-cache", ctx.Body.Path, account.Email), encryptedID, time.Minute*12)
+	response, err := biometric.BiometricService.FaceMatchWithLiveness(data, *ctx.GetHeader("Polymer-Device-Id"))
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "verification information saved", response, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
+func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
 	idDetails := cache.Cache.FindOneByteArray(fmt.Sprintf("%s-%s-info", ctx.Body.Path, ctx.GetStringContextData("Email")))
-	var kycDetails struct{
-		Gender            string
-		WatchListed       *string
-		FirstName         string
-		MiddleName        *string 
-		LastName          string
-		DateOfBirth       string 
-		PhoneNumber       *string
-		Nationality       string
-		Base64Image       string 
-		Address		      string 
+	var kycDetails struct {
+		Gender      string
+		WatchListed *string
+		FirstName   string
+		MiddleName  *string
+		LastName    string
+		DateOfBirth string
+		PhoneNumber *string
+		Nationality string
+		Base64Image string
+		Address     string
 	}
 	json.Unmarshal(*idDetails, &kycDetails)
 	profileImageFilePath := fmt.Sprintf("%s/%s", ctx.GetStringContextData("UserID"), utils.GenerateUUIDString())
 	fileupload.FileUploader.UploadBase64File(profileImageFilePath, &kycDetails.Base64Image)
 	watchListed := false
-	if  kycDetails.WatchListed  != nil {
+	if kycDetails.WatchListed != nil {
 		if *kycDetails.WatchListed == "True" {
 			watchListed = true
 		}
@@ -645,11 +643,11 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		return
 	}
 	userUpdatedInfo := map[string]any{
-		"gender": kycDetails.Gender,
-		"dob": kycDetails.DateOfBirth,
-		"lastName": cases.Title(language.Und).String(kycDetails.LastName),
+		"gender":    kycDetails.Gender,
+		"dob":       kycDetails.DateOfBirth,
+		"lastName":  cases.Title(language.Und).String(kycDetails.LastName),
 		"firstName": cases.Title(language.Und).String(kycDetails.FirstName),
-		"middleName": func () *string {
+		"middleName": func() *string {
 			if kycDetails.MiddleName != nil {
 				return utils.GetStringPointer(cases.Title(language.Und).String(*kycDetails.MiddleName))
 			}
@@ -657,28 +655,28 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		}(),
 		"watchListed": watchListed,
 		"nationality": kycDetails.Nationality,
-		"phone": func () *entities.PhoneNumber {
+		"phone": func() *entities.PhoneNumber {
 			if kycDetails.PhoneNumber != nil {
 				return &entities.PhoneNumber{
-					Prefix: "234",
-					ISOCode: "NG",
+					Prefix:      "234",
+					ISOCode:     "NG",
 					LocalNumber: *kycDetails.PhoneNumber,
 				}
-			}	
+			}
 			return nil
 		}(),
 		"profileImage": profileImageFilePath,
 		"kycCompleted": true,
-		"bvn": func () *string {
+		"bvn": func() *string {
 			if ctx.Body.Path == "bvn" {
 				return &id
-			}	
+			}
 			return nil
 		}(),
-		"nin": func () *string {
+		"nin": func() *string {
 			if ctx.Body.Path == "nin" {
 				return &id
-			}	
+			}
 			return nil
 		}(),
 		"accountRestricted": watchListed,
@@ -701,37 +699,37 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]){
 		return
 	}
 	if ctx.Body.Path == "bvn" {
-	wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID,  ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), ctx.GetStringContextData("Email"), id, ctx.GetHeader("Polymer-Device-Id"))
+		wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID, ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), ctx.GetStringContextData("Email"), id, ctx.GetHeader("Polymer-Device-Id"))
 	}
 	cache.Cache.DeleteOne(fmt.Sprintf("%s-kyc-attempts-left", ctx.GetStringContextData("Email")))
 	now := time.Now()
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
-		Email:     utils.GetStringPointer(ctx.GetStringContextData("Email")),
-		Phone:     &entities.PhoneNumber{
-			Prefix: "234",
-			ISOCode: "NG",
+		Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
+		Phone: &entities.PhoneNumber{
+			Prefix:      "234",
+			ISOCode:     "NG",
 			LocalNumber: *kycDetails.PhoneNumber,
 		},
-		UserID:    ctx.GetStringContextData("UserID"),
-		IssuedAt:  now.Unix(),
-		ExpiresAt: now.Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
-		UserAgent: ctx.GetStringContextData("UserAgent"),
-		FirstName: userUpdatedInfo["firstName"].(string),
-		LastName: userUpdatedInfo["lastName"].(string),
-		DeviceID:   ctx.GetStringContextData("DeviceID"),
+		UserID:                ctx.GetStringContextData("UserID"),
+		IssuedAt:              now.Unix(),
+		ExpiresAt:             now.Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
+		UserAgent:             ctx.GetStringContextData("UserAgent"),
+		FirstName:             userUpdatedInfo["firstName"].(string),
+		LastName:              userUpdatedInfo["lastName"].(string),
+		DeviceID:              ctx.GetStringContextData("DeviceID"),
 		PushNotificationToken: ctx.GetStringContextData("PushNotificationToken"),
-		AppVersion: ctx.GetStringContextData("AppVersion"),
+		AppVersion:            ctx.GetStringContextData("AppVersion"),
 	})
 	if err != nil {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	pushnotification.PushNotificationService.PushOne(ctx.GetStringContextData("PushNotificationToken"), "Welcome to Polymer!😃",
-	"You now have global payments at your finger tips! Make payments with crypto, Mobile Money and to bank accounts in over 40+ countries!🤯")
+		"You now have global payments at your finger tips! Make payments with crypto, Mobile Money and to bank accounts in over 40+ countries!🤯")
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "kyc completed", token, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
+func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]) {
 	email := ctx.Query["email"]
 	if email == "" {
 		server_response.Responder.Respond(ctx.Ctx, http.StatusBadRequest, "pass in a valid email", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
@@ -742,7 +740,7 @@ func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 		"email": email,
 	}, options.FindOne().SetProjection(map[string]interface{}{
 		"emailVerified": 1,
-		"kycCompleted": 1,
+		"kycCompleted":  1,
 	}))
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -751,7 +749,7 @@ func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 	response := map[string]any{}
 	if account == nil {
 		response["exists"] = false
-	}else {
+	} else {
 		response["exists"] = true
 		response["emailVerified"] = account.EmailVerified
 		response["KYCCompleted"] = account.KYCCompleted
@@ -759,7 +757,7 @@ func AccountWithEmailExists(ctx *interfaces.ApplicationContext[any]){
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "success", response, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func SetTransactionPin(ctx *interfaces.ApplicationContext[dto.SetTransactionPinDTO]){
+func SetTransactionPin(ctx *interfaces.ApplicationContext[dto.SetTransactionPinDTO]) {
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
 	if valiedationErr != nil {
 		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
@@ -768,7 +766,7 @@ func SetTransactionPin(ctx *interfaces.ApplicationContext[dto.SetTransactionPinD
 	hashedPin, err := cryptography.CryptoHahser.HashString(ctx.Body.TransactionPin)
 	if err != nil {
 		logger.Error(errors.New("an error occured while hashing users transaction pin"), logger.LoggerOptions{
-			Key: "userID",
+			Key:  "userID",
 			Data: ctx.GetStringContextData("UserID"),
 		})
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -786,7 +784,7 @@ func SetTransactionPin(ctx *interfaces.ApplicationContext[dto.SetTransactionPinD
 		server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transaction pin has already been set", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	affected, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"),map[string]any{
+	affected, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]any{
 		"transactionPin": string(hashedPin),
 	})
 	if err != nil {
@@ -800,16 +798,16 @@ func SetTransactionPin(ctx *interfaces.ApplicationContext[dto.SetTransactionPinD
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "pin set", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){
+func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]) {
 	userRepo := repository.UserRepo()
 	account, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
-		"deactivated": 1,
-		"password": 1,
+		"deactivated":    1,
+		"password":       1,
 		"transactionPin": 1,
 	}))
 	if err != nil {
 		logger.Error(errors.New("error fetching a user account to deactivate account"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -818,7 +816,7 @@ func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){
 	if account == nil {
 		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("This user profile was not found. Please contact support on %s to help resolve this issue.", constants.SUPPORT_EMAIL), ctx.GetHeader("Polymer-Device-Id"))
 		return
-	} 
+	}
 	if account.Deactivated {
 		apperrors.ClientError(ctx.Ctx, "account has already been deactivated", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
@@ -834,28 +832,28 @@ func DeactivateAccount(ctx *interfaces.ApplicationContext[dto.ConfirmPin]){
 	})
 	if err != nil {
 		logger.Error(errors.New("error while deactivating user account"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
-		},  logger.LoggerOptions{
-			Key: "success",
+		}, logger.LoggerOptions{
+			Key:  "success",
 			Data: success,
-		}, )
+		})
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 	}
 	if success == 0 {
 		logger.Error(errors.New("error while deactivating user account"), logger.LoggerOptions{
-			Key: "userID",
+			Key:  "userID",
 			Data: ctx.GetStringContextData("UserID"),
-		},  logger.LoggerOptions{
-			Key: "success",
+		}, logger.LoggerOptions{
+			Key:  "success",
 			Data: success,
-		},)
+		})
 		apperrors.FatalServerError(ctx.Ctx, fmt.Errorf("error while deactivating user account userID - %s", ctx.GetStringContextData("UserID")), ctx.GetHeader("Polymer-Device-Id"))
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "deactivated", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func LogOut(ctx *interfaces.ApplicationContext[any]){
+func LogOut(ctx *interfaces.ApplicationContext[any]) {
 	success := cache.Cache.DeleteOne(ctx.GetStringContextData("UserID"))
 	if !success {
 		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("log out user failed - %s", ctx.GetStringContextData("UserID")), ctx.GetHeader("Polymer-Device-Id"))
