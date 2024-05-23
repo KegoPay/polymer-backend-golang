@@ -103,7 +103,7 @@ func WalletRouter(router *gin.RouterGroup) {
 		})
 	}
 
-	walletRouter.POST("/:businessID/request-statement", middlewares.AuthenticationMiddleware(true, true), func(ctx *gin.Context) {
+	walletRouter.POST("/request-statement", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 		appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 		var body dto.RequestAccountStatementDTO
 		if err := ctx.ShouldBindJSON(&body); err != nil {
