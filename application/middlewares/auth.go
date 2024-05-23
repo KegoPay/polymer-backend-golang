@@ -138,7 +138,7 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 				return nil, false
 			}
 			if exists == 0 {
-				apperrors.NotFoundError(ctx.Ctx, "business", ctx.GetHeader("Polymer-Device-Id"))
+				apperrors.NotFoundError(ctx.Ctx, "business not found", ctx.GetHeader("Polymer-Device-Id"))
 				return nil, false
 			}
 		}
