@@ -310,7 +310,7 @@ func ReverseLockFunds(walletID string, lockedFundsReference string) error {
 	affected, err := walletRepository.UpdateManyWithOperator(map[string]interface{}{
 		"_id": walletID,
 	}, map[string]any{
-		"$set": map[string]any {
+		"$pull": map[string]any {
 			"lockedFundsLog": wallet.LockedFundsLog,
 		},
 		"$inc": map[string]any {

@@ -143,6 +143,14 @@ func AuthRouter(router *gin.RouterGroup) {
 			})
 		})
 
+		authRouter.PATCH("/phone/current/verify",  middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			controllers.VerifyCurrentPhone(&interfaces.ApplicationContext[any]{
+				Ctx: ctx,
+				Keys: appContextAny.Keys,
+			})
+		})
+
 		authRouter.GET("/account/exits",  func(ctx *gin.Context) {
 			query := map[string]any{
 				"email": ctx.Query("email"),

@@ -8,6 +8,7 @@ type PhoneNumber struct	{
 	Prefix		 string `bson:"prefix" json:"prefix"`
 	IsVerified	 bool   `bson:"isVerified" json:"isVerified"`
 	WhatsApp	 bool   `bson:"whatsapp" json:"whatsapp"`
+	Modified	 bool   `bson:"modified" json:"modified"`
 }
 
 func (pn *PhoneNumber) ParsePhoneNumber() string {

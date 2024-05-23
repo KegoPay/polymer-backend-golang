@@ -388,7 +388,6 @@ func (repo *MongoRepository[T]) UpdateManyWithOperator(filter map[string]interfa
 		})
 		return 0, err
 	}
-	logger.Info("UpdateManyWithOperator complete")
 	return affected.ModifiedCount, err
 }
 

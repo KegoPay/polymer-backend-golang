@@ -511,7 +511,55 @@ func VerifyPhone(ctx *interfaces.ApplicationContext[any]) {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "account verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+}
+
+func VerifyCurrentPhone(ctx *interfaces.ApplicationContext[any]) {
+	userRepo := repository.UserRepo()
+	account, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
+		"phone": 1,
+	}))
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if account == nil {
+		apperrors.NotFoundError(ctx.Ctx, "this account does not exist", ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if account.Phone.Modified {
+		apperrors.ClientError(ctx.Ctx, "current phone number cannot be verified because it has been modfied", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	account.Phone.IsVerified = true
+	if account.Phone != nil {
+		if account.Phone.LocalNumber != "" {
+			account.Phone.IsVerified = true
+		}
+	}else {
+		apperrors.ClientError(ctx.Ctx, "phone number not set", nil, nil, ctx.GetHeader("Polymer-Device-Id"),)
+		return
+	}
+	success, err := userRepo.UpdatePartialByID(account.ID, map[string]any{
+		"phone": account.Phone,
+	})
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if success != 1 {
+		err = errors.New("could not modify account phone details")
+		logger.Error(err, logger.LoggerOptions{
+			Key: "id",
+			Data: account.ID,
+		}, logger.LoggerOptions{
+			Key: "phone",
+			Data: account.Phone,
+		})
+		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
 func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDForBiometricVerificationDTO]) {
@@ -859,5 +907,5 @@ func LogOut(ctx *interfaces.ApplicationContext[any]) {
 		apperrors.UnknownError(ctx.Ctx, fmt.Errorf("log out user failed - %s", ctx.GetStringContextData("UserID")), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "deactivated", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "logged out", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
