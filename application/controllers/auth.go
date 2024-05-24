@@ -688,6 +688,7 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
+	encryptedID, err := cryptography.SymmetricEncryption(id, nil)
 	userUpdatedInfo := map[string]any{
 		"gender":    kycDetails.Gender,
 		"dob":       kycDetails.DateOfBirth,
@@ -715,13 +716,13 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
 		"kycCompleted": true,
 		"bvn": func() *string {
 			if ctx.Body.Path == "bvn" {
-				return &id
+				return &encryptedID
 			}
 			return nil
 		}(),
 		"nin": func() *string {
 			if ctx.Body.Path == "nin" {
-				return &id
+				return &encryptedID
 			}
 			return nil
 		}(),

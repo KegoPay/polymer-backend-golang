@@ -87,7 +87,7 @@ func WalletRouter(router *gin.RouterGroup) {
 		})
 
 
-		walletRouter.POST("/:businessID/payment/local/verify-name", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+		walletRouter.POST("/payment/local/verify-name", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
 			var body dto.NameVerificationDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {

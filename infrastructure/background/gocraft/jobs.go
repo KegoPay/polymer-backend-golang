@@ -14,6 +14,7 @@ import (
 	"kego.com/application/repository"
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
+	"kego.com/infrastructure/cryptography"
 	"kego.com/infrastructure/database/repository/cache"
 	identityverification "kego.com/infrastructure/identity_verification"
 	identity_verification_types "kego.com/infrastructure/identity_verification/types"
@@ -182,7 +183,12 @@ func VerifyBusiness(job *work.Job) error {
 			if aff.AffiliateType != "DIRECTOR" {
 				continue
 			}
-			if aff.Email == &user.Email || aff.IDNumber == user.NIN || aff.IDNumber == user.BVN {
+			var plainNIN string
+			if user.NIN != "" {
+				plainNIN, _ = cryptography.DecryptData(user.NIN, nil)
+			}
+			plainBVN, _ := cryptography.DecryptData(user.BVN, nil)
+			if aff.Email == &user.Email || aff.IDNumber == plainNIN || aff.IDNumber == plainBVN {
 				match = true
 				break
 			}
@@ -315,7 +321,7 @@ func VerifyBusiness(job *work.Job) error {
 			if aff.AffiliateType != "DIRECTOR" {
 				continue
 			}
-			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-info-address", busniess.ID), fullAddress, time.Hour * 8760)
+			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-info-address", busniess.ID), fullAddress, time.Hour*8760)
 			wg.Add(1)
 			go func(aff *identity_verification_types.AffiliateProfile) {
 				firstName := strings.Split(aff.Name, ",")
