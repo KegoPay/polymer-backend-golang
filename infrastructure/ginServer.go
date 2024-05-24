@@ -69,8 +69,9 @@ func (s *ginServer)Start(){
 
 		webRouterV1 := v1.Group("/v1/web")
 		{
-			webroutev1.EmailSubsRouter(webRouterV1)
-			webroutev1.WebhookRouter(webRouterV1)
+			// webroutev1.EmailSubsRouter(webRouterV1)
+			// webroutev1.WebhookRouter(webRouterV1)
+			webroutev1.BusinessRouter(webRouterV1)
 		}
 	
 

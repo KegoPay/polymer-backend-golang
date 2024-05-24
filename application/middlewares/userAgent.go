@@ -18,7 +18,7 @@ func UserAgentMiddleware(ctx *interfaces.ApplicationContext[any], minAppVersion 
 		apperrors.ClientError(ctx.Ctx, "Why your User-Agent header no dey? You be criminal?🤨", []error{errors.New("user agent header missing")}, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return nil, false
 	}
-	if !strings.Contains(*agent, "Android") && !strings.Contains(*agent, "iOS") {
+	if !strings.Contains(*agent, "Android") && !strings.Contains(*agent, "iOS") && !strings.Contains(*agent, "Windows") && !strings.Contains(*agent, "Linux") {
 		apperrors.UnsupportedUserAgent(ctx.Ctx, ctx.GetHeader("Polymer-Device-Id"))
 		return nil ,false
 	}

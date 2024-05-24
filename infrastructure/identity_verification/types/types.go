@@ -47,8 +47,8 @@ type CompanyProfile struct {
 type AffiliateProfile struct {
 	Name          string  `json:"name"`
 	Status        string  `json:"status"`
-	IDType        string  `json:"identityNumber"`
-	IDNumber      string  `json:"identityType"`
+	IDType        string  `json:"identityType"`
+	IDNumber      string  `json:"identityNumber"`
 	AffiliateType string  `json:"affiliateType"`
 	ShareAllotted string  `json:"shareAllotted"`
 	Email         *string `json:"email"`

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	identity_verification_types "kego.com/infrastructure/identity_verification/types"
 	"kego.com/infrastructure/logger"
@@ -48,6 +49,11 @@ func (div *DojahIdentityVerification) FetchAdvancedCACDetails(rc string) (*ident
 		return nil, errors.New("error retireving cac")
 	}
 	logger.Info("cac information retireved by Dojah")
+	if os.Getenv("ENV") != "prod" {
+		var mockResponse identity_verification_types.CompanyProfile
+		json.Unmarshal(PolymerCACDetails, &mockResponse)
+		dojahResponse.Data = mockResponse
+	}
 	return &dojahResponse.Data, nil
 }
 

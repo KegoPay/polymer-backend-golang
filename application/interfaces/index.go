@@ -1,14 +1,19 @@
 package interfaces
 
-import "kego.com/application/utils"
+import (
+	"fmt"
+	"strconv"
 
-type ApplicationContext[T interface{}] struct{
-	Body *T
-	Keys map[string]any
-	Query map[string]any
-	Param map[string]any
+	"kego.com/application/utils"
+)
+
+type ApplicationContext[T interface{}] struct {
+	Body   *T
+	Keys   map[string]any
+	Query  map[string]any
+	Param  map[string]any
 	Header map[string][]string
-	Ctx any
+	Ctx    any
 }
 
 func (ac *ApplicationContext[T]) GetContextData(key string) (value any, exists bool) {
@@ -40,6 +45,13 @@ func (ac *ApplicationContext[T]) GetFloat64ContextData(key string) (value float6
 func (ac *ApplicationContext[T]) GetBoolContextData(key string) (value bool) {
 	if val, ok := ac.GetContextData(key); ok && val != nil {
 		value = val.(bool)
+	}
+	return
+}
+
+func (ac *ApplicationContext[T]) GetIntContextData(key string) (value int) {
+	if val, ok := ac.GetContextData(key); ok && val != nil {
+		value, _ = strconv.Atoi(fmt.Sprintf("%d", val))
 	}
 	return
 }

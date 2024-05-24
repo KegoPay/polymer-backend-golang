@@ -90,8 +90,6 @@ func DecryptForStaging(ctx *interfaces.ApplicationContext[dto.DecryptForStagingD
 	dec := gob.NewDecoder(byteBuffer) // Will read from byteBuffer
 	var person map[string]string
 	err = dec.Decode(&person)
-	fmt.Println(person)
-	fmt.Println(decrypted)
 	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusOK, "decrypted", person, nil, nil)
 }
 

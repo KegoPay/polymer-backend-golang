@@ -364,7 +364,6 @@ func SetNextOfKin(ctx *interfaces.ApplicationContext[dto.SetNextOfKin]) {
 		apperrors.ClientError(ctx.Ctx, "could not upgrade your account", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	fmt.Println(payload)
 	updated, err := userRepo.UpdatePartialByFilter(map[string]interface{}{
 		"_id": ctx.GetStringContextData("UserID"),
 	}, payload, nil)

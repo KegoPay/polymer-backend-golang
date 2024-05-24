@@ -43,6 +43,8 @@ var ENCRYPTION_KEY_EXPIRED uint = 6170 // take the user to the face match page t
 var NIN_VERIFICATION_FAILED uint = 6511 // show the user the popup to escale the issue for manual review
 var EMAIL_UNVERIFIED uint = 3540 // request a new otp and redirect the user to the otp verification screen
 var BUSINESS_ALREADY_VERIFIED uint = 3541 // show the user the popup to escale the issue for manual review
+var REQUEST_HIGHER_TRANSFER_LIMIT uint = 7141 // show the user the popup to escale the issue for manual review
+var ESCALATE_TO_SUPPORT uint = 0141 // show the user the popup to escale the issue for manual review
 
 type state struct {
 	Name     string   `json:"state"`

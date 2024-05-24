@@ -29,7 +29,7 @@ import (
 	server_response "kego.com/infrastructure/serverResponse"
 )
 
-func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
+func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]) {
 	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(&ctx.Body.Amount)
 	if err != nil {
 		apperrors.ExternalDependencyError(ctx.Ctx, "chimoney", fmt.Sprintf("%d", statusCode), err, ctx.GetHeader("Polymer-Device-Id"))
@@ -60,15 +60,15 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("country %s is not supported", *ctx.Body.DestinationCountryCode), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	if	fxUSDRate < constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency((usdRate / utils.UInt64ToFloat32Currency(ctx.Body.Amount) * constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT))), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+	if fxUSDRate < constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency((usdRate/utils.UInt64ToFloat32Currency(ctx.Body.Amount)*constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT))), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if fxUSDRate > constants.MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency((usdRate / utils.UInt64ToFloat32Currency(ctx.Body.Amount) * constants.MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT))), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency((usdRate/utils.UInt64ToFloat32Currency(ctx.Body.Amount)*constants.MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT))), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	internationalProcessorFee, transactionFee, transactionFeeVat  := utils.GetInternationalTransactionFee(fxNGNRate)
+	internationalProcessorFee, transactionFee, transactionFeeVat := utils.GetInternationalTransactionFee(fxNGNRate)
 	totalAmount := internationalProcessorFee + transactionFee + fxNGNRate + transactionFeeVat
 	destinationCountry := utils.CountryCodeToCountryName(*ctx.Body.DestinationCountryCode)
 	if destinationCountry == "" {
@@ -79,72 +79,72 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		destinationCountry = "Nigeria"
 	}
 	trxRef := utils.GenerateUUIDString()
-	businessID := ctx.GetStringParameter("businessID") 
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), utils.Float32ToUint64Currency(totalAmount, true), ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
+	businessID := ctx.GetStringParameter("businessID")
+	wallet, err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), utils.Float32ToUint64Currency(totalAmount, true), ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
 
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(fxNGNRate, true), entities.InternationalDebit, trxRef, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking amount to be sent"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking amount to be sent"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
+	}
 	// lock processor transaction fee
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(internationalProcessorFee, false), entities.InternationalDebitFee, trxRef, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking chimoney transaction fee"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking chimoney transaction fee"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
+	}
 
 	// lock polymer transaction fee
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(transactionFee, false), entities.PolymerFee, trxRef, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking polymer processing fee"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking polymer processing fee"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
+	}
 
 	// lock polymer vat
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(transactionFeeVat, false), entities.PolymerVAT, trxRef, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
+	}
 
 	response := services.InitiateInternationalPayment(ctx.Ctx, &international_payment_processor.InternationalPaymentRequestPayload{
 		DestinationCountry: destinationCountry,
-		AccountNumber: ctx.Body.AccountNumber,
-		BankCode: ctx.Body.BankCode,
-		ValueInUSD: fxUSDRate,
-		Reference: trxRef,
-		FullName: ctx.Body.FullName,
+		AccountNumber:      ctx.Body.AccountNumber,
+		BankCode:           ctx.Body.BankCode,
+		ValueInUSD:         fxUSDRate,
+		Reference:          trxRef,
+		FullName:           ctx.Body.FullName,
 	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {
 		services.ReverseLockFunds(wallet.ID, trxRef)
@@ -152,22 +152,22 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}
 	transaction := entities.Transaction{
 		TransactionReference: trxRef,
-		MetaData: response.Chimoneys[0],
-		TotalAmountInNGN: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(totalAmount, true)),
-		AmountInUSD: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(fxUSDRate, false)),
-		AmountInNGN:  utils.GetUInt64Pointer(utils.Float32ToUint64Currency(fxNGNRate, true)),
-		Fee: utils.Float32ToUint64Currency(transactionFee, false),
-		Vat: utils.Float32ToUint64Currency(transactionFeeVat, false),
+		MetaData:             response.Chimoneys[0],
+		TotalAmountInNGN:     utils.GetUInt64Pointer(utils.Float32ToUint64Currency(totalAmount, true)),
+		AmountInUSD:          utils.GetUInt64Pointer(utils.Float32ToUint64Currency(fxUSDRate, false)),
+		AmountInNGN:          utils.GetUInt64Pointer(utils.Float32ToUint64Currency(fxNGNRate, true)),
+		Fee:                  utils.Float32ToUint64Currency(transactionFee, false),
+		Vat:                  utils.Float32ToUint64Currency(transactionFeeVat, false),
 		ProcessorFeeCurrency: "USD",
-		ProcessorFee: utils.Float32ToUint64Currency(internationalProcessorFee, false),
-		Amount: ctx.Body.Amount,
-		Status: entities.TransactionPending,
-		Currency: utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
-		WalletID: wallet.ID,
-		UserID: wallet.UserID,
-		BusinessID: wallet.BusinessID,
-		Description: func () string {
-			if	ctx.Body.Description == nil {
+		ProcessorFee:         utils.Float32ToUint64Currency(internationalProcessorFee, false),
+		Amount:               ctx.Body.Amount,
+		Status:               entities.TransactionPending,
+		Currency:             utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
+		WalletID:             wallet.ID,
+		UserID:               wallet.UserID,
+		BusinessID:           wallet.BusinessID,
+		Description: func() string {
+			if ctx.Body.Description == nil {
 				des := fmt.Sprintf("International transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), *ctx.Body.FullName)
 				return des
 			}
@@ -175,33 +175,33 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		}(),
 		Location: entities.Location{
 			IPAddress: ctx.Body.IPAddress,
-			Latitude: ctx.GetFloat64ContextData("Latitude"),
+			Latitude:  ctx.GetFloat64ContextData("Latitude"),
 			Longitude: ctx.GetFloat64ContextData("Longitude"),
 		},
 		Intent: entities.InternationalDebit,
 		DeviceInfo: &entities.DeviceInfo{
 			IPAddress: ctx.Body.IPAddress,
-			DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
+			DeviceID:  utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
 			UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
 		},
 		Sender: entities.TransactionSender{
 			BusinessName: wallet.BusinessName,
-			FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
-			Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
+			FullName:     fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
+			Email:        utils.GetStringPointer(ctx.GetStringContextData("Email")),
 		},
 		Recepient: entities.TransactionRecepient{
-			FullName: *ctx.Body.FullName,
-			BankCode: &ctx.Body.BankCode,
+			FullName:      *ctx.Body.FullName,
+			BankCode:      &ctx.Body.BankCode,
 			AccountNumber: ctx.Body.AccountNumber,
-			BranchCode: ctx.Body.BranchCode,
-			Country: ctx.Body.DestinationCountryCode,
+			BranchCode:    ctx.Body.BranchCode,
+			Country:       ctx.Body.DestinationCountryCode,
 		},
 	}
 	trxRepository := repository.TransactionRepo()
 	trx, err := trxRepository.CreateOne(context.TODO(), transaction)
 	if err != nil {
 		logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
-			Key: "payload",
+			Key:  "payload",
 			Data: transaction,
 		})
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -215,14 +215,14 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 
 	if ctx.GetBoolContextData("EmailOptions") {
 		background.Scheduler.Emit("send_email", map[string]any{
-			"email": ctx.GetStringContextData("Email"),
-			"subject": "Your payment is on its way! 🚀",
+			"email":        ctx.GetStringContextData("Email"),
+			"subject":      "Your payment is on its way! 🚀",
 			"templateName": "payment_sent",
 			"opts": map[string]any{
-				"FIRSTNAME": transaction.Sender.FullName,
-				"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
-				"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-				"RECEPIENT_NAME": transaction.Recepient.FullName,
+				"FIRSTNAME":         transaction.Sender.FullName,
+				"CURRENCY_CODE":     utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
+				"AMOUNT":            utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+				"RECEPIENT_NAME":    transaction.Recepient.FullName,
 				"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
 			},
 		})
@@ -230,7 +230,7 @@ func InitiateBusinessInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
+func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]) {
 	var wg sync.WaitGroup
 	rates, statusCode, err := international_payment_processor.InternationalPaymentProcessor.GetExchangeRates(&ctx.Body.Amount)
 	if err != nil {
@@ -257,20 +257,33 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 			break
 		}
 	}
+	userTier := ctx.GetIntContextData("Tier")
+	if userTier == 1 && fxNGNRate > utils.UInt64ToFloat32Currency(constants.TIER_ONE_SINGLE_TRANSFER_LIMITS) {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You can only send up to %s at this moment. Upgrade your account by setting your phone number, address and next of kin to send up to %s at once!", currencyformatter.HumanReadableIntCurrency(constants.TIER_ONE_SINGLE_TRANSFER_LIMITS), currencyformatter.HumanReadableIntCurrency(constants.TIER_TWO_SINGLE_TRANSFER_LIMITS)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if userTier == 2 && fxNGNRate > utils.UInt64ToFloat32Currency(constants.TIER_TWO_SINGLE_TRANSFER_LIMITS) {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You can only send up to %s at this moment. Upgrade your account by setting your NIN to send up to %s at once!", currencyformatter.HumanReadableIntCurrency(constants.TIER_TWO_SINGLE_TRANSFER_LIMITS), currencyformatter.HumanReadableIntCurrency(constants.TIER_THREE_SINGLE_TRANSFER_LIMITS)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if userTier == 3 && fxNGNRate > utils.UInt64ToFloat32Currency(constants.TIER_THREE_SINGLE_TRANSFER_LIMITS) {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You can only send up to %s at this moment. Contact support to send more than %s at once!", currencyformatter.HumanReadableIntCurrency(constants.TIER_THREE_SINGLE_TRANSFER_LIMITS), currencyformatter.HumanReadableIntCurrency(constants.TIER_THREE_SINGLE_TRANSFER_LIMITS)), nil, &constants.REQUEST_HIGHER_TRANSFER_LIMIT, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
 	// var USDNGN = usdRate / float32(ctx.Body.Amount)
 	if fxNGNRate == 0 {
 		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("country %s is not supported", *ctx.Body.DestinationCountryCode), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	if	fxUSDRate < constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency((usdRate / utils.UInt64ToFloat32Currency(ctx.Body.Amount) * constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT))), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+	if fxUSDRate < constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than $1 (₦%s)", currencyformatter.HumanReadableFloat32Currency((usdRate/utils.UInt64ToFloat32Currency(ctx.Body.Amount)*constants.MINIMUM_INTERNATIONAL_TRANSFER_LIMIT))), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if fxUSDRate > constants.MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT {
-		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency((usdRate / utils.UInt64ToFloat32Currency(ctx.Body.Amount) * constants.MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT))), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send more than $20,000 (₦%s) at a time", currencyformatter.HumanReadableFloat32Currency((usdRate/utils.UInt64ToFloat32Currency(ctx.Body.Amount)*constants.MAXIMUM_INTERNATIONAL_TRANSFER_LIMIT))), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	internationalProcessorFee, transactionFee, transactionFeeVat  := utils.GetInternationalTransactionFee(fxNGNRate)
+	internationalProcessorFee, transactionFee, transactionFeeVat := utils.GetInternationalTransactionFee(fxNGNRate)
 	totalAmount := internationalProcessorFee + transactionFee + fxNGNRate + transactionFeeVat
 	destinationCountry := utils.CountryCodeToCountryName(*ctx.Body.DestinationCountryCode)
 	if destinationCountry == "" {
@@ -281,24 +294,23 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		destinationCountry = "Ghana"
 	}
 	trxRef := utils.GenerateUUIDString()
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, nil, ctx.GetStringContextData("UserID"), utils.Float32ToUint64Currency(totalAmount, true), ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
+	wallet, err := services.InitiatePreAuth(ctx.Ctx, nil, ctx.GetStringContextData("UserID"), utils.Float32ToUint64Currency(totalAmount, true), ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
 
-
 	errChan := make(chan error, 4)
 	wg.Add(1)
 	// lock amount to be sent
-	go func ()  {
+	go func() {
 		defer wg.Done()
 		err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(fxNGNRate, true), entities.InternationalDebit, trxRef, ctx.GetHeader("Polymer-Device-Id"))
 		if err != nil {
 			logger.Error(errors.New("error locking amount to be sent"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: err,
 			}, logger.LoggerOptions{
-				Key: "payload",
+				Key:  "payload",
 				Data: ctx.Body,
 			})
 			errChan <- err
@@ -307,15 +319,15 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}()
 	// lock international transaction fee
 	wg.Add(1)
-	go func ()  {
+	go func() {
 		defer wg.Done()
 		err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(internationalProcessorFee, false), entities.InternationalDebitFee, trxRef, ctx.GetHeader("Polymer-Device-Id"))
 		if err != nil {
 			logger.Error(errors.New("error locking chimoney transaction fee"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: err,
 			}, logger.LoggerOptions{
-				Key: "payload",
+				Key:  "payload",
 				Data: ctx.Body,
 			})
 			errChan <- err
@@ -324,18 +336,18 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}()
 	// lock polymer transaction fee
 	wg.Add(1)
-	go func ()  {
+	go func() {
 		defer wg.Done()
 		err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(transactionFee, false), entities.PolymerFee, trxRef, ctx.GetHeader("Polymer-Device-Id"))
 		if err != nil {
 			logger.Error(errors.New("error locking polymer processing fee"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: err,
 			}, logger.LoggerOptions{
-				Key: "payload",
+				Key:  "payload",
 				Data: ctx.Body,
 			}, logger.LoggerOptions{
-				Key: "payload",
+				Key:  "payload",
 				Data: ctx.Body,
 			})
 			errChan <- err
@@ -344,15 +356,15 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}()
 	// lock polymer vat
 	wg.Add(1)
-	go func ()  {
+	go func() {
 		defer wg.Done()
 		err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(transactionFeeVat, false), entities.PolymerVAT, trxRef, ctx.GetHeader("Polymer-Device-Id"))
 		if err != nil {
 			logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: err,
 			}, logger.LoggerOptions{
-				Key: "payload",
+				Key:  "payload",
 				Data: ctx.Body,
 			})
 			errChan <- err
@@ -361,14 +373,13 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}()
 	wg.Wait()
 
-
 	response := services.InitiateInternationalPayment(ctx.Ctx, &international_payment_processor.InternationalPaymentRequestPayload{
 		DestinationCountry: destinationCountry,
-		AccountNumber: ctx.Body.AccountNumber,
-		BankCode: ctx.Body.BankCode,
-		ValueInUSD: fxUSDRate,
-		Reference: trxRef,
-		FullName: ctx.Body.FullName,
+		AccountNumber:      ctx.Body.AccountNumber,
+		BankCode:           ctx.Body.BankCode,
+		ValueInUSD:         fxUSDRate,
+		Reference:          trxRef,
+		FullName:           ctx.Body.FullName,
 	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {
 		services.ReverseLockFunds(wallet.ID, trxRef)
@@ -376,21 +387,21 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	}
 	transaction := entities.Transaction{
 		TransactionReference: trxRef,
-		MetaData: response.Chimoneys[0],
-		TotalAmountInNGN: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(totalAmount, true)),
-		AmountInUSD: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(fxUSDRate, false)),
-		AmountInNGN: utils.GetUInt64Pointer(utils.Float32ToUint64Currency(fxNGNRate, true)),
-		Fee: utils.Float32ToUint64Currency(transactionFee, false),
-		Vat: utils.Float32ToUint64Currency(transactionFeeVat, false),
+		MetaData:             response.Chimoneys[0],
+		TotalAmountInNGN:     utils.GetUInt64Pointer(utils.Float32ToUint64Currency(totalAmount, true)),
+		AmountInUSD:          utils.GetUInt64Pointer(utils.Float32ToUint64Currency(fxUSDRate, false)),
+		AmountInNGN:          utils.GetUInt64Pointer(utils.Float32ToUint64Currency(fxNGNRate, true)),
+		Fee:                  utils.Float32ToUint64Currency(transactionFee, false),
+		Vat:                  utils.Float32ToUint64Currency(transactionFeeVat, false),
 		ProcessorFeeCurrency: "USD",
-		ProcessorFee: utils.Float32ToUint64Currency(internationalProcessorFee, false),
-		Amount: ctx.Body.Amount,
-		Currency: utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
-		WalletID: wallet.ID,
-		UserID: wallet.UserID,
-		Status: entities.TransactionPending,
-		Description: func () string {
-			if	ctx.Body.Description == nil {
+		ProcessorFee:         utils.Float32ToUint64Currency(internationalProcessorFee, false),
+		Amount:               ctx.Body.Amount,
+		Currency:             utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
+		WalletID:             wallet.ID,
+		UserID:               wallet.UserID,
+		Status:               entities.TransactionPending,
+		Description: func() string {
+			if ctx.Body.Description == nil {
 				des := fmt.Sprintf("International transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), *ctx.Body.FullName)
 				return des
 			}
@@ -398,32 +409,32 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 		}(),
 		Location: entities.Location{
 			IPAddress: ctx.Body.IPAddress,
-			Latitude: ctx.GetFloat64ContextData("Latitude"),
+			Latitude:  ctx.GetFloat64ContextData("Latitude"),
 			Longitude: ctx.GetFloat64ContextData("Longitude"),
 		},
 		Intent: entities.InternationalDebit,
 		DeviceInfo: &entities.DeviceInfo{
 			IPAddress: ctx.Body.IPAddress,
-			DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
+			DeviceID:  utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
 			UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
 		},
 		Sender: entities.TransactionSender{
 			FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
-			Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
+			Email:    utils.GetStringPointer(ctx.GetStringContextData("Email")),
 		},
 		Recepient: entities.TransactionRecepient{
-			FullName: *ctx.Body.FullName,
-			BankCode: &ctx.Body.BankCode,
+			FullName:      *ctx.Body.FullName,
+			BankCode:      &ctx.Body.BankCode,
 			AccountNumber: ctx.Body.AccountNumber,
-			BranchCode: ctx.Body.BranchCode,
-			Country: ctx.Body.DestinationCountryCode,
+			BranchCode:    ctx.Body.BranchCode,
+			Country:       ctx.Body.DestinationCountryCode,
 		},
 	}
 	trxRepository := repository.TransactionRepo()
 	trx, err := trxRepository.CreateOne(context.TODO(), transaction)
 	if err != nil {
 		logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
-			Key: "payload",
+			Key:  "payload",
 			Data: transaction,
 		})
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -437,14 +448,14 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 
 	if ctx.GetBoolContextData("EmailOptions") {
 		background.Scheduler.Emit("send_email", map[string]any{
-			"email": ctx.GetStringContextData("Email"),
-			"subject": "Your payment is on its way! 🚀",
+			"email":        ctx.GetStringContextData("Email"),
+			"subject":      "Your payment is on its way! 🚀",
 			"templateName": "payment_sent",
 			"opts": map[string]any{
-				"FIRSTNAME": transaction.Sender.FullName,
-				"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
-				"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-				"RECEPIENT_NAME": transaction.Recepient.FullName,
+				"FIRSTNAME":         transaction.Sender.FullName,
+				"CURRENCY_CODE":     utils.CurrencyCodeToCurrencySymbol(*ctx.Body.DestinationCountryCode),
+				"AMOUNT":            utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+				"RECEPIENT_NAME":    transaction.Recepient.FullName,
 				"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
 			},
 		})
@@ -452,7 +463,7 @@ func InitiatePersonalInternationalPayment(ctx *interfaces.ApplicationContext[dto
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
+func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]) {
 	if ctx.Body.Amount < constants.MINIMUM_LOCAL_TRANSFER_LIMIT {
 		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than ₦%s", currencyformatter.HumanReadableIntCurrency(constants.MINIMUM_LOCAL_TRANSFER_LIMIT)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
@@ -466,7 +477,7 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	bankName := ""
 	for _, bank := range bankssupported.SupportedLocalBanks {
 		if bank.Code == ctx.Body.BankCode {
-			bankName =  bank.Name
+			bankName = bank.Name
 			break
 		}
 	}
@@ -474,13 +485,13 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		apperrors.NotFoundError(ctx.Ctx, "Selected bank is not currently supported", ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	businessID := ctx.GetStringParameter("businessID") 
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
+	businessID := ctx.GetStringParameter("businessID")
+	wallet, err := services.InitiatePreAuth(ctx.Ctx, &businessID, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
-	narration := func () string {
-		if	ctx.Body.Description == nil {
+	narration := func() string {
+		if ctx.Body.Description == nil {
 			des := fmt.Sprintf("NGN Transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), bankName)
 			return des
 		}
@@ -491,69 +502,69 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	// lock amount to be sent
 	err = services.LockFunds(ctx.Ctx, wallet, ctx.Body.Amount, entities.LocalDebit, reference, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
-			logger.Error(errors.New("error locking amount to be sent"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
+		logger.Error(errors.New("error locking amount to be sent"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
 	}
 
 	// lock local transaction fee
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(localProcessorFee, false), entities.LocalDebitFee, reference, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking chimoney transaction fee"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking chimoney transaction fee"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+	}
 
 	// lock local debit vat
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(localProcessorVAT, false), entities.LocalDebitVAT, reference, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking polymer processing fee"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking polymer processing fee"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
+	}
 
 	// lock polymer fee
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(polymerFee, false), entities.PolymerFee, reference, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
+	}
 
 	// lock polymer vat
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(polymerVAT, false), entities.PolymerVAT, reference, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
+	}
 
 	// err = services.LockFunds(ctx.Ctx, wallet, totalAmount, entities.FlutterwaveDebitLocal, reference, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
@@ -564,16 +575,16 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	}
 	response := services.InitiateLocalPayment(ctx.Ctx, &types.InitiateLocalTransferPayload{
 		AccountNumber: ctx.Body.AccountNumber,
-		AccountBank: ctx.Body.BankCode,
-		Currency: "NGN",
-		Amount: utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-		Narration: narration ,
-		Reference: reference,
+		AccountBank:   ctx.Body.BankCode,
+		Currency:      "NGN",
+		Amount:        utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+		Narration:     narration,
+		Reference:     reference,
 		DebitCurrency: "NGN",
-		CallbackURL: os.Getenv("LOCAL_TRANSFER_WEBHOOK_URL"),
+		CallbackURL:   os.Getenv("LOCAL_TRANSFER_WEBHOOK_URL"),
 		Meta: types.InitiateLocalTransferMeta{
 			WalletID: wallet.ID,
-			UserID: wallet.UserID,
+			UserID:   wallet.UserID,
 		},
 	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {
@@ -582,47 +593,47 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	}
 	transaction := entities.Transaction{
 		TransactionReference: reference,
-		MetaData: response,
-		Fee: utils.Float32ToUint64Currency(polymerFee, false),
-		Vat: utils.Float32ToUint64Currency(polymerVAT, false),
+		MetaData:             response,
+		Fee:                  utils.Float32ToUint64Currency(polymerFee, false),
+		Vat:                  utils.Float32ToUint64Currency(polymerVAT, false),
 		ProcessorFeeCurrency: "NGN",
-		ProcessorFee: utils.Float32ToUint64Currency(localProcessorFee, false),
-		ProcessorFeeVAT: utils.Float32ToUint64Currency(localProcessorVAT, false),
-		Amount: totalAmount,
-		Currency: "NGN",
-		WalletID: wallet.ID,
-		UserID: wallet.UserID,
-		BusinessID: wallet.BusinessID,
-		Status: entities.TransactionPending,
-		Description: narration,
+		ProcessorFee:         utils.Float32ToUint64Currency(localProcessorFee, false),
+		ProcessorFeeVAT:      utils.Float32ToUint64Currency(localProcessorVAT, false),
+		Amount:               totalAmount,
+		Currency:             "NGN",
+		WalletID:             wallet.ID,
+		UserID:               wallet.UserID,
+		BusinessID:           wallet.BusinessID,
+		Status:               entities.TransactionPending,
+		Description:          narration,
 		Location: entities.Location{
 			IPAddress: ctx.Body.IPAddress,
 		},
 		Intent: entities.LocalDebit,
 		DeviceInfo: &entities.DeviceInfo{
 			IPAddress: ctx.Body.IPAddress,
-			DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
+			DeviceID:  utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
 			UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
 		},
 		Sender: entities.TransactionSender{
 			BusinessName: wallet.BusinessName,
-			FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
-			Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
+			FullName:     fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
+			Email:        utils.GetStringPointer(ctx.GetStringContextData("Email")),
 		},
 		Recepient: entities.TransactionRecepient{
-			FullName: response.FullName,
-			BankCode: &ctx.Body.BankCode,
+			FullName:      response.FullName,
+			BankCode:      &ctx.Body.BankCode,
 			AccountNumber: ctx.Body.AccountNumber,
-			BranchCode: ctx.Body.BranchCode,
-			BankName: &bankName,
-			Country: utils.GetStringPointer("Nigeria"),
+			BranchCode:    ctx.Body.BranchCode,
+			BankName:      &bankName,
+			Country:       utils.GetStringPointer("Nigeria"),
 		},
 	}
 	trxRepository := repository.TransactionRepo()
 	trx, err := trxRepository.CreateOne(context.TODO(), transaction)
 	if err != nil {
 		logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
-			Key: "payload",
+			Key:  "payload",
 			Data: transaction,
 		})
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -635,17 +646,30 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 
 	if ctx.GetBoolContextData("EmailOptions") {
 		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-			"FIRSTNAME": transaction.Sender.FullName,
-			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol("NGN"),
-			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-			"RECEPIENT_NAME": transaction.Recepient.FullName,
+			"FIRSTNAME":         transaction.Sender.FullName,
+			"CURRENCY_CODE":     utils.CurrencyCodeToCurrencySymbol("NGN"),
+			"AMOUNT":            utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+			"RECEPIENT_NAME":    transaction.Recepient.FullName,
 			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
 		})
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func InitiatePersonalLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]){
+func InitiatePersonalLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPaymentDTO]) {
+	userTier := ctx.GetIntContextData("Tier")
+	if userTier == 1 && ctx.Body.Amount > constants.TIER_ONE_SINGLE_TRANSFER_LIMITS {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You can only send up to %s at this moment. Upgrade your account by setting your phone number, address and next of kin to send up to %s at once!", currencyformatter.HumanReadableIntCurrency(constants.TIER_ONE_SINGLE_TRANSFER_LIMITS), currencyformatter.HumanReadableIntCurrency(constants.TIER_TWO_SINGLE_TRANSFER_LIMITS)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if userTier == 2 && ctx.Body.Amount > constants.TIER_TWO_SINGLE_TRANSFER_LIMITS {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You can only send up to %s at this moment. Upgrade your account by setting your NIN to send up to %s at once!", currencyformatter.HumanReadableIntCurrency(constants.TIER_TWO_SINGLE_TRANSFER_LIMITS), currencyformatter.HumanReadableIntCurrency(constants.TIER_THREE_SINGLE_TRANSFER_LIMITS)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if userTier == 3 && ctx.Body.Amount > constants.TIER_THREE_SINGLE_TRANSFER_LIMITS {
+		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You can only send up to %s at this moment. Contact support to send more than %s at once!", currencyformatter.HumanReadableIntCurrency(constants.TIER_THREE_SINGLE_TRANSFER_LIMITS), currencyformatter.HumanReadableIntCurrency(constants.TIER_THREE_SINGLE_TRANSFER_LIMITS)), nil, &constants.REQUEST_HIGHER_TRANSFER_LIMIT, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
 	if ctx.Body.Amount < constants.MINIMUM_LOCAL_TRANSFER_LIMIT {
 		apperrors.ClientError(ctx.Ctx, fmt.Sprintf("You cannot send less than ₦%s", currencyformatter.HumanReadableIntCurrency(constants.MINIMUM_LOCAL_TRANSFER_LIMIT)), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
@@ -659,7 +683,7 @@ func InitiatePersonalLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	bankName := ""
 	for _, bank := range bankssupported.SupportedLocalBanks {
 		if bank.Code == ctx.Body.BankCode {
-			bankName =  bank.Name
+			bankName = bank.Name
 			break
 		}
 	}
@@ -667,27 +691,27 @@ func InitiatePersonalLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		apperrors.NotFoundError(ctx.Ctx, "Selected bank is not currently supported", ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	wallet , err := services.InitiatePreAuth(ctx.Ctx, nil, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
+	wallet, err := services.InitiatePreAuth(ctx.Ctx, nil, ctx.GetStringContextData("UserID"), totalAmount, ctx.Body.Pin, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		return
 	}
-	narration := func () string {
-		if	ctx.Body.Description == nil {
+	narration := func() string {
+		if ctx.Body.Description == nil {
 			des := fmt.Sprintf("NGN Transfer from %s %s to %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), bankName)
 			return des
 		}
 		return *ctx.Body.Description
 	}()
 	reference := utils.GenerateUUIDString()
-	
+
 	// lock amount to be sent
 	err = services.LockFunds(ctx.Ctx, wallet, ctx.Body.Amount, entities.LocalDebit, reference, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		logger.Error(errors.New("error locking amount to be sent"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "payload",
+			Key:  "payload",
 			Data: ctx.Body,
 		})
 		return
@@ -695,73 +719,73 @@ func InitiatePersonalLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 
 	// lock local transaction fee
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(localProcessorFee, false), entities.LocalDebitFee, reference, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking chimoney transaction fee"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking chimoney transaction fee"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
+	}
 
 	// lock local debit vat
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(localProcessorVAT, false), entities.LocalDebitVAT, reference, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking polymer processing fee"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking polymer processing fee"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
+	}
 	// lock polymer fee
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(polymerFee, false), entities.PolymerFee, reference, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
+	}
 
 	// lock polymer vat
 	err = services.LockFunds(ctx.Ctx, wallet, utils.Float32ToUint64Currency(polymerVAT, false), entities.PolymerVAT, reference, ctx.GetHeader("Polymer-Device-Id"))
-		if err != nil {
-			logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
-				Key: "error",
-				Data: err,
-			}, logger.LoggerOptions{
-				Key: "payload",
-				Data: ctx.Body,
-			})
-			return
-		}
+	if err != nil {
+		logger.Error(errors.New("error locking polymer vat fee"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: ctx.Body,
+		})
+		return
+	}
 
 	if os.Getenv("ENV") != "prod" {
 		reference = fmt.Sprintf("%s_PMCKDU_1", reference)
 	}
 	response := services.InitiateLocalPayment(ctx.Ctx, &types.InitiateLocalTransferPayload{
 		AccountNumber: ctx.Body.AccountNumber,
-		AccountBank: ctx.Body.BankCode,
-		Currency: "NGN",
-		Amount: utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-		Narration: narration ,
-		Reference: reference,
+		AccountBank:   ctx.Body.BankCode,
+		Currency:      "NGN",
+		Amount:        utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+		Narration:     narration,
+		Reference:     reference,
 		DebitCurrency: "NGN",
-		CallbackURL: os.Getenv("LOCAL_TRANSFER_WEBHOOK_URL"),
+		CallbackURL:   os.Getenv("LOCAL_TRANSFER_WEBHOOK_URL"),
 		Meta: types.InitiateLocalTransferMeta{
 			WalletID: wallet.ID,
-			UserID: wallet.UserID,
+			UserID:   wallet.UserID,
 		},
 	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {
@@ -770,17 +794,17 @@ func InitiatePersonalLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 	}
 	transaction := entities.Transaction{
 		TransactionReference: reference,
-		MetaData: response,
-		Fee: utils.Float32ToUint64Currency(polymerFee, false),
-		Vat: utils.Float32ToUint64Currency(polymerVAT, false),
+		MetaData:             response,
+		Fee:                  utils.Float32ToUint64Currency(polymerFee, false),
+		Vat:                  utils.Float32ToUint64Currency(polymerVAT, false),
 		ProcessorFeeCurrency: "NGN",
-		ProcessorFee: utils.Float32ToUint64Currency(localProcessorFee, false),
-		ProcessorFeeVAT: utils.Float32ToUint64Currency(localProcessorVAT, false),
-		Amount: totalAmount,
-		Currency: "NGN",
-		WalletID: wallet.ID,
-		UserID: wallet.UserID,
-		Description: narration,
+		ProcessorFee:         utils.Float32ToUint64Currency(localProcessorFee, false),
+		ProcessorFeeVAT:      utils.Float32ToUint64Currency(localProcessorVAT, false),
+		Amount:               totalAmount,
+		Currency:             "NGN",
+		WalletID:             wallet.ID,
+		UserID:               wallet.UserID,
+		Description:          narration,
 		Location: entities.Location{
 			IPAddress: ctx.Body.IPAddress,
 		},
@@ -788,27 +812,27 @@ func InitiatePersonalLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		Intent: entities.LocalDebit,
 		DeviceInfo: &entities.DeviceInfo{
 			IPAddress: ctx.Body.IPAddress,
-			DeviceID: utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
+			DeviceID:  utils.GetStringPointer(ctx.GetStringContextData("DeviceID")),
 			UserAgent: utils.GetStringPointer(ctx.GetStringContextData("UserAgent")),
 		},
 		Sender: entities.TransactionSender{
 			FullName: fmt.Sprintf("%s %s", ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName")),
-			Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
+			Email:    utils.GetStringPointer(ctx.GetStringContextData("Email")),
 		},
 		Recepient: entities.TransactionRecepient{
-			FullName: response.FullName,
-			BankCode: &ctx.Body.BankCode,
+			FullName:      response.FullName,
+			BankCode:      &ctx.Body.BankCode,
 			AccountNumber: ctx.Body.AccountNumber,
-			BranchCode: ctx.Body.BranchCode,
-			BankName: &bankName,
-			Country: utils.GetStringPointer("Nigeria"),
+			BranchCode:    ctx.Body.BranchCode,
+			BankName:      &bankName,
+			Country:       utils.GetStringPointer("Nigeria"),
 		},
 	}
 	trxRepository := repository.TransactionRepo()
 	trx, err := trxRepository.CreateOne(context.TODO(), transaction)
 	if err != nil {
 		logger.Error(errors.New("error creating transaction for international transfer"), logger.LoggerOptions{
-			Key: "payload",
+			Key:  "payload",
 			Data: transaction,
 		})
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -821,17 +845,17 @@ func InitiatePersonalLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 
 	if ctx.GetBoolContextData("EmailOptions") {
 		emails.EmailService.SendEmail(ctx.GetStringContextData("Email"), "Your payment is on its way! 🚀", "payment_sent", map[string]any{
-			"FIRSTNAME": transaction.Sender.FullName,
-			"CURRENCY_CODE": utils.CurrencyCodeToCurrencySymbol("NGN"),
-			"AMOUNT": utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-			"RECEPIENT_NAME": transaction.Recepient.FullName,
+			"FIRSTNAME":         transaction.Sender.FullName,
+			"CURRENCY_CODE":     utils.CurrencyCodeToCurrencySymbol("NGN"),
+			"AMOUNT":            utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+			"RECEPIENT_NAME":    transaction.Recepient.FullName,
 			"RECEPIENT_COUNTRY": utils.CountryCodeToCountryName(*transaction.Recepient.Country),
 		})
 	}
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "Your payment is on its way! 🚀", trx, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificationDTO]){
+func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificationDTO]) {
 	bankCode := ""
 	for _, bank := range bankssupported.SupportedLocalBanks {
 		if bank.Name == ctx.Body.BankName {
@@ -839,7 +863,7 @@ func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificat
 			break
 		}
 	}
-	if bankCode  == "" {
+	if bankCode == "" {
 		apperrors.NotFoundError(ctx.Ctx, fmt.Sprintf("%s is not a supported bank on our platform yet.", ctx.Body.BankName), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
@@ -852,10 +876,10 @@ func VerifyLocalAccountName(ctx *interfaces.ApplicationContext[dto.NameVerificat
 	}, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]){
+func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]) {
 	transactionsRepo := repository.TransactionRepo()
 	transactions, err := transactionsRepo.FindMany(map[string]interface{}{
-		"userID": ctx.GetStringContextData("UserID"),
+		"userID":     ctx.GetStringContextData("UserID"),
 		"businessID": ctx.GetStringParameter("businessID"),
 	}, &options.FindOptions{
 		Limit: utils.GetInt64Pointer(15),
@@ -864,15 +888,15 @@ func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]){
 		},
 	}, options.Find().SetProjection(map[string]any{
 		"transactionReference": 1,
-		"amount": 1,
-		"amountInNGN": 1,
-		"fee": 1,
-		"description": 1,
-		"amountInUSD": 1,
+		"amount":               1,
+		"amountInNGN":          1,
+		"fee":                  1,
+		"description":          1,
+		"amountInUSD":          1,
 		"transactionRecepient": 1,
-		"transactionSender": 1,
-		"status": 1,
-		"currency": 1,
+		"transactionSender":    1,
+		"status":               1,
+		"currency":             1,
 	}))
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -881,7 +905,7 @@ func FetchPastBusinessTransactions(ctx *interfaces.ApplicationContext[any]){
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func FetchPastPersonalTransactions(ctx *interfaces.ApplicationContext[any]){
+func FetchPastPersonalTransactions(ctx *interfaces.ApplicationContext[any]) {
 	transactionsRepo := repository.TransactionRepo()
 	transactions, err := transactionsRepo.FindManyStripped(map[string]interface{}{
 		"userID": ctx.GetStringContextData("UserID"),
@@ -892,15 +916,15 @@ func FetchPastPersonalTransactions(ctx *interfaces.ApplicationContext[any]){
 		},
 	}, options.Find().SetProjection(map[string]any{
 		"transactionReference": 1,
-		"amount": 1,
-		"amountInNGN": 1,
-		"fee": 1,
-		"description": 1,
-		"amountInUSD": 1,
+		"amount":               1,
+		"amountInNGN":          1,
+		"fee":                  1,
+		"description":          1,
+		"amountInUSD":          1,
 		"transactionRecepient": 1,
-		"transactionSender": 1,
-		"status": 1,
-		"currency": 1,
+		"transactionSender":    1,
+		"status":               1,
+		"currency":             1,
 	}))
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -909,10 +933,10 @@ func FetchPastPersonalTransactions(ctx *interfaces.ApplicationContext[any]){
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "transctions fetched", transactions, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func RequestAccountStatement(ctx *interfaces.ApplicationContext[dto.RequestAccountStatementDTO]){
+func RequestAccountStatement(ctx *interfaces.ApplicationContext[dto.RequestAccountStatementDTO]) {
 	walletRepo := repository.WalletRepo()
 	exists, err := walletRepo.CountDocs(map[string]interface{}{
-		"_id": ctx.Body.WalletID,
+		"_id":    ctx.Body.WalletID,
 		"userID": ctx.GetStringContextData("UserID"),
 	})
 	if err != nil {
@@ -925,10 +949,10 @@ func RequestAccountStatement(ctx *interfaces.ApplicationContext[dto.RequestAccou
 	}
 	background.Scheduler.Emit("generate_account_statement", map[string]any{
 		"walletID": ctx.Body.WalletID,
-		"email": ctx.Body.Email,
-		"start": ctx.Body.Start,
-		"end": ctx.Body.End,
+		"email":    ctx.Body.Email,
+		"start":    ctx.Body.Start,
+		"end":      ctx.Body.End,
 	})
-	
+
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "statement is being generated", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }

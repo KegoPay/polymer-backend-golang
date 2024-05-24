@@ -61,6 +61,7 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 			"appVersion": 1,
 			"notificationOptions": 1,
 			"kycCompleted": 1,
+			"tier": 1,
 		}))
 		if err != nil {
 			apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -154,5 +155,6 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 		ctx.SetContextData("PushNotificationToken", auth_token_claims["pushNotificationToken"])
 		ctx.SetContextData("EmailOptions", account.NotificationOptions.Emails)
 		ctx.SetContextData("PushNotifOptions", account.NotificationOptions.PushNotification)
+		ctx.SetContextData("Tier", account.Tier)
 		return ctx, true
 }

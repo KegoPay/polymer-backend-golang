@@ -1,6 +1,7 @@
 package gocraft
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -13,10 +14,12 @@ import (
 	"kego.com/application/repository"
 	"kego.com/entities"
 	"kego.com/infrastructure/auth"
+	"kego.com/infrastructure/database/repository/cache"
 	identityverification "kego.com/infrastructure/identity_verification"
 	identity_verification_types "kego.com/infrastructure/identity_verification/types"
 	"kego.com/infrastructure/logger"
 	"kego.com/infrastructure/messaging/emails"
+	pushnotification "kego.com/infrastructure/messaging/push_notifications"
 	"kego.com/infrastructure/services"
 )
 
@@ -83,6 +86,7 @@ func VerifyBusiness(job *work.Job) error {
 	busniess, err := businessRepo.FindByID(job.ArgString("id"), options.FindOne().SetProjection(map[string]any{
 		"cacInfo": 1,
 		"email":   1,
+		"userID":  1,
 	}))
 	if err != nil {
 		logger.Error(errors.New("there was an error fetching business for verification"), logger.LoggerOptions{
@@ -142,10 +146,10 @@ func VerifyBusiness(job *work.Job) error {
 			break
 		}
 	}
-
+	var user *entities.User
 	if !match {
 		userRepo := repository.UserRepo()
-		user, err := userRepo.FindOneByFilter(map[string]interface{}{
+		user, err = userRepo.FindOneByFilter(map[string]interface{}{
 			"email": busniess.Email,
 		})
 		if err != nil {
@@ -184,6 +188,7 @@ func VerifyBusiness(job *work.Job) error {
 			}
 		}
 	}
+	fullAddress := fmt.Sprintf("%s, %s, %s", info.City, info.LGA, info.State)
 	if match {
 		var directors []entities.Director
 		var shareholders []entities.ShareHolder
@@ -198,7 +203,7 @@ func VerifyBusiness(job *work.Job) error {
 			if aff.AffiliateType == "SHAREHOLDER" {
 				shareholders = append(shareholders, entities.ShareHolder{
 					ID:     aff.IDNumber,
-					IDType: aff.AffiliateType,
+					IDType: aff.IDType,
 					Name:   strings.Replace(aff.Name, ",", "", -1),
 					Shares: aff.ShareAllotted,
 				})
@@ -206,7 +211,7 @@ func VerifyBusiness(job *work.Job) error {
 		}
 		updated, err := businessRepo.UpdatePartialByID(busniess.ID, map[string]any{
 			"cacInfo.verified":    true,
-			"cacInfo.fulladdress": fmt.Sprintf("%s, %s, %s", info.City, info.LGA, info.State),
+			"cacInfo.fulladdress": fullAddress,
 			"directors":           directors,
 			"shareholders":        shareholders,
 		})
@@ -236,10 +241,57 @@ func VerifyBusiness(job *work.Job) error {
 			})
 			return errors.New("could not update business with shareholder and director info")
 		}
+		pushnotification.PushNotificationService.PushOne(user.PushNotificationToken, "Your business has been verified!🥳", "That was easy, wasn't it? Now you're 1 step closer to unlimited transfer amounts.")
 	} else {
 		logger.Info("failed to verify business using emails, nin and bvn. Attempting to send emails to directors")
+		var directors []entities.Director
+		var shareholders []entities.ShareHolder
+		for _, aff := range info.Affiliates {
+			if aff.AffiliateType == "DIRECTOR" {
+				directors = append(directors, entities.Director{
+					Name:   strings.Replace(aff.Name, ",", "", -1),
+					ID:     aff.IDNumber,
+					IDType: aff.IDType,
+				})
+			}
+			if aff.AffiliateType == "SHAREHOLDER" {
+				shareholders = append(shareholders, entities.ShareHolder{
+					ID:     aff.IDNumber,
+					IDType: aff.IDType,
+					Name:   strings.Replace(aff.Name, ",", "", -1),
+					Shares: aff.ShareAllotted,
+				})
+			}
+		}
+		infoByte, _ := json.Marshal(directors)
+		success := cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-info-directors", busniess.ID), infoByte, time.Hour*8760) // save for a year
+		if !success {
+			err = errors.New("an error occured while saving directors information for business for manual review")
+			logger.Error(err, logger.LoggerOptions{
+				Key:  "info",
+				Data: info,
+			}, logger.LoggerOptions{
+				Key:  "businessID",
+				Data: busniess.ID,
+			})
+			return err
+		}
+		infoByte, _ = json.Marshal(shareholders)
+		success = cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-info-shareholders", busniess.ID), infoByte, time.Hour*8760) // save for a year
+		if !success {
+			err = errors.New("an error occured while saving shareholders information for business for manual review")
+			logger.Error(err, logger.LoggerOptions{
+				Key:  "info",
+				Data: info,
+			}, logger.LoggerOptions{
+				Key:  "businessID",
+				Data: busniess.ID,
+			})
+			return err
+		}
 		token, err := auth.GenerateAuthToken(auth.ClaimsData{
 			BusinessID: &busniess.ID,
+			UserID:     busniess.UserID,
 			ExpiresAt:  time.Now().Local().Add(time.Hour * time.Duration(24*10)).Unix(), //lasts for 10 days
 		})
 		if err != nil {
@@ -256,7 +308,6 @@ func VerifyBusiness(job *work.Job) error {
 			return errors.New("an error occured while generating token for business directors to verify manually")
 		}
 		var wg sync.WaitGroup
-		wg.Add(1)
 		for _, aff := range info.Affiliates {
 			if os.Getenv("ENV") != "prod" {
 				aff.AffiliateType = "DIRECTOR"
@@ -264,6 +315,8 @@ func VerifyBusiness(job *work.Job) error {
 			if aff.AffiliateType != "DIRECTOR" {
 				continue
 			}
+			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-info-address", busniess.ID), fullAddress, time.Hour * 8760)
+			wg.Add(1)
 			go func(aff *identity_verification_types.AffiliateProfile) {
 				firstName := strings.Split(aff.Name, ",")
 				if os.Getenv("ENV") != "prod" {
@@ -286,7 +339,7 @@ func VerifyBusiness(job *work.Job) error {
 			}(&aff)
 		}
 		wg.Wait()
-
+		pushnotification.PushNotificationService.PushOne(user.PushNotificationToken, "Business verification failed", "A verification email has been sent to the directors. One click from a director verifies the business.")
 	}
 	return nil
 }

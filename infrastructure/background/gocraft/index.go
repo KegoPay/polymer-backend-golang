@@ -35,6 +35,7 @@ func (es *GoCraftScheduler) StartScheduler() {
 	pool.Job(string("generate_account_statement"), RequestAccountStatement)
 	pool.Job(string("verify_business"), VerifyBusiness)
 	pool.Start()
+	logger.Info("scheduler started")
 }
 
 func (es *GoCraftScheduler) Emit(channel string, payload map[string]any) error {
