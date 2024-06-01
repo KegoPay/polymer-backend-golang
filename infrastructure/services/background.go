@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 
-	"kego.com/infrastructure/network"
+	"usepolymer.co/infrastructure/network"
 )
 
 var BackgroundServiceInstance *BackgroundService

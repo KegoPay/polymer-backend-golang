@@ -1,11 +1,10 @@
 package paymentprocessor
 
 import (
-	chimoney_international_payment_processor "kego.com/infrastructure/payment_processor/chimoney"
-	flutterwave_local_payment_processor "kego.com/infrastructure/payment_processor/flutterwave"
-	"kego.com/infrastructure/payment_processor/types"
+	chimoney_international_payment_processor "usepolymer.co/infrastructure/payment_processor/chimoney"
+	flutterwave_local_payment_processor "usepolymer.co/infrastructure/payment_processor/flutterwave"
+	"usepolymer.co/infrastructure/payment_processor/types"
 )
 
-
 var LocalPaymentProcessor types.LocalPaymentProcessorType = flutterwave_local_payment_processor.LocalPaymentProcessor
-var InternationalPaymentProcessor =  chimoney_international_payment_processor.InternationalPaymentProcessor
+var InternationalPaymentProcessor = chimoney_international_payment_processor.InternationalPaymentProcessor

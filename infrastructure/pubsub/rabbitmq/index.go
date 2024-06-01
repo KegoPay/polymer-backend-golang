@@ -8,7 +8,7 @@ import (
 	"os"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/infrastructure/logger"
 )
 
 type RabbitMQ struct {
@@ -24,7 +24,7 @@ func (rmq *RabbitMQ) Connect() {
 	conn, err := amqp.Dial(rabbitMQURL)
 	if err != nil {
 		logger.Error(errors.New("could not connect to rabbitmq"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return
@@ -36,7 +36,7 @@ func (rmq *RabbitMQ) Connect() {
 	defer rmq.QueueChannel.Close()
 	if err != nil {
 		logger.Error(errors.New("could not open channel on rabbitmq"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return
@@ -45,14 +45,14 @@ func (rmq *RabbitMQ) Connect() {
 
 	// var wg sync.WaitGroup
 	// wg.Add(1)
-	
+
 	returned := make(chan amqp.Return)
 	rmq.QueueChannel.NotifyReturn(returned)
 	go func() {
 		// defer wg.Done()
 		for returnedMsg := range returned {
 			logger.Error(errors.New("could not publish message"), logger.LoggerOptions{
-				Key: "data",
+				Key:  "data",
 				Data: returnedMsg,
 			})
 		}
@@ -66,13 +66,13 @@ func (rmq *RabbitMQ) CreateQueue(name string) error {
 	_, err := rmq.QueueChannel.QueueDeclare(name, true, false, false, false, nil)
 	if err != nil {
 		logger.Error(errors.New("could not open channel on rabbitmq"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return err
 	}
 	logger.Info("opened channel on rabbitmq", logger.LoggerOptions{
-		Key: "name",
+		Key:  "name",
 		Data: name,
 	})
 	return nil
@@ -80,12 +80,12 @@ func (rmq *RabbitMQ) CreateQueue(name string) error {
 
 func (rmq *RabbitMQ) PublishMessage(key string, payload any) {
 	body, err := json.Marshal(map[string]any{
-		"action": key,
+		"action":  key,
 		"payload": payload,
 	})
 	if err != nil {
-		logger.Error(errors.New("could not marshal payload"),  logger.LoggerOptions{
-			Key: "error",
+		logger.Error(errors.New("could not marshal payload"), logger.LoggerOptions{
+			Key:  "error",
 			Data: err,
 		})
 		return
@@ -95,7 +95,7 @@ func (rmq *RabbitMQ) PublishMessage(key string, payload any) {
 		Body:        body,
 	})
 	logger.Info("published to queue", logger.LoggerOptions{
-		Key: "queue_name",
+		Key:  "queue_name",
 		Data: key,
 	})
 	return

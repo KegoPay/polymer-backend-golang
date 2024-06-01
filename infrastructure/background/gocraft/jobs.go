@@ -11,17 +11,17 @@ import (
 
 	"github.com/gocraft/work"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"kego.com/application/repository"
-	"kego.com/entities"
-	"kego.com/infrastructure/auth"
-	"kego.com/infrastructure/cryptography"
-	"kego.com/infrastructure/database/repository/cache"
-	identityverification "kego.com/infrastructure/identity_verification"
-	identity_verification_types "kego.com/infrastructure/identity_verification/types"
-	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/messaging/emails"
-	pushnotification "kego.com/infrastructure/messaging/push_notifications"
-	"kego.com/infrastructure/services"
+	"usepolymer.co/application/repository"
+	"usepolymer.co/entities"
+	"usepolymer.co/infrastructure/auth"
+	"usepolymer.co/infrastructure/cryptography"
+	"usepolymer.co/infrastructure/database/repository/cache"
+	identityverification "usepolymer.co/infrastructure/identity_verification"
+	identity_verification_types "usepolymer.co/infrastructure/identity_verification/types"
+	"usepolymer.co/infrastructure/logger"
+	"usepolymer.co/infrastructure/messaging/emails"
+	pushnotification "usepolymer.co/infrastructure/messaging/push_notifications"
+	"usepolymer.co/infrastructure/services"
 )
 
 func SendEmail(job *work.Job) error {

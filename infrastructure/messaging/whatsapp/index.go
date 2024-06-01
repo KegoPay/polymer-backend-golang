@@ -3,11 +3,10 @@ package sms
 import (
 	"os"
 
-	"kego.com/infrastructure/network"
+	"usepolymer.co/infrastructure/network"
 )
 
 var SMSService SMSServiceType
-
 
 func InitSMSService() {
 	SMSService = &TermiiService{

@@ -3,16 +3,16 @@ package entities
 import (
 	"time"
 
-	wallet_constants "kego.com/application/services/constants"
-	"kego.com/application/utils"
+	wallet_constants "usepolymer.co/application/services/constants"
+	"usepolymer.co/application/utils"
 )
 
 type FrozenWalletLog struct {
-	WalletID     string    								 `bson:"walletID" json:"walletID"`
-	UserID     	 string    								 `bson:"userID" json:"userID"`
-	Reason       wallet_constants.FrozenAccountReason    `bson:"reason" json:"reason"`
-	Time         wallet_constants.FrozenAccountTime    	 `bson:"time" json:"time"`
-	Unfrozen     bool   	 							 `bson:"unfrozen" json:"unfrozen"`
+	WalletID string                               `bson:"walletID" json:"walletID"`
+	UserID   string                               `bson:"userID" json:"userID"`
+	Reason   wallet_constants.FrozenAccountReason `bson:"reason" json:"reason"`
+	Time     wallet_constants.FrozenAccountTime   `bson:"time" json:"time"`
+	Unfrozen bool                                 `bson:"unfrozen" json:"unfrozen"`
 
 	ID        string    `bson:"_id" json:"id"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`

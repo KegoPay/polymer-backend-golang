@@ -13,20 +13,19 @@ import (
 	"os"
 	"time"
 
-	"kego.com/application/utils"
-	"kego.com/infrastructure/database/repository/cache"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/application/utils"
+	"usepolymer.co/infrastructure/database/repository/cache"
+	"usepolymer.co/infrastructure/logger"
 )
 
 var CryptoHahser Hasher = argonHasher{}
-
 
 func GeneratePublicKey(sessionID string, clientPubKey *ecdh.PublicKey) *ecdh.PublicKey {
 	serverCurve := ecdh.P256()
 	serverPrivKey, err := serverCurve.GenerateKey(rand.Reader)
 	if err != nil {
 		logger.Error(errors.New("error generating public key for key exchange"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return nil
@@ -35,12 +34,12 @@ func GeneratePublicKey(sessionID string, clientPubKey *ecdh.PublicKey) *ecdh.Pub
 	serverSecret, err := serverPrivKey.ECDH(clientPubKey)
 	if err != nil {
 		logger.Error(errors.New("error generating server secret for key exchange"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return nil
 	}
-	cache.Cache.CreateEntry(sessionID, string(serverSecret), time.Minute * 20)
+	cache.Cache.CreateEntry(sessionID, string(serverSecret), time.Minute*20)
 	return serverPubKey
 }
 
@@ -73,7 +72,7 @@ func DecryptData(stringToDecrypt string, keyString *string) (string, error) {
 
 }
 
-func SymmetricEncryption( payload string, keyString *string) (encryptedString string, err error) {
+func SymmetricEncryption(payload string, keyString *string) (encryptedString string, err error) {
 	// convert key to bytes
 	if keyString == nil {
 		keyString = utils.GetStringPointer(os.Getenv("ENC_KEY"))
@@ -102,5 +101,3 @@ func SymmetricEncryption( payload string, keyString *string) (encryptedString st
 	// convert to base64
 	return base64.URLEncoding.EncodeToString(ciphertext), nil
 }
-
-

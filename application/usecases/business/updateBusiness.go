@@ -3,10 +3,10 @@ package business
 import (
 	"errors"
 
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/controllers/dto"
-	"kego.com/application/repository"
-	"kego.com/infrastructure/validator"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/controllers/dto"
+	"usepolymer.co/application/repository"
+	"usepolymer.co/infrastructure/validator"
 )
 
 func UpdateBusiness(ctx any, payload *dto.UpdateBusinessDTO, device_id *string) error {

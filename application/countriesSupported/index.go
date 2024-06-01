@@ -1,77 +1,77 @@
 package countriessupported
 
-import "kego.com/entities"
+import "usepolymer.co/entities"
 
-var CountriesSupported =  []entities.Country{
+var CountriesSupported = []entities.Country{
 	{
-		Name:           "Nigeria",
-		ISOCode:        "NG",
-		FlagURL:        "https://upload.wikimedia.org/wikipedia/commons/7/79/Flag_of_Nigeria.svg",
+		Name:            "Nigeria",
+		ISOCode:         "NG",
+		FlagURL:         "https://upload.wikimedia.org/wikipedia/commons/7/79/Flag_of_Nigeria.svg",
 		ServicesAllowed: []entities.CountryServiceType{entities.SignUp, entities.InstantTransfer},
-		Symbol: "₦",
+		Symbol:          "₦",
 	},
 	{
-		Name:           "Canada",
-		ISOCode:        "CA",
-		FlagURL:        "https://upload.wikimedia.org/wikipedia/commons/d/d9/Flag_of_Canada_%28Pantone%29.svg",
+		Name:            "Canada",
+		ISOCode:         "CA",
+		FlagURL:         "https://upload.wikimedia.org/wikipedia/commons/d/d9/Flag_of_Canada_%28Pantone%29.svg",
 		ServicesAllowed: []entities.CountryServiceType{entities.InstantTransfer},
-		Symbol: "$",
+		Symbol:          "$",
 	},
 	{
-		Name:           "Ghana",
-		ISOCode:        "GH",
-		FlagURL:        "https://upload.wikimedia.org/wikipedia/commons/1/19/Flag_of_Ghana.svg",
+		Name:            "Ghana",
+		ISOCode:         "GH",
+		FlagURL:         "https://upload.wikimedia.org/wikipedia/commons/1/19/Flag_of_Ghana.svg",
 		ServicesAllowed: []entities.CountryServiceType{entities.InstantTransfer, entities.MobileMoney},
-		Symbol: "¢",
+		Symbol:          "¢",
 	},
 	{
-		Name:           "India",
-		ISOCode:        "IN",
-		FlagURL:        "https://upload.wikimedia.org/wikipedia/en/4/41/Flag_of_India.svg",
+		Name:            "India",
+		ISOCode:         "IN",
+		FlagURL:         "https://upload.wikimedia.org/wikipedia/en/4/41/Flag_of_India.svg",
 		ServicesAllowed: []entities.CountryServiceType{entities.InstantTransfer},
-		Symbol: "₹",
+		Symbol:          "₹",
 	},
 	{
-		Name:           "Kenya",
-		ISOCode:        "KE",
-		FlagURL:        "https://upload.wikimedia.org/wikipedia/commons/4/49/Flag_of_Kenya.svg",
+		Name:            "Kenya",
+		ISOCode:         "KE",
+		FlagURL:         "https://upload.wikimedia.org/wikipedia/commons/4/49/Flag_of_Kenya.svg",
 		ServicesAllowed: []entities.CountryServiceType{entities.InstantTransfer, entities.MobileMoney},
-		Symbol: "Ksh",
+		Symbol:          "Ksh",
 	},
 	{
-		Name:           "Mexico",
-		ISOCode:        "MX",
-		FlagURL:        "https://upload.wikimedia.org/wikipedia/commons/f/fc/Flag_of_Mexico.svg",
+		Name:            "Mexico",
+		ISOCode:         "MX",
+		FlagURL:         "https://upload.wikimedia.org/wikipedia/commons/f/fc/Flag_of_Mexico.svg",
 		ServicesAllowed: []entities.CountryServiceType{entities.InstantTransfer},
-		Symbol: "$",
+		Symbol:          "$",
 	},
 	{
-		Name:           "Rwanda",
-		ISOCode:        "RW",
-		FlagURL:        "https://upload.wikimedia.org/wikipedia/commons/1/17/Flag_of_Rwanda.svg",
+		Name:            "Rwanda",
+		ISOCode:         "RW",
+		FlagURL:         "https://upload.wikimedia.org/wikipedia/commons/1/17/Flag_of_Rwanda.svg",
 		ServicesAllowed: []entities.CountryServiceType{entities.InstantTransfer, entities.MobileMoney},
-		Symbol: "FRw",
+		Symbol:          "FRw",
 	},
 	{
-		Name:           "South Africa",
-		ISOCode:        "ZA",
-		FlagURL:        "https://upload.wikimedia.org/wikipedia/commons/a/af/Flag_of_South_Africa.svg",
+		Name:            "South Africa",
+		ISOCode:         "ZA",
+		FlagURL:         "https://upload.wikimedia.org/wikipedia/commons/a/af/Flag_of_South_Africa.svg",
 		ServicesAllowed: []entities.CountryServiceType{entities.InstantTransfer, entities.MobileMoney},
-		Symbol: "R",
+		Symbol:          "R",
 	},
 	{
-		Name:           "United Kingdom",
-		ISOCode:        "GB",
-		FlagURL:        "https://upload.wikimedia.org/wikipedia/en/a/ae/Flag_of_the_United_Kingdom.svg",
+		Name:            "United Kingdom",
+		ISOCode:         "GB",
+		FlagURL:         "https://upload.wikimedia.org/wikipedia/en/a/ae/Flag_of_the_United_Kingdom.svg",
 		ServicesAllowed: []entities.CountryServiceType{entities.InstantTransfer},
-		Symbol: "₦",
+		Symbol:          "₦",
 	},
 	{
-		Name:           "United States of America",
-		ISOCode:        "US",
-		FlagURL:        "https://upload.wikimedia.org/wikipedia/en/a/a4/Flag_of_the_United_States.svg",
+		Name:            "United States of America",
+		ISOCode:         "US",
+		FlagURL:         "https://upload.wikimedia.org/wikipedia/en/a/a4/Flag_of_the_United_States.svg",
 		ServicesAllowed: []entities.CountryServiceType{entities.InstantTransfer},
-		Symbol: "$",
+		Symbol:          "$",
 	},
 }
 
@@ -79,7 +79,7 @@ func FilterCountries(filter entities.CountryServiceType) []entities.Country {
 	var selectedCountries = []entities.Country{}
 	for _, c := range CountriesSupported {
 		for _, s := range c.ServicesAllowed {
-			if s == filter{
+			if s == filter {
 				selectedCountries = append(selectedCountries, c)
 				break
 			}

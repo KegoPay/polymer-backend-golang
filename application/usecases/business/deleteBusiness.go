@@ -5,10 +5,10 @@ import (
 	"errors"
 
 	"go.mongodb.org/mongo-driver/mongo"
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/repository"
-	walletUsecases "kego.com/application/usecases/wallet"
-	"kego.com/infrastructure/logger"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/repository"
+	walletUsecases "usepolymer.co/application/usecases/wallet"
+	"usepolymer.co/infrastructure/logger"
 )
 
 func DeleteBusiness(ctx any, id string, device_id *string) error {
@@ -21,34 +21,33 @@ func DeleteBusiness(ctx any, id string, device_id *string) error {
 		if err != nil {
 			(sc).AbortTransaction(c)
 			logger.Error(errors.New("error deleting business"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: err,
 			}, logger.LoggerOptions{
-				Key: "id",
+				Key:  "id",
 				Data: id,
 			})
-			e =  err
+			e = err
 			apperrors.FatalServerError(ctx, err, device_id)
 			return err
 		}
 		if deleted == 0 {
 			(sc).AbortTransaction(c)
 			err = errors.New("business does not exist")
-			e =  err
+			e = err
 			apperrors.NotFoundError(ctx, err.Error(), device_id)
 			return err
 		}
 		err = walletUsecases.DeleteWallet(ctx, c, id, device_id)
 		if err != nil {
-			e =  err
-		(sc).AbortTransaction(c)
+			e = err
+			(sc).AbortTransaction(c)
 			return err
 		}
-		
+
 		(sc).CommitTransaction(c)
 		return err
 	})
-
 
 	return e
 }

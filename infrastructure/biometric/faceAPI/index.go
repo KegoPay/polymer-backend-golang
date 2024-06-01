@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/network"
+	"usepolymer.co/infrastructure/logger"
+	"usepolymer.co/infrastructure/network"
 )
-
 
 type FaceAPIBiometricService struct {
 	Network *network.NetworkController
@@ -20,14 +19,14 @@ func (face *FaceAPIBiometricService) FaceMatchWithLiveness(referenceImg []byte, 
 	}, map[string]any{
 		"Parameters": map[string]any{
 			"livenessOperationMode": "passive",
-			"deviceCorrelationId": deviceID,
+			"deviceCorrelationId":   deviceID,
 		},
 	}, nil, true, &map[string][]byte{
 		"VerifyImage": referenceImg,
 	})
 	if err != nil {
 		logger.Error(errors.New("error creating FaceMatchWithLiveness session"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return nil, err
@@ -37,7 +36,7 @@ func (face *FaceAPIBiometricService) FaceMatchWithLiveness(referenceImg []byte, 
 	if err != nil {
 		err = errors.New("error parsing response for FaceMatchWithLiveness")
 		logger.Error(err, logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return nil, err

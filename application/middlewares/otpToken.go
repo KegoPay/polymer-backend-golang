@@ -6,13 +6,12 @@ import (
 	"os"
 
 	"github.com/golang-jwt/jwt"
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/interfaces"
-	"kego.com/infrastructure/auth"
-	"kego.com/infrastructure/database/repository/cache"
-	"kego.com/infrastructure/logger"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/interfaces"
+	"usepolymer.co/infrastructure/auth"
+	"usepolymer.co/infrastructure/database/repository/cache"
+	"usepolymer.co/infrastructure/logger"
 )
-
 
 func OTPTokenMiddleware(ctx *interfaces.ApplicationContext[any], ipAddress string, intent string) (*interfaces.ApplicationContext[any], bool) {
 	otpTokenPointer := ctx.GetHeader("Otp-Token")
@@ -44,7 +43,7 @@ func OTPTokenMiddleware(ctx *interfaces.ApplicationContext[any], ipAddress strin
 	var channel string
 	if auth_token_claims["email"] != nil {
 		channel = auth_token_claims["email"].(string)
-	}else {
+	} else {
 		channel = auth_token_claims["phoneNum"].(string)
 	}
 	otpIntent := cache.Cache.FindOne(fmt.Sprintf("%s-otp-intent", channel))
@@ -53,7 +52,7 @@ func OTPTokenMiddleware(ctx *interfaces.ApplicationContext[any], ipAddress strin
 		apperrors.ClientError(ctx.Ctx, "otp expired", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return nil, false
 	}
-	if *otpIntent != auth_token_claims["otpIntent"].(string) || auth_token_claims["otpIntent"].(string) != intent{
+	if *otpIntent != auth_token_claims["otpIntent"].(string) || auth_token_claims["otpIntent"].(string) != intent {
 		logger.Warning("this should trigger a wallet lock")
 		logger.Error(errors.New("wrong otp intent in token"))
 		apperrors.ClientError(ctx.Ctx, "incorrect intent", nil, nil, ctx.GetHeader("Polymer-Device-Id"))

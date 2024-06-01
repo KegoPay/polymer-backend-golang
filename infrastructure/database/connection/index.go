@@ -1,11 +1,11 @@
 package connection
 
 import (
-	"kego.com/infrastructure/database/connection/cache"
-	"kego.com/infrastructure/database/connection/datastore"
+	"usepolymer.co/infrastructure/database/connection/cache"
+	"usepolymer.co/infrastructure/database/connection/datastore"
 )
 
-func ConnectToDatabase(){
+func ConnectToDatabase() {
 	datastore.ConnectToDatabase()
 	cache.ConnectToCache()
 }

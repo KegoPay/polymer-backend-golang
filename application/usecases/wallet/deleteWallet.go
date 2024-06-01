@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/repository"
-	"kego.com/infrastructure/logger"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/repository"
+	"usepolymer.co/infrastructure/logger"
 )
 
 func DeleteWallet(ctx any, transactionCtx context.Context, businessID string, device_id *string) error {
@@ -16,7 +16,7 @@ func DeleteWallet(ctx any, transactionCtx context.Context, businessID string, de
 	})
 	if err != nil {
 		logger.Error(errors.New("error deleting wallet"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		apperrors.FatalServerError(ctx, err, device_id)

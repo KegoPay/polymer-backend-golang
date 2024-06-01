@@ -2,7 +2,7 @@ package currencyformatter
 
 import (
 	"github.com/dustin/go-humanize"
-	"kego.com/application/utils"
+	"usepolymer.co/application/utils"
 )
 
 func HumanReadableFloat32Currency(amount float32) string {

@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"kego.com/infrastructure/cryptography"
-	"kego.com/infrastructure/database/repository/cache"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/infrastructure/cryptography"
+	"usepolymer.co/infrastructure/database/repository/cache"
+	"usepolymer.co/infrastructure/logger"
 )
 
 const otpChars = "1234567890"

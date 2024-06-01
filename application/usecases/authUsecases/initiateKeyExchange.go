@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	apperrors "kego.com/application/appErrors"
-	"kego.com/infrastructure/cryptography"
-	"kego.com/infrastructure/database/repository/cache"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/infrastructure/cryptography"
+	"usepolymer.co/infrastructure/database/repository/cache"
 )
 
 func InitiateKeyExchange(ctx any, deviceID string, clientPublicKey *ecdh.PublicKey, device_id *string) ([]byte, *string, error) {
@@ -33,7 +33,7 @@ func InitiateKeyExchange(ctx any, deviceID string, clientPublicKey *ecdh.PublicK
 		apperrors.FatalServerError(ctx, err, device_id)
 		return nil, nil, err
 	}
-	success := cache.Cache.CreateEntry(fmt.Sprintf("%s-key", deviceID), encryptedSecret, time.Minute * 15)
+	success := cache.Cache.CreateEntry(fmt.Sprintf("%s-key", deviceID), encryptedSecret, time.Minute*15)
 	if !success {
 		apperrors.FatalServerError(ctx, nil, device_id)
 		return nil, nil, err

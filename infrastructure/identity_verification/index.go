@@ -3,9 +3,9 @@ package identityverification
 import (
 	"os"
 
-	dojah_identity_verification "kego.com/infrastructure/identity_verification/dojah"
-	identity_verification_types "kego.com/infrastructure/identity_verification/types"
-	"kego.com/infrastructure/network"
+	dojah_identity_verification "usepolymer.co/infrastructure/identity_verification/dojah"
+	identity_verification_types "usepolymer.co/infrastructure/identity_verification/types"
+	"usepolymer.co/infrastructure/network"
 )
 
 var IdentityVerifier identity_verification_types.IdentityVerifierType

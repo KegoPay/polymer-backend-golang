@@ -1,10 +1,10 @@
 package database
 
 import (
-	"kego.com/infrastructure/database/connection"
+	"usepolymer.co/infrastructure/database/connection"
 )
 
-func SetUpDatabase(){
+func SetUpDatabase() {
 	connection.ConnectToDatabase()
 }
 

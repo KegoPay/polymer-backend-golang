@@ -10,21 +10,21 @@ import (
 
 	"github.com/golang-jwt/jwt"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/constants"
-	"kego.com/application/controllers/dto"
-	"kego.com/application/interfaces"
-	"kego.com/application/repository"
-	"kego.com/application/usecases/business"
-	"kego.com/entities"
-	"kego.com/infrastructure/auth"
-	"kego.com/infrastructure/background"
-	cac_service "kego.com/infrastructure/cac"
-	"kego.com/infrastructure/database/repository/cache"
-	"kego.com/infrastructure/logger"
-	pushnotification "kego.com/infrastructure/messaging/push_notifications"
-	server_response "kego.com/infrastructure/serverResponse"
-	"kego.com/infrastructure/validator"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/constants"
+	"usepolymer.co/application/controllers/dto"
+	"usepolymer.co/application/interfaces"
+	"usepolymer.co/application/repository"
+	"usepolymer.co/application/usecases/business"
+	"usepolymer.co/entities"
+	"usepolymer.co/infrastructure/auth"
+	"usepolymer.co/infrastructure/background"
+	cac_service "usepolymer.co/infrastructure/cac"
+	"usepolymer.co/infrastructure/database/repository/cache"
+	"usepolymer.co/infrastructure/logger"
+	pushnotification "usepolymer.co/infrastructure/messaging/push_notifications"
+	server_response "usepolymer.co/infrastructure/serverResponse"
+	"usepolymer.co/infrastructure/validator"
 )
 
 func CreateBusiness(ctx *interfaces.ApplicationContext[dto.BusinessDTO]) {
@@ -209,7 +209,7 @@ func VerifyBusinessManual(ctx *interfaces.ApplicationContext[any]) {
 	directorCache := cache.Cache.FindOneByteArray(fmt.Sprintf("%s-kyc-info-directors", auth_token_claims["businessID"].(string)))
 	shareHoldersCache := cache.Cache.FindOneByteArray(fmt.Sprintf("%s-kyc-info-shareholders", auth_token_claims["businessID"].(string)))
 	address := cache.Cache.FindOne(fmt.Sprintf("%s-kyc-info-address", auth_token_claims["businessID"].(string)))
-	if directorCache == nil || shareHoldersCache == nil || address == nil{
+	if directorCache == nil || shareHoldersCache == nil || address == nil {
 		apperrors.ClientError(ctx.Ctx, "Business kyc details were not found in our system. This is probaly because this link is too old to use and the data has expired. If you think this is a mistake and want a manual review please click the button below", nil, &constants.ESCALATE_TO_SUPPORT, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
@@ -235,9 +235,9 @@ func VerifyBusinessManual(ctx *interfaces.ApplicationContext[any]) {
 	}
 	businessRepo := repository.BusinessRepo()
 	updated, err := businessRepo.UpdatePartialByID(auth_token_claims["businessID"].(string), map[string]any{
-		"cacInfo.verified": true,
-		"shareholders":     shareholders,
-		"directors":        directors,
+		"cacInfo.verified":    true,
+		"shareholders":        shareholders,
+		"directors":           directors,
 		"cacInfo.fulladdress": address,
 	})
 	if err != nil {

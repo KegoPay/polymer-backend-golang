@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/network"
+	"usepolymer.co/infrastructure/logger"
+	"usepolymer.co/infrastructure/network"
 )
 
 type TermiiService struct {
@@ -20,49 +20,49 @@ func (ts *TermiiService) SendOTP(phone string, whatsapp bool, otp *string) *stri
 	var err error
 	if whatsapp {
 		response, statusCode, err = ts.Network.Post("/sms/send", nil, map[string]any{
-			"api_key": ts.API_KEY,
-			"from": "Polymer",
-			"to": phone,
-			"sms": *otp,
-			"type": "plain",
-			"channel": "whatsapp_otp",
+			"api_key":         ts.API_KEY,
+			"from":            "Polymer",
+			"to":              phone,
+			"sms":             *otp,
+			"type":            "plain",
+			"channel":         "whatsapp_otp",
 			"time_in_minutes": "10 minutes",
 		}, nil, false, nil)
-	}else {
+	} else {
 		response, statusCode, err = ts.Network.Post("/sms/otp/send", nil, map[string]any{
-			"api_key": ts.API_KEY,
-			"message_type": "NUMERIC",
-			"from": "N-Alert",
-			"to": phone,
-			"channel": "dnd",
-			"pin_attempts": 4,
+			"api_key":          ts.API_KEY,
+			"message_type":     "NUMERIC",
+			"from":             "N-Alert",
+			"to":               phone,
+			"channel":          "dnd",
+			"pin_attempts":     4,
 			"pin_time_to_live": 7,
-			"pin_length": 6,
-			"pin_placeholder": "< 123456 >",
-			"message_text": "Your Polymer confirmation code is < 123456 >. Valid for 10 minutes, one-time use only.",
+			"pin_length":       6,
+			"pin_placeholder":  "< 123456 >",
+			"message_text":     "Your Polymer confirmation code is < 123456 >. Valid for 10 minutes, one-time use only.",
 		}, nil, false, nil)
 	}
-	var termiiResponse TermiiOTPResponse	
+	var termiiResponse TermiiOTPResponse
 	json.Unmarshal(*response, &termiiResponse)
 	if err != nil {
 		logger.Error(errors.New("error retireving bvn data from dojah"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return nil
 	}
 	if *statusCode != 200 {
 		logger.Error(errors.New("request to termii for sms delivery was unsuccessful"), logger.LoggerOptions{
-			Key: "statusCode",
+			Key:  "statusCode",
 			Data: fmt.Sprintf("%d", statusCode),
 		}, logger.LoggerOptions{
-			Key: "data",
+			Key:  "data",
 			Data: termiiResponse,
 		})
 		return nil
 	}
 	logger.Info(fmt.Sprintf("SMS OTP sent to %s", phone), logger.LoggerOptions{
-		Key: "res",
+		Key:  "res",
 		Data: termiiResponse,
 	})
 	if whatsapp {
@@ -74,8 +74,8 @@ func (ts *TermiiService) SendOTP(phone string, whatsapp bool, otp *string) *stri
 func (ts *TermiiService) VerifyOTP(otpID string, otp string) bool {
 	response, statusCode, err := ts.Network.Post("/sms/otp/verify", nil, map[string]any{
 		"api_key": ts.API_KEY,
-		"pin": otp,
-		"pin_id": otpID,
+		"pin":     otp,
+		"pin_id":  otpID,
 	}, nil, false, nil)
 	var termiiResponse TermiiOTPVerifiedResponse
 	var termiiRespons map[string]any
@@ -83,17 +83,17 @@ func (ts *TermiiService) VerifyOTP(otpID string, otp string) bool {
 	json.Unmarshal(*response, &termiiRespons)
 	if err != nil {
 		logger.Error(errors.New("error retireving bvn data from dojah"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return false
 	}
 	if *statusCode != 200 {
 		logger.Error(errors.New("request to Dojah for BVN fetch was unsuccessful"), logger.LoggerOptions{
-			Key: "statusCode",
+			Key:  "statusCode",
 			Data: fmt.Sprintf("%d", statusCode),
 		}, logger.LoggerOptions{
-			Key: "data",
+			Key:  "data",
 			Data: termiiResponse,
 		})
 		return false

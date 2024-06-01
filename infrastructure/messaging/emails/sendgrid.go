@@ -9,7 +9,7 @@ import (
 
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/infrastructure/logger"
 )
 
 var dir, _ = os.Getwd()
@@ -29,8 +29,8 @@ func (s *SendGridService) SendEmail(toEmail string, subject string, templateName
 			Key:  "to",
 			Data: toEmail,
 		}, logger.LoggerOptions{
-			Key:   "templateName",
-			Data:  templateName,
+			Key:  "templateName",
+			Data: templateName,
 		})
 		return false
 	} else {

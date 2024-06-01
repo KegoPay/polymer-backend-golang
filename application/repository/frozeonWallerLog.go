@@ -3,11 +3,10 @@ package repository
 import (
 	"sync"
 
-	"kego.com/entities"
-	"kego.com/infrastructure/database/connection/datastore"
-	"kego.com/infrastructure/database/repository/mongo"
+	"usepolymer.co/entities"
+	"usepolymer.co/infrastructure/database/connection/datastore"
+	"usepolymer.co/infrastructure/database/repository/mongo"
 )
-
 
 var frozenWalletLogOnce = sync.Once{}
 

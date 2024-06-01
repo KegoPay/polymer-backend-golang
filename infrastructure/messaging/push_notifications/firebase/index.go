@@ -10,7 +10,7 @@ import (
 	fcm "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
 	"google.golang.org/api/option"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/infrastructure/logger"
 )
 
 type FireBasePushNotification struct {
@@ -19,10 +19,10 @@ type FireBasePushNotification struct {
 
 func (fbpn *FireBasePushNotification) InitialiseClient() *FireBasePushNotification {
 	firebaseServicekey := os.Getenv("FIREBASE_SERVICE_KEY")
-	decodedKey, err :=  base64.StdEncoding.DecodeString(firebaseServicekey)
+	decodedKey, err := base64.StdEncoding.DecodeString(firebaseServicekey)
 	if err != nil {
 		logger.Error(errors.New("error converting firebase service key from base64 to byte array"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return nil
@@ -30,7 +30,7 @@ func (fbpn *FireBasePushNotification) InitialiseClient() *FireBasePushNotificati
 	appInstance, err := fcm.NewApp(context.Background(), nil, option.WithCredentialsJSON(decodedKey))
 	if err != nil {
 		logger.Error(errors.New("error creating new app instance for firebase"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return nil
@@ -38,7 +38,7 @@ func (fbpn *FireBasePushNotification) InitialiseClient() *FireBasePushNotificati
 	fbpn.MessagingClient, err = appInstance.Messaging(context.Background())
 	if err != nil {
 		logger.Error(errors.New("error instanciating firebase messaging client"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return nil
@@ -46,21 +46,20 @@ func (fbpn *FireBasePushNotification) InitialiseClient() *FireBasePushNotificati
 	return fbpn
 }
 
-
 func (fbpn *FireBasePushNotification) PushOne(deviceID string, title string, body string) {
 	_, err := fbpn.MessagingClient.Send(context.Background(), &messaging.Message{
 		Notification: &messaging.Notification{
 			Title: title,
-			Body: body,
+			Body:  body,
 		},
 		Token: deviceID,
 	})
 	if err != nil {
 		logger.Error(errors.New("error sending push notification using Firebase"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "deviceID",
+			Key:  "deviceID",
 			Data: deviceID,
 		})
 		return

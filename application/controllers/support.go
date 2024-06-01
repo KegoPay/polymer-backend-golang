@@ -4,16 +4,16 @@ import (
 	"context"
 	"net/http"
 
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/controllers/dto"
-	"kego.com/application/interfaces"
-	"kego.com/application/repository"
-	"kego.com/entities"
-	server_response "kego.com/infrastructure/serverResponse"
-	"kego.com/infrastructure/validator"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/controllers/dto"
+	"usepolymer.co/application/interfaces"
+	"usepolymer.co/application/repository"
+	"usepolymer.co/entities"
+	server_response "usepolymer.co/infrastructure/serverResponse"
+	"usepolymer.co/infrastructure/validator"
 )
 
-func ErrSupportRequest(ctx *interfaces.ApplicationContext[dto.ErrorSupportRequestDTO]){
+func ErrSupportRequest(ctx *interfaces.ApplicationContext[dto.ErrorSupportRequestDTO]) {
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
 	if valiedationErr != nil {
 		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
@@ -21,9 +21,9 @@ func ErrSupportRequest(ctx *interfaces.ApplicationContext[dto.ErrorSupportReques
 	}
 	errSupportRequestRepo := repository.ErrorSupportRequestRepo()
 	_, err := errSupportRequestRepo.CreateOne(context.TODO(), entities.ErrorSupportRequest{
-		UserID: ctx.GetStringContextData("UserID"),
+		UserID:  ctx.GetStringContextData("UserID"),
 		Message: ctx.Body.Message,
-		Email: ctx.GetStringContextData("Email"),
+		Email:   ctx.GetStringContextData("Email"),
 	})
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))

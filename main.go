@@ -1,7 +1,7 @@
 package main
 
-import "kego.com/infrastructure"
+import "usepolymer.co/infrastructure"
 
-func main(){
+func main() {
 	infrastructure.StartServer()
 }

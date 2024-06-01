@@ -1,8 +1,8 @@
 package ipresolver
 
 import (
-	"kego.com/infrastructure/ipresolver/maxmind"
-	"kego.com/infrastructure/ipresolver/types"
+	"usepolymer.co/infrastructure/ipresolver/maxmind"
+	"usepolymer.co/infrastructure/ipresolver/types"
 )
 
-var IPResolverInstance types.IPResolver =  &maxmind.MaxMindIPResolver{}
+var IPResolverInstance types.IPResolver = &maxmind.MaxMindIPResolver{}

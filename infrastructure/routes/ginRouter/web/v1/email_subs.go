@@ -2,9 +2,8 @@ package webroutev1
 
 import (
 	"github.com/gin-gonic/gin"
-	middlewares "kego.com/infrastructure/middleware"
+	middlewares "usepolymer.co/infrastructure/middleware"
 )
-
 
 func EmailSubsRouter(router *gin.RouterGroup) {
 	emailSubRouter := router.Group("/emailsub")

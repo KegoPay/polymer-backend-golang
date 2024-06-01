@@ -1,24 +1,24 @@
 package startup
 
 import (
-	"kego.com/application"
-	"kego.com/infrastructure/background"
-	"kego.com/infrastructure/biometric"
-	cac_service "kego.com/infrastructure/cac"
-	"kego.com/infrastructure/database"
-	"kego.com/infrastructure/database/connection/datastore"
-	fileupload "kego.com/infrastructure/file_upload"
-	identityverification "kego.com/infrastructure/identity_verification"
-	"kego.com/infrastructure/ipresolver"
-	"kego.com/infrastructure/logger"
-	pushnotification "kego.com/infrastructure/messaging/push_notifications"
-	sms "kego.com/infrastructure/messaging/whatsapp"
-	paymentprocessor "kego.com/infrastructure/payment_processor"
-	"kego.com/infrastructure/services"
+	"usepolymer.co/application"
+	"usepolymer.co/infrastructure/background"
+	"usepolymer.co/infrastructure/biometric"
+	cac_service "usepolymer.co/infrastructure/cac"
+	"usepolymer.co/infrastructure/database"
+	"usepolymer.co/infrastructure/database/connection/datastore"
+	fileupload "usepolymer.co/infrastructure/file_upload"
+	identityverification "usepolymer.co/infrastructure/identity_verification"
+	"usepolymer.co/infrastructure/ipresolver"
+	"usepolymer.co/infrastructure/logger"
+	pushnotification "usepolymer.co/infrastructure/messaging/push_notifications"
+	sms "usepolymer.co/infrastructure/messaging/whatsapp"
+	paymentprocessor "usepolymer.co/infrastructure/payment_processor"
+	"usepolymer.co/infrastructure/services"
 )
 
 // Used to start services such as loggers, databases, queues, etc.
-func StartServices(){
+func StartServices() {
 	logger.InitializeLogger()
 	database.SetUpDatabase()
 	// logger.MetricMonitor.Init()
@@ -39,7 +39,7 @@ func StartServices(){
 }
 
 // Used to clean up after services that have been shutdown.
-func CleanUpServices(){
+func CleanUpServices() {
 	datastore.CleanUp()
 	// metrics.MetricMonitor.CleanUp()
 }

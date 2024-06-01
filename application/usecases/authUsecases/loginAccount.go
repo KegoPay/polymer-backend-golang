@@ -6,17 +6,17 @@ import (
 	"strconv"
 	"time"
 
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/constants"
-	"kego.com/application/repository"
-	"kego.com/application/utils"
-	"kego.com/entities"
-	"kego.com/infrastructure/auth"
-	"kego.com/infrastructure/background"
-	"kego.com/infrastructure/cryptography"
-	"kego.com/infrastructure/database/repository/cache"
-	geospatialcalculation "kego.com/infrastructure/geospatial_calculation"
-	"kego.com/infrastructure/logger"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/constants"
+	"usepolymer.co/application/repository"
+	"usepolymer.co/application/utils"
+	"usepolymer.co/entities"
+	"usepolymer.co/infrastructure/auth"
+	"usepolymer.co/infrastructure/background"
+	"usepolymer.co/infrastructure/cryptography"
+	"usepolymer.co/infrastructure/database/repository/cache"
+	geospatialcalculation "usepolymer.co/infrastructure/geospatial_calculation"
+	"usepolymer.co/infrastructure/logger"
 )
 
 func LoginAccount(ctx any, email *string, phone *string, password *string, appVersion string, userAgent string, deviceID string, pushNotificationToken string, longitude float64, latitude float64, device_id *string) (*entities.User, *entities.Wallet, *string) {
@@ -27,13 +27,13 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 	currentTriesInt, err := strconv.Atoi(*currentTries)
 	if err != nil {
 		logger.Error(errors.New("error parsing users password current tries"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "key",
+			Key:  "key",
 			Data: fmt.Sprintf("%s-password-tries", *email),
 		}, logger.LoggerOptions{
-			Key: "data",
+			Key:  "data",
 			Data: currentTries,
 		})
 		apperrors.FatalServerError(ctx, err, device_id)
@@ -74,11 +74,11 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 	}
 	passwordMatch := cryptography.CryptoHahser.VerifyData(account.Password, *password)
 	if !passwordMatch {
-		currentTriesInt =  currentTriesInt + 1
-		cache.Cache.CreateEntry(fmt.Sprintf("%s-password-tries", *email), fmt.Sprintf("%d", currentTriesInt), time.Hour * 24 * 5)
-		msg := fmt.Sprintf("wrong password. your account will be deactivated after %d wrong attempts", constants.MAX_PASSWORD_TRIES - currentTriesInt)
+		currentTriesInt = currentTriesInt + 1
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-password-tries", *email), fmt.Sprintf("%d", currentTriesInt), time.Hour*24*5)
+		msg := fmt.Sprintf("wrong password. your account will be deactivated after %d wrong attempts", constants.MAX_PASSWORD_TRIES-currentTriesInt)
 		if currentTriesInt == 0 {
-			msg =  "you have exceeded maximum password tries and your account has been locked"
+			msg = "you have exceeded maximum password tries and your account has been locked"
 		}
 		apperrors.AuthenticationError(ctx, msg, device_id)
 		return nil, nil, nil
@@ -92,16 +92,16 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		})
 	}
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
-		Email:     &account.Email,
-		Phone:     account.Phone,
-		UserID:    account.ID,
-		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(10)).Unix(), //lasts for 10 mins
-		UserAgent: account.UserAgent,
-		FirstName: account.FirstName,
-		LastName: account.LastName,
-		DeviceID:   account.DeviceID,
-		AppVersion: account.AppVersion,
+		Email:                 &account.Email,
+		Phone:                 account.Phone,
+		UserID:                account.ID,
+		IssuedAt:              time.Now().Unix(),
+		ExpiresAt:             time.Now().Local().Add(time.Minute * time.Duration(10)).Unix(), //lasts for 10 mins
+		UserAgent:             account.UserAgent,
+		FirstName:             account.FirstName,
+		LastName:              account.LastName,
+		DeviceID:              account.DeviceID,
+		AppVersion:            account.AppVersion,
 		PushNotificationToken: account.PushNotificationToken,
 	})
 	if err != nil {
@@ -109,7 +109,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 		return nil, nil, nil
 	}
 	var updateAccountPayload = map[string]any{}
-	if account.UserAgent != userAgent{
+	if account.UserAgent != userAgent {
 		updateAccountPayload["userAgent"] = userAgent
 		account.UserAgent = userAgent
 	}
@@ -120,13 +120,13 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 	updateAccountPayload["deviceID"] = deviceID
 	updateAccountPayload["pushNotificationToken"] = pushNotificationToken
 	account.DeviceID = deviceID
-	userRepo.UpdatePartialByID(account.ID,updateAccountPayload)
+	userRepo.UpdatePartialByID(account.ID, updateAccountPayload)
 	hashedToken, err := cryptography.CryptoHahser.HashString(*token)
 	if err != nil {
 		apperrors.FatalServerError(ctx, err, device_id)
 		return nil, nil, nil
 	}
-	cache.Cache.CreateEntry(account.ID, hashedToken, time.Minute * time.Duration(10)) // cache authentication token for 10 mins
+	cache.Cache.CreateEntry(account.ID, hashedToken, time.Minute*time.Duration(10)) // cache authentication token for 10 mins
 	walletRepo := repository.WalletRepo()
 	wallet, err := walletRepo.FindByID(account.WalletID)
 	if err != nil {

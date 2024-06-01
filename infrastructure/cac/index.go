@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/network"
+	"usepolymer.co/infrastructure/logger"
+	"usepolymer.co/infrastructure/network"
 )
 
 type CACService struct {
@@ -20,7 +20,7 @@ func (cacs *CACService) FetchBusinessDetailsByName(name string) (*[]CACBusiness,
 	}, nil, false, nil)
 	if err != nil {
 		logger.Error(errors.New("an error occured while retrieving data from cac server"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return nil, errors.New("an error occured")
@@ -29,20 +29,20 @@ func (cacs *CACService) FetchBusinessDetailsByName(name string) (*[]CACBusiness,
 	err = json.Unmarshal(*response, &business)
 	if err != nil {
 		logger.Error(errors.New("an error occured while parsing data from cac server"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "response",
+			Key:  "response",
 			Data: *response,
 		})
 		return nil, errors.New("something went wrong while retireving bvn data from prembly")
 	}
 	if business.Data == nil {
 		logger.Error(errors.New("error with cac API"), logger.LoggerOptions{
-			Key: "message",
+			Key:  "message",
 			Data: business.Message,
 		}, logger.LoggerOptions{
-			Key: "errorCode",
+			Key:  "errorCode",
 			Data: business.Error,
 		})
 		return nil, nil

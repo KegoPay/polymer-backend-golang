@@ -1,8 +1,8 @@
 package pubsub
 
 import (
-	"kego.com/infrastructure/pubsub/rabbitmq"
-	"kego.com/infrastructure/pubsub/types"
+	"usepolymer.co/infrastructure/pubsub/rabbitmq"
+	"usepolymer.co/infrastructure/pubsub/types"
 )
 
 var PubSub types.MessagingQueueType = (&rabbitmq.RabbitMQ{})

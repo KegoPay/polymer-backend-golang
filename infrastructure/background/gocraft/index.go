@@ -6,7 +6,7 @@ import (
 
 	"github.com/gocraft/work"
 	"github.com/gomodule/redigo/redis"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/infrastructure/logger"
 )
 
 type GoCraftScheduler struct {

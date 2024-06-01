@@ -3,7 +3,7 @@ package entities
 import (
 	"time"
 
-	"kego.com/application/utils"
+	"usepolymer.co/application/utils"
 )
 
 type NotificationOptions struct {

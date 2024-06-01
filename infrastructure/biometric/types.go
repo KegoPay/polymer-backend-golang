@@ -1,6 +1,6 @@
 package biometric
 
-import faceapi "kego.com/infrastructure/biometric/faceAPI"
+import faceapi "usepolymer.co/infrastructure/biometric/faceAPI"
 
 type BiometricServiceType interface {
 	FaceMatchWithLiveness(referenceImg []byte, deviceID string) (*faceapi.FaceAPIFaceMatchWithLivenessResponse, error)

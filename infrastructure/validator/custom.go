@@ -6,8 +6,8 @@ import (
 	"unicode"
 
 	"github.com/go-playground/validator/v10"
-	"kego.com/entities"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/entities"
+	"usepolymer.co/infrastructure/logger"
 )
 
 func validatePasswordStrength(fl validator.FieldLevel) bool {
@@ -16,7 +16,7 @@ func validatePasswordStrength(fl validator.FieldLevel) bool {
 	for _, char := range password {
 		if unicode.IsDigit(char) {
 			digitCount++
-		}else {
+		} else {
 			return false
 		}
 	}
@@ -57,7 +57,7 @@ func alphaSpace(fl validator.FieldLevel) bool {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		logger.Error(errors.New("Error compiling regular expression:"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return false

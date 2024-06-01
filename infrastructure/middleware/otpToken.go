@@ -2,8 +2,8 @@ package middlewares
 
 import (
 	"github.com/gin-gonic/gin"
-	"kego.com/application/interfaces"
-	"kego.com/application/middlewares"
+	"usepolymer.co/application/interfaces"
+	"usepolymer.co/application/middlewares"
 )
 
 func OTPTokenMiddleware(intent string) gin.HandlerFunc {

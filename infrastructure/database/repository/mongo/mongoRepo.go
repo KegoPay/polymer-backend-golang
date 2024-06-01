@@ -12,8 +12,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"kego.com/infrastructure/database"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/infrastructure/database"
+	"usepolymer.co/infrastructure/logger"
 )
 
 func (repo *MongoRepository[T]) CreateOne(ctx context.Context, payload T, opts ...*options.InsertOneOptions) (*T, error) {
@@ -33,10 +33,10 @@ func (repo *MongoRepository[T]) CreateOne(ctx context.Context, payload T, opts .
 	_, err := repo.Model.InsertOne(ctx, parsedPayload, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running CreateOne"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "payload",
+			Key:  "payload",
 			Data: payload,
 		})
 		if errParts := strings.Split(err.Error(), "E11000 duplicate key error collection:"); len(errParts) == 2 {
@@ -61,10 +61,10 @@ func (repo *MongoRepository[T]) CreateBulk(payload []T, opts ...*options.InsertM
 	response, err := repo.Model.InsertMany(c, marshaled, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running CreateBulk"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "payload",
+			Key:  "payload",
 			Data: payload,
 		})
 		return nil, err
@@ -90,10 +90,10 @@ func (repo *MongoRepository[T]) CreateBulkAndReturnPayload(payload []T, opts ...
 	_, err := repo.Model.InsertMany(c, marshaled, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running CreateBulkAndReturnPayload"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "payload",
+			Key:  "payload",
 			Data: payload,
 		})
 		return nil, err
@@ -116,10 +116,10 @@ func (repo *MongoRepository[T]) FindOneByFilter(filter map[string]interface{}, o
 			return nil, nil
 		}
 		logger.Error(errors.New("mongo error occured while running FindOneByFilter"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return nil, err
@@ -145,10 +145,10 @@ func (repo *MongoRepository[T]) FindMany(filter map[string]interface{}, opts ...
 			return nil, errors.New("no documents found")
 		}
 		logger.Error(errors.New("mongo error occured while running FindMany"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return nil, err
@@ -176,10 +176,10 @@ func (repo *MongoRepository[T]) FindManyStripped(filter map[string]interface{}, 
 			return nil, errors.New("no documents found")
 		}
 		logger.Error(errors.New("mongo error occured while running FindManyStripped"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return nil, err
@@ -201,10 +201,10 @@ func (repo *MongoRepository[T]) FindByID(id string, opts ...*options.FindOneOpti
 			return nil, nil
 		}
 		logger.Error(errors.New("mongo error occured while running FindById"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "resourceID",
+			Key:  "resourceID",
 			Data: id,
 		})
 		return nil, err
@@ -222,10 +222,10 @@ func (repo *MongoRepository[T]) CountDocs(filter map[string]interface{}, opts ..
 	count, err := repo.Model.CountDocuments(c, filter, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running CountDocs"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return 0, err
@@ -245,7 +245,7 @@ func (repo *MongoRepository[T]) FindLast(opts ...*options.FindOptions) (*T, erro
 	err := repo.Model.FindOne(c, bson.M{}, options.FindOne().SetSort(bson.M{"$natural": -1})).Decode(&lastRecord)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running FindLast"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return nil, err
@@ -254,7 +254,7 @@ func (repo *MongoRepository[T]) FindLast(opts ...*options.FindOptions) (*T, erro
 	return &lastRecord, nil
 }
 
-func (repo *MongoRepository[T]) DeleteOne(ctx context.Context,  filter map[string]interface{}) (int64, error) {
+func (repo *MongoRepository[T]) DeleteOne(ctx context.Context, filter map[string]interface{}) (int64, error) {
 	var cancel context.CancelFunc
 	if ctx == nil {
 		c, ctxCancel := repo.createCtx()
@@ -271,10 +271,10 @@ func (repo *MongoRepository[T]) DeleteOne(ctx context.Context,  filter map[strin
 	result, err := repo.Model.DeleteOne(ctx, filter)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running DeleteOne"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return 0, err
@@ -293,10 +293,10 @@ func (repo *MongoRepository[T]) DeleteByID(id string) (int64, error) {
 	result, err := repo.Model.DeleteOne(c, bson.M{"_id": &id})
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running DeleteByID"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "resourceID",
+			Key:  "resourceID",
 			Data: id,
 		})
 		return 0, err
@@ -314,10 +314,10 @@ func (repo *MongoRepository[T]) DeleteMany(filter map[string]interface{}) (int64
 	count, err := repo.Model.DeleteMany(c, filter)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running DeleteMany"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return 0, err
@@ -336,10 +336,10 @@ func (repo *MongoRepository[T]) UpdateByField(filter map[string]interface{}, pay
 	_, err := repo.Model.UpdateOne(c, filter, payload, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdateByField"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return false, err
@@ -358,10 +358,10 @@ func (repo *MongoRepository[T]) UpdateWithOperator(filter map[string]interface{}
 	_, err := repo.Model.UpdateOne(c, filter, payload, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdateWithOperator"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return false, err
@@ -380,10 +380,10 @@ func (repo *MongoRepository[T]) UpdateManyWithOperator(filter map[string]interfa
 	affected, err := repo.Model.UpdateMany(c, filter, payload, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdateManyWithOperator"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return 0, err
@@ -401,10 +401,10 @@ func (repo *MongoRepository[T]) UpdateOrCreateByField(filter map[string]interfac
 	_, err := repo.Model.UpdateOne(c, filter, bson.D{primitive.E{Key: "$set", Value: payload}}, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdateOrCreateByField"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return false, err
@@ -423,10 +423,10 @@ func (repo *MongoRepository[T]) UpdateOrCreateByFieldAndReturn(filter map[string
 	result, err := repo.Model.UpdateOne(c, filter, bson.D{primitive.E{Key: "$set", Value: &payload}}, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdateOrCreateByFieldAndReturn"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return nil, err
@@ -449,10 +449,10 @@ func (repo *MongoRepository[T]) UpdateByID(id string, payload *T, opts ...*optio
 	_, err := repo.Model.UpdateByID(c, id, bson.D{primitive.E{Key: "$set", Value: *payload}}, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdateByID"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "resourceID",
+			Key:  "resourceID",
 			Data: id,
 		})
 		return false, err
@@ -468,13 +468,13 @@ func (repo *MongoRepository[T]) UpdatePartialByID(id string, payload interface{}
 		cancel()
 	}()
 
-	result , err := repo.Model.UpdateByID(c, id, bson.D{primitive.E{Key: "$set", Value: payload}}, opts...)
+	result, err := repo.Model.UpdateByID(c, id, bson.D{primitive.E{Key: "$set", Value: payload}}, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdatePartialByID"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "resourceID",
+			Key:  "resourceID",
 			Data: id,
 		})
 		return 0, err
@@ -493,10 +493,10 @@ func (repo *MongoRepository[T]) UpdatePartialByFilter(filter map[string]interfac
 	_, err := repo.Model.UpdateMany(c, filter, bson.D{primitive.E{Key: "$set", Value: payload}}, opts...)
 	if err != nil {
 		logger.Error(errors.New("mongo error occured while running UpdatePartialByFilter"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "filter",
+			Key:  "filter",
 			Data: filter,
 		})
 		return false, err
@@ -518,7 +518,7 @@ func (repo MongoRepository[T]) StartTransaction(payload func(sc mongo.Session, c
 	}
 	if err := payload(session, ctx); err != nil {
 		logger.Error(errors.New("mongo error occured while running StartTransaction"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		})
 		return err
@@ -532,5 +532,5 @@ func (repo *MongoRepository[T]) createCtx() (context.Context, context.CancelFunc
 }
 
 // func (repo *MongoRepository[T])  marshalBSON(payload T) ([]byte, error) {
-	
+
 // }

@@ -3,13 +3,13 @@ package biometric
 import (
 	"os"
 
-	faceapi "kego.com/infrastructure/biometric/faceAPI"
-	"kego.com/infrastructure/network"
+	faceapi "usepolymer.co/infrastructure/biometric/faceAPI"
+	"usepolymer.co/infrastructure/network"
 )
 
 var BiometricService BiometricServiceType
 
-func InitialiseBiometricService(){
+func InitialiseBiometricService() {
 	BiometricService = &faceapi.FaceAPIBiometricService{
 		Network: &network.NetworkController{
 			BaseUrl: os.Getenv("FACEAPI_BASE_URL"),

@@ -9,16 +9,16 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/infrastructure/logger"
 )
 
 var (
-	UserModel *mongo.Collection
-	TransactionModel *mongo.Collection
-	WalletModel *mongo.Collection
-	FrozenWalletLogModel *mongo.Collection
-	BusinessModel *mongo.Collection
-	EmailSubs *mongo.Collection
+	UserModel                *mongo.Collection
+	TransactionModel         *mongo.Collection
+	WalletModel              *mongo.Collection
+	FrozenWalletLogModel     *mongo.Collection
+	BusinessModel            *mongo.Collection
+	EmailSubs                *mongo.Collection
 	ErrorSupportRequestModel *mongo.Collection
 )
 
@@ -59,7 +59,7 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 	}, {
 		Keys:    bson.D{{Key: "bvn", Value: 1}},
 		Options: options.Index(),
-	},{
+	}, {
 		Keys:    bson.D{{Key: "tag", Value: 1}},
 		Options: options.Index(),
 	}})
@@ -74,7 +74,7 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 	BusinessModel.Indexes().CreateMany(ctx, []mongo.IndexModel{{
 		Keys:    bson.D{{Key: "walletID", Value: 1}},
 		Options: options.Index().SetUnique(true),
-	},{
+	}, {
 		Keys:    bson.D{{Key: "userID", Value: 1}},
 		Options: options.Index(),
 	}})
@@ -93,6 +93,6 @@ func setUpIndexes(ctx context.Context, db *mongo.Database) {
 	EmailSubs = db.Collection("EmailSubs")
 
 	ErrorSupportRequestModel = db.Collection("ErrorSupportRequest")
-	
+
 	logger.Info("mongodb indexes set up successfully")
 }

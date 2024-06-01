@@ -7,9 +7,8 @@ import (
 	"time"
 
 	"github.com/oklog/ulid/v2"
-	"kego.com/application/constants"
+	"usepolymer.co/application/constants"
 )
-
 
 func GenerateUUIDString() string {
 	return ulid.MustNew(ulid.Timestamp(time.Now()), ulid.DefaultEntropy()).String()
@@ -43,31 +42,31 @@ func GetInternationalTransactionFee(amount float32) (internationalProcessorFee f
 	transactionFee = amount * constants.INTERNATIONAL_TRANSACTION_FEE_RATE
 	transactionFeeVat = transactionFee * constants.INTERNATIONAL_TRANSACTION_FEE_VAT
 	internationalProcessorFee = amount * constants.INTERNATIONAL_PROCESSOR_FEE_RATE
-    return
+	return
 }
 
 func GetLocalTransactionFee(amount uint64) (localProcessorFee float32, localProcessorVAT float32, polymerFee float32, polymerVAT float32) {
-    if amount <= 500000 {
+	if amount <= 500000 {
 		polymerFee = constants.LOCAL_PROCESSOR_FEE_LT_5000 * constants.LOCAL_TRANSACTION_FEE_RATE
 		polymerVAT = polymerFee * constants.LOCAL_TRANSACTION_FEE_VAT
-        localProcessorFee = constants.LOCAL_PROCESSOR_FEE_LT_5000 
+		localProcessorFee = constants.LOCAL_PROCESSOR_FEE_LT_5000
 		localProcessorVAT = constants.LOCAL_PROCESSOR_FEE_LT_5000 * constants.LOCAL_TRANSACTION_FEE_VAT
-    } else if amount <= 5000000 {
+	} else if amount <= 5000000 {
 		polymerFee = constants.LOCAL_PROCESSOR_FEE_LT_50000 * constants.LOCAL_TRANSACTION_FEE_RATE
 		polymerVAT = polymerFee * constants.LOCAL_TRANSACTION_FEE_VAT
-        localProcessorFee = constants.LOCAL_PROCESSOR_FEE_LT_50000
+		localProcessorFee = constants.LOCAL_PROCESSOR_FEE_LT_50000
 		localProcessorVAT = constants.LOCAL_PROCESSOR_FEE_LT_50000 * constants.LOCAL_TRANSACTION_FEE_VAT
-    } else {
+	} else {
 		polymerFee = constants.LOCAL_PROCESSOR_FEE_GT_50000 * constants.LOCAL_TRANSACTION_FEE_RATE
 		polymerVAT = polymerFee * constants.LOCAL_TRANSACTION_FEE_VAT
-        localProcessorFee = constants.LOCAL_PROCESSOR_FEE_GT_50000
+		localProcessorFee = constants.LOCAL_PROCESSOR_FEE_GT_50000
 		localProcessorVAT = constants.LOCAL_PROCESSOR_FEE_GT_50000 * constants.LOCAL_TRANSACTION_FEE_VAT
-    }
-    return
+	}
+	return
 }
 
 func CountryCodeToCountryName(code string) string {
-	countryCodeMap := map[string]string {
+	countryCodeMap := map[string]string{
 		"NG": "Nigeria",
 		"IN": "India",
 		"US": "United States of America",
@@ -80,7 +79,7 @@ func CountryCodeToCountryName(code string) string {
 }
 
 func CountryCodeToCurrencyCode(code string) string {
-	countryCodeMap := map[string]string {
+	countryCodeMap := map[string]string{
 		"NG": "NGN",
 		"IN": "INR",
 		"US": "USD",
@@ -92,7 +91,7 @@ func CountryCodeToCurrencyCode(code string) string {
 }
 
 func CurrencyCodeToCountryCode(code string) string {
-	countryCodeMap := map[string]string {
+	countryCodeMap := map[string]string{
 		"NGN": "NG",
 		"INR": "IN",
 		"USD": "US",
@@ -104,33 +103,32 @@ func CurrencyCodeToCountryCode(code string) string {
 }
 
 func CurrencyCodeToCurrencySymbol(code string) string {
-    currencySymbolMap := map[string]string{
-        "NGN": "₦",
-        "INR": "₹",
-        "USD": "$",
-        "KES": "KSh",
-        "ZAR": "R",
-        "GBP": "£",
-        "GHS": "GH₵",
-    }
-    return currencySymbolMap[code]
+	currencySymbolMap := map[string]string{
+		"NGN": "₦",
+		"INR": "₹",
+		"USD": "$",
+		"KES": "KSh",
+		"ZAR": "R",
+		"GBP": "£",
+		"GHS": "GH₵",
+	}
+	return currencySymbolMap[code]
 }
-
 
 func Float32ToUint64Currency(value float32, round bool) uint64 {
 	var roundUp bool
-	s := fmt.Sprintf("%.6f", value) 
-    parts := strings.Split(s, ".")
-    if len(parts) < 2 { // No decimal part
-        roundUp = false
-    }
-    decimalPart := parts[1]
-    if len(decimalPart) > 3 || (len(decimalPart) == 3 && decimalPart != "000") {
-        roundUp = true
-    }
-    roundUp = false
+	s := fmt.Sprintf("%.6f", value)
+	parts := strings.Split(s, ".")
+	if len(parts) < 2 { // No decimal part
+		roundUp = false
+	}
+	decimalPart := parts[1]
+	if len(decimalPart) > 3 || (len(decimalPart) == 3 && decimalPart != "000") {
+		roundUp = true
+	}
+	roundUp = false
 	uintValue := uint64(value * 100)
-	if roundUp && round{
+	if roundUp && round {
 		uintValue++
 	}
 	return uintValue

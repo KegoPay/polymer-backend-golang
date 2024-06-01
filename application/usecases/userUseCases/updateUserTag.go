@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/controllers/dto"
-	"kego.com/application/repository"
-	"kego.com/infrastructure/validator"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/controllers/dto"
+	"usepolymer.co/application/repository"
+	"usepolymer.co/infrastructure/validator"
 )
 
 func UpdateUserTag(ctx any, id string, tag dto.SetPaymentTagDTO, device_id *string) error {

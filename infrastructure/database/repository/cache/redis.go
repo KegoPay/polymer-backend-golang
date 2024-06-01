@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/infrastructure/logger"
 
-	redisClient "kego.com/infrastructure/database/connection/cache"
+	redisClient "usepolymer.co/infrastructure/database/connection/cache"
 )
 
 var (
@@ -23,7 +23,7 @@ func generateContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 15*time.Second)
 }
 
-func (redisRepo *RedisRepository) preRequest(){
+func (redisRepo *RedisRepository) preRequest() {
 	if redisRepo.Clinet == nil {
 		redisRepo.Clinet = redisClient.Client
 		logger.Info("redis repository initialisation complete")
@@ -35,13 +35,13 @@ func (redisRepo *RedisRepository) CreateEntry(key string, payload interface{}, t
 	_, err := redisRepo.Clinet.Set(key, payload, ttl).Result()
 	if err != nil {
 		logger.Error(errors.New("redis error occured while running CreateEntry"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "key",
+			Key:  "key",
 			Data: key,
 		}, logger.LoggerOptions{
-			Key: "payload",
+			Key:  "payload",
 			Data: payload,
 		})
 		return false
@@ -61,10 +61,10 @@ func (redisRepo *RedisRepository) FindOne(key string) *string {
 			return nil
 		}
 		logger.Error(errors.New("redis error occured while running FindOne"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "key",
+			Key:  "key",
 			Data: key,
 		})
 		return nil
@@ -84,10 +84,10 @@ func (redisRepo *RedisRepository) FindOneByteArray(key string) *[]byte {
 			return nil
 		}
 		logger.Error(errors.New("redis error occured while running FindOneByteArray"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "key",
+			Key:  "key",
 			Data: key,
 		})
 		return nil
@@ -104,10 +104,10 @@ func (redisRepo *RedisRepository) DeleteOne(key string) bool {
 
 	if err != nil {
 		logger.Error(errors.New("redis error occured while running DeleteOne"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "key",
+			Key:  "key",
 			Data: key,
 		})
 		return false
@@ -128,16 +128,16 @@ func (redisRepo *RedisRepository) CreateInSet(key string, score float64, member 
 
 	if err := added.Err(); err != nil {
 		logger.Error(errors.New("redis error occured while running CreateInSet"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "key",
+			Key:  "key",
 			Data: key,
 		}, logger.LoggerOptions{
-			Key: "socre",
+			Key:  "socre",
 			Data: score,
 		}, logger.LoggerOptions{
-			Key: "member",
+			Key:  "member",
 			Data: member,
 		})
 		return false
@@ -153,10 +153,10 @@ func (redisRepo *RedisRepository) FindSet(key string) *[]string {
 	result := redisRepo.Clinet.ZRange(key, 0, -1)
 	if err := result.Err(); err != nil {
 		logger.Error(errors.New("redis error occured while running FindSet"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "key",
+			Key:  "key",
 			Data: key,
 		})
 		return nil

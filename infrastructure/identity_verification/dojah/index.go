@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	identity_verification_types "kego.com/infrastructure/identity_verification/types"
-	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/network"
+	identity_verification_types "usepolymer.co/infrastructure/identity_verification/types"
+	"usepolymer.co/infrastructure/logger"
+	"usepolymer.co/infrastructure/network"
 )
 
 type DojahIdentityVerification struct {

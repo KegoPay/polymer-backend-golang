@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/go-redis/redis"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/infrastructure/logger"
 )
 
 var (
@@ -14,11 +14,11 @@ var (
 
 func connectRedis() {
 	opt := &redis.Options{
-		Addr: os.Getenv("REDIS_ADDR"),
-		Password: os.Getenv("REDIS_PASSWORD"),
-		DB: 0,
+		Addr:      os.Getenv("REDIS_ADDR"),
+		Password:  os.Getenv("REDIS_PASSWORD"),
+		DB:        0,
 		TLSConfig: &tls.Config{},
-		PoolSize: 50,
+		PoolSize:  50,
 	}
 	Client = redis.NewClient(opt)
 	logger.Info("connected to redis successfully")

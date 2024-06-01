@@ -9,8 +9,8 @@ import (
 	"mime/multipart"
 	"net/http"
 
-	"kego.com/application/utils"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/application/utils"
+	"usepolymer.co/infrastructure/logger"
 )
 
 type NetworkController struct {
@@ -76,13 +76,13 @@ func (network *NetworkController) Post(path string, headers *map[string]string, 
 		err = writer.Close()
 		if err != nil {
 			logger.Error(errors.New("error closing writer after parsing formdata"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: err,
 			})
 			return nil, nil, err
 		}
 		contentType = writer.FormDataContentType()
-	}else {
+	} else {
 		parsedBody, err := json.Marshal(body)
 		if err != nil {
 			logger.Error(errors.New("error converting body to JSON"), logger.LoggerOptions{
@@ -158,39 +158,39 @@ func (network *NetworkController) parseFormData(body any, writer *multipart.Writ
 		field, err := writer.CreateFormField(i)
 		if err != nil {
 			logger.Error(errors.New("error parsing multipart payload"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: err,
 			})
 			return err
 		}
 		b, err := json.Marshal(item)
 		if err != nil {
-		logger.Error(errors.New("error marshalling item to byte for formdata"), logger.LoggerOptions{
-			Key: "error",
-			Data: err,
-		})
+			logger.Error(errors.New("error marshalling item to byte for formdata"), logger.LoggerOptions{
+				Key:  "error",
+				Data: err,
+			})
 		}
 		_, err = io.Copy(field, bytes.NewReader(b))
 		if err != nil {
 			logger.Error(errors.New("error copying file to file part for formdata"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: err,
 			})
 			return err
-			}
+		}
 	}
 	for i, file := range *files {
 		part, err := writer.CreateFormFile(i, utils.GenerateUUIDString())
 		if err != nil {
 			logger.Error(errors.New("error creating form file for formdata"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: err,
 			})
 			return err
 		}
 		if _, err := io.Copy(part, bytes.NewReader(file)); err != nil {
 			logger.Error(errors.New("error copying file to file part for formdata"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: err,
 			})
 			return err

@@ -5,12 +5,11 @@ import (
 	"regexp"
 	"strings"
 
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/interfaces"
-	"kego.com/infrastructure/ipresolver"
-	"kego.com/infrastructure/logger"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/interfaces"
+	"usepolymer.co/infrastructure/ipresolver"
+	"usepolymer.co/infrastructure/logger"
 )
-
 
 func UserAgentMiddleware(ctx *interfaces.ApplicationContext[any], minAppVersion string, clientIP string) (*interfaces.ApplicationContext[any], bool) {
 	agent := ctx.GetHeader("User-Agent")
@@ -20,12 +19,12 @@ func UserAgentMiddleware(ctx *interfaces.ApplicationContext[any], minAppVersion 
 	}
 	if !strings.Contains(*agent, "Android") && !strings.Contains(*agent, "iOS") && !strings.Contains(*agent, "Windows") && !strings.Contains(*agent, "Linux") {
 		apperrors.UnsupportedUserAgent(ctx.Ctx, ctx.GetHeader("Polymer-Device-Id"))
-		return nil ,false
+		return nil, false
 	}
 
 	if !strings.Contains(*agent, "Polymer/") {
 		apperrors.UnsupportedUserAgent(ctx.Ctx, ctx.GetHeader("Polymer-Device-Id"))
-		return nil ,false
+		return nil, false
 	}
 
 	versionRegex := regexp.MustCompile(`Polymer/([0-9]+\.[0-9]+\.[0-9]+)`)
@@ -37,7 +36,7 @@ func UserAgentMiddleware(ctx *interfaces.ApplicationContext[any], minAppVersion 
 	}
 
 	appVersion := matches[1]
-	reqSemVers  := strings.Split(appVersion, ".")
+	reqSemVers := strings.Split(appVersion, ".")
 	if len(reqSemVers) < 3 {
 
 	}
@@ -57,25 +56,25 @@ func UserAgentMiddleware(ctx *interfaces.ApplicationContext[any], minAppVersion 
 		apperrors.UnsupportedAppVersion(ctx.Ctx, ctx.GetHeader("Polymer-Device-Id"))
 		return nil, false
 	}
-	
-	ipLookupRes, err  := ipresolver.IPResolverInstance.LookUp(clientIP)
+
+	ipLookupRes, err := ipresolver.IPResolverInstance.LookUp(clientIP)
 	if err != nil {
 		logger.Error(errors.New("error looking up ip"), logger.LoggerOptions{
-			Key: "ip",
+			Key:  "ip",
 			Data: clientIP,
 		}, logger.LoggerOptions{
-			Key: "user agent",
+			Key:  "user agent",
 			Data: agent,
 		})
 	}
 	logger.Info("request-ip-lookup", logger.LoggerOptions{
-		Key: "ip-data",
+		Key:  "ip-data",
 		Data: ipLookupRes,
 	}, logger.LoggerOptions{
-		Key: "user-agent",
+		Key:  "user-agent",
 		Data: *agent,
 	})
-	
+
 	ctx.SetContextData("Latitude", ipLookupRes.Latitude)
 	ctx.SetContextData("Longitude", ipLookupRes.Longitude)
 

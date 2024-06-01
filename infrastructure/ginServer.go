@@ -9,19 +9,19 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	apperrors "kego.com/application/appErrors"
-	"kego.com/infrastructure/logger"
-	middlewares "kego.com/infrastructure/middleware"
-	ratelimiter "kego.com/infrastructure/rateLimiter"
-	routev1 "kego.com/infrastructure/routes/ginRouter/mobile/v1"
-	webroutev1 "kego.com/infrastructure/routes/ginRouter/web/v1"
-	server_response "kego.com/infrastructure/serverResponse"
-	startup "kego.com/infrastructure/startUp"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/infrastructure/logger"
+	middlewares "usepolymer.co/infrastructure/middleware"
+	ratelimiter "usepolymer.co/infrastructure/rateLimiter"
+	routev1 "usepolymer.co/infrastructure/routes/ginRouter/mobile/v1"
+	webroutev1 "usepolymer.co/infrastructure/routes/ginRouter/web/v1"
+	server_response "usepolymer.co/infrastructure/serverResponse"
+	startup "usepolymer.co/infrastructure/startUp"
 )
 
-type ginServer struct {}
+type ginServer struct{}
 
-func (s *ginServer)Start(){
+func (s *ginServer) Start() {
 	err := godotenv.Load()
 
 	startup.StartServices()
@@ -34,8 +34,8 @@ func (s *ginServer)Start(){
 	origins := []string{}
 	if os.Getenv("GIN_MODE") == "debug" {
 		origins = append(origins, "http://localhost:5173")
-	}else if os.Getenv("GIN_MODE") == "release" {
-		origins = append(origins, "https://usepolymer.co",  "https://www.usepolymer.co", "https://www.usepolymer.co/")
+	} else if os.Getenv("GIN_MODE") == "release" {
+		origins = append(origins, "https://usepolymer.co", "https://www.usepolymer.co", "https://www.usepolymer.co/")
 	}
 	corsConfig := cors.Config{
 		AllowOrigins:     origins,
@@ -47,33 +47,31 @@ func (s *ginServer)Start(){
 	}
 	server.Use(cors.New(corsConfig))
 	server.Use(ratelimiter.LeakyBucket())
-	server.MaxMultipartMemory =  15 << 20  // 8 MiB
+	server.MaxMultipartMemory = 15 << 20 // 8 MiB
 
 	// server.Use(logger.MetricMonitor.MetricMiddleware().(gin.HandlerFunc))
-	server.Use(logger.RequestMetricMonitor.RequestMetricMiddleware().(func (*gin.Context)))
+	server.Use(logger.RequestMetricMonitor.RequestMetricMiddleware().(func(*gin.Context)))
 
-	v1 := server.Group("/api",)
+	v1 := server.Group("/api")
 
-	
-		routerV1 := v1.Group("/v1")
-		routerV1.Use(middlewares.UserAgentMiddleware(true))
-		{
-			routev1.AuthRouter(routerV1)
-			routev1.InfoRouter(routerV1)
-			routev1.UserRouter(routerV1)
-			routev1.BusinessRouter(routerV1)
-			routev1.WalletRouter(routerV1)
-			routev1.TransactionRouter(routerV1)
-			routev1.SupportRouter(routerV1)
-		}
+	routerV1 := v1.Group("/v1")
+	routerV1.Use(middlewares.UserAgentMiddleware(true))
+	{
+		routev1.AuthRouter(routerV1)
+		routev1.InfoRouter(routerV1)
+		routev1.UserRouter(routerV1)
+		routev1.BusinessRouter(routerV1)
+		routev1.WalletRouter(routerV1)
+		routev1.TransactionRouter(routerV1)
+		routev1.SupportRouter(routerV1)
+	}
 
-		webRouterV1 := v1.Group("/v1/web")
-		{
-			// webroutev1.EmailSubsRouter(webRouterV1)
-			// webroutev1.WebhookRouter(webRouterV1)
-			webroutev1.BusinessRouter(webRouterV1)
-		}
-	
+	webRouterV1 := v1.Group("/v1/web")
+	{
+		// webroutev1.EmailSubsRouter(webRouterV1)
+		// webroutev1.WebhookRouter(webRouterV1)
+		webroutev1.BusinessRouter(webRouterV1)
+	}
 
 	server.GET("/ping", func(ctx *gin.Context) {
 		server_response.Responder.UnEncryptedRespond(ctx, http.StatusOK, "pong!", nil, nil, nil)
@@ -85,7 +83,7 @@ func (s *ginServer)Start(){
 
 	gin_mode := os.Getenv("GIN_MODE")
 	port := os.Getenv("PORT")
-	if gin_mode == "debug" || gin_mode == "release"{
+	if gin_mode == "debug" || gin_mode == "release" {
 		logger.Info(fmt.Sprintf("Server starting on PORT %s", port))
 		server.Run(fmt.Sprintf(":%s", port))
 	} else {

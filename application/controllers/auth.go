@@ -17,31 +17,31 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/constants"
-	"kego.com/application/controllers/dto"
-	countriessupported "kego.com/application/countriesSupported"
-	"kego.com/application/interfaces"
-	"kego.com/application/repository"
-	"kego.com/application/services"
-	"kego.com/application/services/types"
-	authusecases "kego.com/application/usecases/authUsecases"
-	"kego.com/application/usecases/wallet"
-	"kego.com/application/utils"
-	"kego.com/entities"
-	"kego.com/infrastructure/auth"
-	"kego.com/infrastructure/background"
-	"kego.com/infrastructure/biometric"
-	"kego.com/infrastructure/cryptography"
-	"kego.com/infrastructure/database/repository/cache"
-	fileupload "kego.com/infrastructure/file_upload"
-	identityverification "kego.com/infrastructure/identity_verification"
-	"kego.com/infrastructure/logger"
-	pushnotification "kego.com/infrastructure/messaging/push_notifications"
-	sms "kego.com/infrastructure/messaging/whatsapp"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/constants"
+	"usepolymer.co/application/controllers/dto"
+	countriessupported "usepolymer.co/application/countriesSupported"
+	"usepolymer.co/application/interfaces"
+	"usepolymer.co/application/repository"
+	"usepolymer.co/application/services"
+	"usepolymer.co/application/services/types"
+	authusecases "usepolymer.co/application/usecases/authUsecases"
+	"usepolymer.co/application/usecases/wallet"
+	"usepolymer.co/application/utils"
+	"usepolymer.co/entities"
+	"usepolymer.co/infrastructure/auth"
+	"usepolymer.co/infrastructure/background"
+	"usepolymer.co/infrastructure/biometric"
+	"usepolymer.co/infrastructure/cryptography"
+	"usepolymer.co/infrastructure/database/repository/cache"
+	fileupload "usepolymer.co/infrastructure/file_upload"
+	identityverification "usepolymer.co/infrastructure/identity_verification"
+	"usepolymer.co/infrastructure/logger"
+	pushnotification "usepolymer.co/infrastructure/messaging/push_notifications"
+	sms "usepolymer.co/infrastructure/messaging/whatsapp"
 
-	server_response "kego.com/infrastructure/serverResponse"
-	"kego.com/infrastructure/validator"
+	server_response "usepolymer.co/infrastructure/serverResponse"
+	"usepolymer.co/infrastructure/validator"
 )
 
 func KeyExchange(ctx *interfaces.ApplicationContext[dto.KeyExchangeDTO]) {
@@ -534,8 +534,8 @@ func VerifyCurrentPhone(ctx *interfaces.ApplicationContext[any]) {
 		if account.Phone.LocalNumber != "" {
 			account.Phone.IsVerified = true
 		}
-	}else {
-		apperrors.ClientError(ctx.Ctx, "phone number not set", nil, nil, ctx.GetHeader("Polymer-Device-Id"),)
+	} else {
+		apperrors.ClientError(ctx.Ctx, "phone number not set", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	success, err := userRepo.UpdatePartialByID(account.ID, map[string]any{
@@ -548,10 +548,10 @@ func VerifyCurrentPhone(ctx *interfaces.ApplicationContext[any]) {
 	if success != 1 {
 		err = errors.New("could not modify account phone details")
 		logger.Error(err, logger.LoggerOptions{
-			Key: "id",
+			Key:  "id",
 			Data: account.ID,
 		}, logger.LoggerOptions{
-			Key: "phone",
+			Key:  "phone",
 			Data: account.Phone,
 		})
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))

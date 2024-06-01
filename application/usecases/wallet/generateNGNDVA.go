@@ -5,25 +5,25 @@ import (
 	"fmt"
 	"os"
 
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/repository"
-	"kego.com/application/services"
-	"kego.com/application/utils"
-	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/payment_processor/types"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/repository"
+	"usepolymer.co/application/services"
+	"usepolymer.co/application/utils"
+	"usepolymer.co/infrastructure/logger"
+	"usepolymer.co/infrastructure/payment_processor/types"
 )
 
 func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string, email string, bvn string, device_id *string) (accountNumber *string, bankName *string, err error) {
 	dva := services.GenerateDVA(ctx, &types.CreateVirtualAccountPayload{
-		Permanent: os.Getenv("ENV") == "production",
-		Currency: "NGN",
-		FirstName: firstName,
-		LastName: lastName,
-		Email: email,
+		Permanent:            os.Getenv("ENV") == "production",
+		Currency:             "NGN",
+		FirstName:            firstName,
+		LastName:             lastName,
+		Email:                email,
 		TransactionReference: walletID,
-		Narration: fmt.Sprintf("%s %s", firstName, lastName),
-		BVN: bvn,
-		Amount: func () *uint64 {
+		Narration:            fmt.Sprintf("%s %s", firstName, lastName),
+		BVN:                  bvn,
+		Amount: func() *uint64 {
 			if os.Getenv("ENV") != "production" {
 				return utils.GetUInt64Pointer(10000000)
 			}
@@ -33,17 +33,17 @@ func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string,
 	walletRepo := repository.WalletRepo()
 	affected, err := walletRepo.UpdatePartialByID(walletID, map[string]any{
 		"accountNumber": dva.AccountNumber,
-		"bankName": dva.BankName,
+		"bankName":      dva.BankName,
 	})
 	if err != nil {
 		logger.Error(errors.New("failed to update user wallet with dva details"), logger.LoggerOptions{
-			Key: "err",
+			Key:  "err",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "walletID",
+			Key:  "walletID",
 			Data: walletID,
 		}, logger.LoggerOptions{
-			Key: "dva",
+			Key:  "dva",
 			Data: dva,
 		})
 		apperrors.FatalServerError(ctx, err, device_id)
@@ -51,13 +51,13 @@ func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string,
 	}
 	if affected == 0 {
 		logger.Error(errors.New("failed to update user wallet with dva details"), logger.LoggerOptions{
-			Key: "walletID",
+			Key:  "walletID",
 			Data: walletID,
 		}, logger.LoggerOptions{
-			Key: "dva",
+			Key:  "dva",
 			Data: dva,
 		}, logger.LoggerOptions{
-			Key: "affected",
+			Key:  "affected",
 			Data: affected,
 		})
 		apperrors.UnknownError(ctx, errors.New("attempt to updated a users wallet with DVA details failed"), device_id)

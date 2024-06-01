@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/resend/resend-go/v2"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/infrastructure/logger"
 )
 
 var rsdir, _ = os.Getwd()
@@ -17,45 +17,43 @@ var rsdir, _ = os.Getwd()
 type ResendService struct {
 }
 
-
 func (rs *ResendService) SendEmail(toEmail string, subject string, templateName string, opts interface{}) bool {
-    apiKey := os.Getenv("RESEND_API_KEY")
+	apiKey := os.Getenv("RESEND_API_KEY")
 
-    client := resend.NewClient(apiKey)
+	client := resend.NewClient(apiKey)
 
 	html := rs.loadTemplates(templateName, opts)
 
-    params := &resend.SendEmailRequest{
-        From:    os.Getenv("POLYMER_DEFAULT_EMAIL"),
-        To:      []string{toEmail},
-        Subject: subject,
-        Html:    *html,
-    }
+	params := &resend.SendEmailRequest{
+		From:    os.Getenv("POLYMER_DEFAULT_EMAIL"),
+		To:      []string{toEmail},
+		Subject: subject,
+		Html:    *html,
+	}
 
-    _, err := client.Emails.Send(params)
+	_, err := client.Emails.Send(params)
 	if err != nil {
 		logger.Error(errors.New("an error occured while trying to send email using resend service"), logger.LoggerOptions{
-			Key: "error",
+			Key:  "error",
 			Data: err,
 		}, logger.LoggerOptions{
-			Key: "toEmail",
+			Key:  "toEmail",
 			Data: toEmail,
 		}, logger.LoggerOptions{
-			Key: "templateName",
+			Key:  "templateName",
 			Data: templateName,
 		})
 		return false
 	}
 	logger.Info(fmt.Sprintf("successfully sent email to %s", toEmail), logger.LoggerOptions{
-		Key: "templateName",
+		Key:  "templateName",
 		Data: templateName,
 	}, logger.LoggerOptions{
-		Key: "service",
+		Key:  "service",
 		Data: "resend",
 	})
 	return true
 }
-
 
 func (rs *ResendService) loadTemplates(templateName string, opts interface{}) *string {
 	var buffer bytes.Buffer

@@ -2,9 +2,9 @@ package routev1
 
 import (
 	"github.com/gin-gonic/gin"
-	"kego.com/application/controllers"
-	"kego.com/application/interfaces"
-	middlewares "kego.com/infrastructure/middleware"
+	"usepolymer.co/application/controllers"
+	"usepolymer.co/application/interfaces"
+	middlewares "usepolymer.co/infrastructure/middleware"
 )
 
 func TransactionRouter(router *gin.RouterGroup) {

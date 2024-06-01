@@ -9,18 +9,18 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/repository"
-	walletUsecases "kego.com/application/usecases/wallet"
-	"kego.com/entities"
-	"kego.com/infrastructure/cryptography"
-	"kego.com/infrastructure/database/repository/cache"
-	identityverification "kego.com/infrastructure/identity_verification"
-	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/validator"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/repository"
+	walletUsecases "usepolymer.co/application/usecases/wallet"
+	"usepolymer.co/entities"
+	"usepolymer.co/infrastructure/cryptography"
+	"usepolymer.co/infrastructure/database/repository/cache"
+	identityverification "usepolymer.co/infrastructure/identity_verification"
+	"usepolymer.co/infrastructure/logger"
+	"usepolymer.co/infrastructure/validator"
 )
 
-func CreateAccount(ctx any, payload *entities.User, device_id *string) (*entities.User, *entities.Wallet, error){
+func CreateAccount(ctx any, payload *entities.User, device_id *string) (*entities.User, *entities.Wallet, error) {
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(*payload)
 	if valiedationErr != nil {
 		apperrors.ValidationFailedError(ctx, valiedationErr, device_id)
@@ -57,7 +57,7 @@ func CreateAccount(ctx any, payload *entities.User, device_id *string) (*entitie
 		}
 		if !valid {
 			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil, nil, device_id)
-			cache.Cache.CreateEntry(fmt.Sprintf("%s-email-blacklist", payload.Email), payload.Email, time.Minute * 0 )
+			cache.Cache.CreateEntry(fmt.Sprintf("%s-email-blacklist", payload.Email), payload.Email, time.Minute*0)
 			return nil, nil, err
 		}
 	}
@@ -68,27 +68,27 @@ func CreateAccount(ctx any, payload *entities.User, device_id *string) (*entitie
 	userRepo.StartTransaction(func(sc mongo.Session, c context.Context) error {
 		userPayload := payload.ParseModel().(*entities.User)
 		walletPayload := &entities.Wallet{
-			UserID: userPayload.ID,
-			Frozen: false,
-			Balance: 0,
-			LedgerBalance: 0,
-			Currency: "NGN",
+			UserID:         userPayload.ID,
+			Frozen:         false,
+			Balance:        0,
+			LedgerBalance:  0,
+			Currency:       "NGN",
 			LockedFundsLog: []entities.LockedFunds{},
 		}
 
 		walletPayload = walletPayload.ParseModel().(*entities.Wallet)
 		userPayload.WalletID = walletPayload.ID
 		userPayload.NotificationOptions = entities.NotificationOptions{
-			Emails: true,
+			Emails:           true,
 			PushNotification: true,
 		}
 		userData, e := userRepo.CreateOne(c, *userPayload)
 		if e != nil {
 			logger.Error(errors.New("error creating users account"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: e,
 			}, logger.LoggerOptions{
-				Key: "payload",
+				Key:  "payload",
 				Data: payload,
 			})
 			err = e
@@ -99,10 +99,10 @@ func CreateAccount(ctx any, payload *entities.User, device_id *string) (*entitie
 		wallet, e = walletUsecases.CreateWallet(ctx, c, walletPayload)
 		if e != nil {
 			logger.Error(errors.New("error creating users wallet"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: e,
 			}, logger.LoggerOptions{
-				Key: "payload",
+				Key:  "payload",
 				Data: walletPayload,
 			})
 			err = e
@@ -113,13 +113,13 @@ func CreateAccount(ctx any, payload *entities.User, device_id *string) (*entitie
 		return nil
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "already exists"){
+		if strings.Contains(err.Error(), "already exists") {
 			apperrors.EntityAlreadyExistsError(ctx, err.Error(), device_id)
 			return nil, nil, err
-		}else {
+		} else {
 			apperrors.ClientError(ctx, err.Error(), nil, nil, device_id)
 			return nil, nil, err
 		}
 	}
-	return user, wallet,  err
+	return user, wallet, err
 }

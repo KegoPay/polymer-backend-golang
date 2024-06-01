@@ -6,21 +6,21 @@ import (
 	"errors"
 
 	"github.com/gin-gonic/gin"
-	"kego.com/infrastructure/logger"
+	"usepolymer.co/infrastructure/logger"
 )
 
 type ginResponder struct{}
 
 // Sends an encrypted payload to the client
-func (gr ginResponder)Respond(ctx interface{}, code int, message string, payload interface{}, errs []error, response_code *uint, device_id *string) {
+func (gr ginResponder) Respond(ctx interface{}, code int, message string, payload interface{}, errs []error, response_code *uint, device_id *string) {
 	// ginCtx, ok := (ctx).(*gin.Context)
-    // if !ok {
+	// if !ok {
 	// 	logger.Error(errors.New("could not transform *interface{} to gin.Context in serverResponse package"), logger.LoggerOptions{
 	// 		Key: "payload",
 	// 		Data: ctx,
 	// 	})
-    //     return
-    // }
+	//     return
+	// }
 	// ginCtx.Abort()
 	// response := map[string]any{
 	// 	"message": message,
@@ -58,13 +58,13 @@ func (gr ginResponder)Respond(ctx interface{}, code int, message string, payload
 	// }
 	// ginCtx.JSON(code, *encryptedResponse)
 	// ginCtx, ok := (ctx).(*gin.Context)
-    // if !ok {
+	// if !ok {
 	// 	logger.Error(errors.New("could not transform *interface{} to gin.Context in serverResponse package"), logger.LoggerOptions{
 	// 		Key: "payload",
 	// 		Data: ctx,
 	// 	})
-    //     return
-    // }
+	//     return
+	// }
 	// ginCtx.Abort()
 	// response := map[string]any{
 	// 	"message": message,
@@ -104,22 +104,22 @@ func (gr ginResponder)Respond(ctx interface{}, code int, message string, payload
 // Sends a response to the client using plain JSON
 func (gr ginResponder) UnEncryptedRespond(ctx interface{}, code int, message string, payload interface{}, errs []error, response_code *uint) {
 	ginCtx, ok := (ctx).(*gin.Context)
-    if !ok {
+	if !ok {
 		logger.Error(errors.New("could not transform *interface{} to gin.Context in serverResponse package"), logger.LoggerOptions{
-			Key: "payload",
+			Key:  "payload",
 			Data: ctx,
 		})
-        return
-    }
+		return
+	}
 	ginCtx.Abort()
 	response := map[string]any{
 		"message": message,
 		"body":    payload,
 	}
-	if response_code != nil{
+	if response_code != nil {
 		response["response_code"] = response_code
 	}
-	if errs != nil{
+	if errs != nil {
 		errMsgs := []string{}
 		for _, err := range errs {
 			errMsgs = append(errMsgs, err.Error())

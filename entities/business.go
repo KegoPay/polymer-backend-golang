@@ -3,15 +3,15 @@ package entities
 import (
 	"time"
 
-	"kego.com/application/utils"
-	cac_service "kego.com/infrastructure/cac"
+	"usepolymer.co/application/utils"
+	cac_service "usepolymer.co/infrastructure/cac"
 )
 
 type ShareHolder struct {
 	Name   string `bson:"name" json:"name" validate:"required"`
 	ID     string `bson:"id" json:"id"`
 	IDType string `bson:"idType" json:"idType"`
-	Shares string  `bson:"shares" json:"shares"`
+	Shares string `bson:"shares" json:"shares"`
 }
 
 type Director struct {

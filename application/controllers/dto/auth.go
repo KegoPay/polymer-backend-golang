@@ -3,7 +3,7 @@ package dto
 import (
 	"crypto/ecdh"
 
-	"kego.com/infrastructure/file_upload/types"
+	"usepolymer.co/infrastructure/file_upload/types"
 )
 
 type CreateAccountDTO struct {

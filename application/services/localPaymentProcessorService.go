@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/utils"
-	"kego.com/infrastructure/logger"
-	paymentprocessor "kego.com/infrastructure/payment_processor"
-	"kego.com/infrastructure/payment_processor/types"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/utils"
+	"usepolymer.co/infrastructure/logger"
+	paymentprocessor "usepolymer.co/infrastructure/payment_processor"
+	"usepolymer.co/infrastructure/payment_processor/types"
 )
-
 
 func NameVerification(ctx any, accountNumber string, bankCode string, device_id *string) *string {
 	response, statusCode, err := paymentprocessor.LocalPaymentProcessor.NameVerification(accountNumber, bankCode)
@@ -23,7 +22,7 @@ func NameVerification(ctx any, accountNumber string, bankCode string, device_id 
 }
 
 func InitiateLocalPayment(ctx any, payload *types.InitiateLocalTransferPayload, device_id *string) *types.InitiateLocalTransferDataField {
-	response, statusCode, err :=  paymentprocessor.LocalPaymentProcessor.InitiateLocalTransfer(payload)
+	response, statusCode, err := paymentprocessor.LocalPaymentProcessor.InitiateLocalTransfer(payload)
 	if err != nil {
 		apperrors.ExternalDependencyError(ctx, os.Getenv("LOCAL_PAYMENT_PROCESSOR"), fmt.Sprintf("%d", statusCode), err, device_id)
 		return nil
@@ -34,7 +33,7 @@ func InitiateLocalPayment(ctx any, payload *types.InitiateLocalTransferPayload, 
 	}
 	if *statusCode >= 400 {
 		logger.Error(errors.New("flutterwave failed to initate local transfer"), logger.LoggerOptions{
-			Key: "response",
+			Key:  "response",
 			Data: response,
 		})
 		apperrors.UnknownError(ctx, fmt.Errorf("%s initiate local payment returned status code %d", os.Getenv("LOCAL_PAYMENT_PROCESSOR"), *statusCode), device_id)
@@ -47,7 +46,7 @@ func GenerateDVA(ctx any, payload *types.CreateVirtualAccountPayload, device_id 
 	if os.Getenv("GIN_MODE") != "release" {
 		payload.Amount = utils.GetUInt64Pointer(10000000)
 	}
-	response, statusCode, err :=  paymentprocessor.LocalPaymentProcessor.GenerateDVA(payload)
+	response, statusCode, err := paymentprocessor.LocalPaymentProcessor.GenerateDVA(payload)
 	if err != nil {
 		apperrors.ExternalDependencyError(ctx, "flutterwave", fmt.Sprintf("%d", *statusCode), err, device_id)
 		return nil

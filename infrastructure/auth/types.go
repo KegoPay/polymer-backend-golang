@@ -1,6 +1,6 @@
 package auth
 
-import "kego.com/entities"
+import "usepolymer.co/entities"
 
 type ClaimsData struct {
 	Issuer                string

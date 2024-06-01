@@ -3,14 +3,14 @@ package entities
 import (
 	"time"
 
-	"kego.com/application/utils"
+	"usepolymer.co/application/utils"
 )
 
 type ErrorSupportRequest struct {
-	UserID          string   	`bson:"userID" json:"userID" validate:"required"`
-	Message      	string   	`bson:"message" json:"message" validate:"required"`
-	Email	      	string   	`bson:"email" json:"email" validate:"required"`
-	Resolved      	bool   		`bson:"resolved" json:"resolved"`
+	UserID   string `bson:"userID" json:"userID" validate:"required"`
+	Message  string `bson:"message" json:"message" validate:"required"`
+	Email    string `bson:"email" json:"email" validate:"required"`
+	Resolved bool   `bson:"resolved" json:"resolved"`
 
 	ID        string    `bson:"_id" json:"id"`
 	CreatedAt time.Time `bson:"createdAt" json:"createdAt"`

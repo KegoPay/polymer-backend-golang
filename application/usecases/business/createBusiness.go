@@ -7,12 +7,12 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	apperrors "kego.com/application/appErrors"
-	"kego.com/application/repository"
-	walletUsecases "kego.com/application/usecases/wallet"
-	"kego.com/entities"
-	"kego.com/infrastructure/logger"
-	"kego.com/infrastructure/validator"
+	apperrors "usepolymer.co/application/appErrors"
+	"usepolymer.co/application/repository"
+	walletUsecases "usepolymer.co/application/usecases/wallet"
+	"usepolymer.co/entities"
+	"usepolymer.co/infrastructure/logger"
+	"usepolymer.co/infrastructure/validator"
 )
 
 func CreateBusiness(ctx any, payload *entities.Business, device_id *string) (*entities.Business, *entities.Wallet, error) {
@@ -28,13 +28,13 @@ func CreateBusiness(ctx any, payload *entities.Business, device_id *string) (*en
 	businessRepo.StartTransaction(func(sc mongo.Session, c context.Context) error {
 		payload = payload.ParseModel().(*entities.Business)
 		walletPayload := &entities.Wallet{
-			BusinessID: &payload.ID,
-			UserID: payload.UserID,
-			BusinessName: &payload.Name,
-			Frozen: false,
-			Balance: 0,
-			LedgerBalance: 0,
-			Currency: "NGN",
+			BusinessID:     &payload.ID,
+			UserID:         payload.UserID,
+			BusinessName:   &payload.Name,
+			Frozen:         false,
+			Balance:        0,
+			LedgerBalance:  0,
+			Currency:       "NGN",
 			LockedFundsLog: []entities.LockedFunds{},
 		}
 		walletPayload = walletPayload.ParseModel().(*entities.Wallet)
@@ -42,10 +42,10 @@ func CreateBusiness(ctx any, payload *entities.Business, device_id *string) (*en
 		b, e := businessRepo.CreateOne(c, *payload)
 		if e != nil {
 			logger.Error(errors.New("error creating users business"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: e,
 			}, logger.LoggerOptions{
-				Key: "payload",
+				Key:  "payload",
 				Data: payload,
 			})
 			err = e
@@ -56,10 +56,10 @@ func CreateBusiness(ctx any, payload *entities.Business, device_id *string) (*en
 		w, e := walletUsecases.CreateWallet(ctx, c, walletPayload)
 		if e != nil {
 			logger.Error(errors.New("error creating users business wallet"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: e,
 			}, logger.LoggerOptions{
-				Key: "payload",
+				Key:  "payload",
 				Data: walletPayload,
 			})
 			err = e
@@ -72,10 +72,10 @@ func CreateBusiness(ctx any, payload *entities.Business, device_id *string) (*en
 		})
 		if e != nil {
 			logger.Error(errors.New("error updated users hasBusiness field after business creation"), logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: e,
 			}, logger.LoggerOptions{
-				Key: "payload",
+				Key:  "payload",
 				Data: business,
 			})
 			err = e
@@ -85,10 +85,10 @@ func CreateBusiness(ctx any, payload *entities.Business, device_id *string) (*en
 		if affected == 0 {
 			e = errors.New("error updated users hasBusiness field after business creation")
 			logger.Error(e, logger.LoggerOptions{
-				Key: "error",
+				Key:  "error",
 				Data: e,
 			}, logger.LoggerOptions{
-				Key: "payload",
+				Key:  "payload",
 				Data: business,
 			})
 			err = e
@@ -100,10 +100,10 @@ func CreateBusiness(ctx any, payload *entities.Business, device_id *string) (*en
 		return nil
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "already exists"){
+		if strings.Contains(err.Error(), "already exists") {
 			apperrors.EntityAlreadyExistsError(ctx, err.Error(), device_id)
 			return nil, nil, err
-		}else {
+		} else {
 			apperrors.ClientError(ctx, err.Error(), nil, nil, device_id)
 			return nil, nil, err
 		}
@@ -114,15 +114,15 @@ func CreateBusiness(ctx any, payload *entities.Business, device_id *string) (*en
 	}))
 	if err != nil {
 		logger.Error(errors.New("error fetching user bvn to create business account dva"), logger.LoggerOptions{
-		Key: "error",
-		Data: err,
-	}, logger.LoggerOptions{
-		Key: "payload",
-		Data: payload,
-	})
-	return nil, nil, err
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "payload",
+			Data: payload,
+		})
+		return nil, nil, err
 	}
-	wallet.AccountNumber, wallet.BankName, err = walletUsecases.GenerateNGNDVA(ctx, business.WalletID,  business.Name, "Polymer Software", business.Email, user.BVN, device_id)
+	wallet.AccountNumber, wallet.BankName, err = walletUsecases.GenerateNGNDVA(ctx, business.WalletID, business.Name, "Polymer Software", business.Email, user.BVN, device_id)
 	if err != nil {
 		return business, wallet, nil
 	}

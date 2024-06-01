@@ -1,4 +1,4 @@
-module kego.com
+module usepolymer.co
 
 go 1.21.2
 
