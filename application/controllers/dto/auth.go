@@ -14,6 +14,7 @@ type CreateAccountDTO struct {
 	PushNotificationToken string `json:"pushNotificationToken"`
 	AppVersion            string `json:"appVersion"`
 	IPAddress             string
+	AuthOne               bool
 }
 
 type KeyExchangeDTO struct {
@@ -62,13 +63,9 @@ type SetBVNDTOO struct {
 }
 
 type VerifyAccountData struct {
-	ProfileImage string `json:"profileImage" validate:"required,url"`
+	ProfileImage string `json:"profileImage" validate:"required"`
 	Path         string `json:"path" validate:"required,oneof=nin bvn"`
-}
-
-type SetIDForBiometricVerificationDTO struct {
-	ID   string `json:"id"`
-	Path string `json:"path" validate:"required,oneof=nin bvn"`
+	ID           string `json:"id" validate:"required,min=11,max=11"`
 }
 
 type SetTransactionPinDTO struct {
@@ -95,6 +92,7 @@ type ConfirmPin struct {
 }
 
 type FileUploadOptions struct {
+	Type        string                    `json:"type" validate:"required,oneof=biometric"`
 	Permissions types.SignedURLPermission `json:"permissions" validate:"required"`
 }
 

@@ -71,6 +71,7 @@ func (s *ginServer) Start() {
 		// webroutev1.EmailSubsRouter(webRouterV1)
 		// webroutev1.WebhookRouter(webRouterV1)
 		webroutev1.BusinessRouter(webRouterV1)
+		webroutev1.AuthOneRouter(webRouterV1)
 	}
 
 	server.GET("/ping", func(ctx *gin.Context) {

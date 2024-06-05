@@ -20,14 +20,14 @@ import (
 	"usepolymer.co/infrastructure/validator"
 )
 
-func CreateAccount(ctx any, payload *entities.User, device_id *string) (*entities.User, *entities.Wallet, error) {
+func CreateAccount(ctx any, payload *entities.User, device_id *string, verifiedEmail bool) (*entities.User, *entities.Wallet, error) {
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(*payload)
 	if valiedationErr != nil {
 		apperrors.ValidationFailedError(ctx, valiedationErr, device_id)
 		return nil, nil, errors.New("")
 	}
 	userRepo := repository.UserRepo()
-	passwordHash, err := cryptography.CryptoHahser.HashString(payload.Password)
+	passwordHash, err := cryptography.CryptoHahser.HashString(payload.Password, nil)
 	if err != nil {
 		apperrors.ValidationFailedError(ctx, &[]error{err}, device_id)
 		return nil, nil, err
@@ -44,7 +44,7 @@ func CreateAccount(ctx any, payload *entities.User, device_id *string) (*entitie
 		apperrors.EntityAlreadyExistsError(ctx, err.Error(), device_id)
 		return nil, nil, err
 	}
-	if os.Getenv("GIN_MODE") == "release" {
+	if os.Getenv("ENV") == "prod" {
 		found := cache.Cache.FindOne(fmt.Sprintf("%s-email-blacklist", payload.Email))
 		if found != nil {
 			apperrors.ClientError(ctx, fmt.Sprintf("%s was not approved for signup on Polymer", payload.Email), nil, nil, device_id)
@@ -78,6 +78,7 @@ func CreateAccount(ctx any, payload *entities.User, device_id *string) (*entitie
 
 		walletPayload = walletPayload.ParseModel().(*entities.Wallet)
 		userPayload.WalletID = walletPayload.ID
+		userPayload.EmailVerified = verifiedEmail
 		userPayload.NotificationOptions = entities.NotificationOptions{
 			Emails:           true,
 			PushNotification: true,

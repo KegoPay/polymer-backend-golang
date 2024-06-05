@@ -23,8 +23,7 @@ func AuthenticationMiddleware(ctx *interfaces.ApplicationContext[any], restricte
 		apperrors.AuthenticationError(ctx.Ctx, "provide an auth token", ctx.GetHeader("Polymer-Device-Id"))
 		return nil, false
 	}
-	authTokenHeader := *authTokenHeaderPointer
-	auth_token := strings.Split(authTokenHeader, " ")[1]
+	auth_token := strings.Split(*authTokenHeaderPointer, " ")[1]
 	valid_access_token, err := auth.DecodeAuthToken(auth_token)
 	if err != nil {
 		apperrors.AuthenticationError(ctx.Ctx, "this session has expired", ctx.GetHeader("Polymer-Device-Id"))

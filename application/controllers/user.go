@@ -19,9 +19,11 @@ import (
 	userusecases "usepolymer.co/application/usecases/userUseCases"
 	"usepolymer.co/entities"
 	"usepolymer.co/infrastructure/auth"
+	"usepolymer.co/infrastructure/biometric"
 	"usepolymer.co/infrastructure/cryptography"
 	"usepolymer.co/infrastructure/database/repository/cache"
 	fileupload "usepolymer.co/infrastructure/file_upload"
+	file_upload_types "usepolymer.co/infrastructure/file_upload/types"
 	identityverification "usepolymer.co/infrastructure/identity_verification"
 	"usepolymer.co/infrastructure/logger"
 	sms "usepolymer.co/infrastructure/messaging/whatsapp"
@@ -164,7 +166,19 @@ func UpdateAddress(ctx *interfaces.ApplicationContext[dto.UpdateAddressDTO]) {
 		return
 	}
 	userRepo := repository.UserRepo()
-	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]any{
+	user, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
+		"phone":     1,
+		"nextOfKin": 1,
+		"bvn":       1,
+		"nin":       1,
+		"tier":      1,
+	}))
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+
+	var payload = map[string]any{
 		"address": entities.Address{
 			FullAddress: nil,
 			State:       &ctx.Body.State,
@@ -172,7 +186,21 @@ func UpdateAddress(ctx *interfaces.ApplicationContext[dto.UpdateAddressDTO]) {
 			LGA:         &ctx.Body.LGA,
 			Verified:    true,
 		},
-	})
+	}
+
+	if ctx.Body.AuthOne {
+		if user.Phone.IsVerified && user.NextOfKin != nil && user.BVN != "" && user.NIN != "" {
+			if user.Tier == 2 {
+				payload["tier"] = 3
+			}
+		} else if (user.Phone.IsVerified && user.NextOfKin != nil) && (user.BVN == "" || user.NIN == "") {
+			if user.Tier == 1 {
+				payload["tier"] = 2
+			}
+		}
+	}
+
+	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), payload)
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
@@ -209,28 +237,51 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 		"profileImage": 1,
 		"nextOfKin":    1,
 		"tier":         1,
+		"nin":          1,
+		"bvn":          1,
 	}))
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	_, err = identityverification.IdentityVerifier.FetchNINDetails(ctx.Body.NIN)
+	if account.NIN != "" {
+		apperrors.ClientError(ctx.Ctx, "You already have an NIN linked to your profile. If you do not remember doing so we probably got it from your BVN details 😉", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if account.BVN == "" {
+		apperrors.ClientError(ctx.Ctx, "This endpoint should be used only after a BVN has been used to verify the account", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	ninDetails, err := identityverification.IdentityVerifier.FetchNINDetails(ctx.Body.NIN)
 	if err != nil {
 		cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft-1, time.Hour*24*365)
 		apperrors.CustomError(ctx.Ctx, err.Error(), ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	// result, err := biometric.BiometricService.FaceMatch(account.ProfileImage, ninDetails.Base64Image)
-	// if err != nil {
-	// 	cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-	// 	apperrors.ClientError(ctx.Ctx, err.Error(), nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-	// 	return
-	// }
-	// if *result < 80 {
-	// 	cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", ctx.GetStringContextData("Email")), parsedAttemptsLeft - 1 , time.Hour * 24 * 365 ) // keep data cached for a year
-	// 	apperrors.ClientError(ctx.Ctx, "NIN Biometric verification failed. NIN not linked. If you think this is a mistake and want a manual review please click the button below", nil, &constants.NIN_VERIFICATION_FAILED, ctx.GetHeader("Polymer-Device-Id"))
-	// 	return
-	// }
+	url, err := fileupload.FileUploader.GeneratedSignedURL(account.ProfileImage, file_upload_types.SignedURLPermission{
+		Read: true,
+	})
+	if err != nil {
+		logger.Error(errors.New("signed url could not be generated for file download"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		})
+		return
+	}
+	if url == nil {
+		logger.Error(errors.New("signed url could not be generated for file download. nil url returned and no error"))
+		return
+	}
+	result, err := biometric.BiometricService.FaceMatch(&ninDetails.Base64Image, url)
+	if err != nil {
+		apperrors.ClientError(ctx.Ctx, "something went wrong while performing face verification", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if !result {
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft-1, time.Hour*24*365) // keep data cached for a yea
+		apperrors.ClientError(ctx.Ctx, "We compared your face with that on your ID and it did not match. Please ensure you are in a well lit environment and have no coverings on your face.", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
 	encryptedNIN, err := cryptography.SymmetricEncryption(ctx.Body.NIN, ctx.GetHeader("Polymer-Device-Id"))
 	if err != nil {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
@@ -244,13 +295,30 @@ func LinkNIN(ctx *interfaces.ApplicationContext[dto.LinkNINDTO]) {
 		apperrors.NotFoundError(ctx.Ctx, "this account no longer exists", ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	if account.NextOfKin != nil {
-		if account.Tier == 2 {
-			userUpdatedInfo["tier"] = 3
+	if !ctx.Body.AuthOne {
+		if account.NextOfKin != nil {
+			if account.Tier == 2 {
+				userUpdatedInfo["tier"] = 3
+			}
+		} else {
+			apperrors.ClientError(ctx.Ctx, "could not upgrade your account", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+			return
 		}
 	} else {
-		apperrors.ClientError(ctx.Ctx, "could not upgrade your account", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-		return
+		if account.NextOfKin != nil && account.Phone.IsVerified && account.Address.Verified {
+			if account.NextOfKin != nil {
+				if account.Tier == 2 {
+					userUpdatedInfo["tier"] = 3
+				}
+			} else {
+				apperrors.ClientError(ctx.Ctx, "could not upgrade your account", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+				return
+			}
+		} else {
+			if account.Tier == 2 {
+				userUpdatedInfo["tier"] = 3
+			}
+		}
 	}
 	success, err := userRepo.UpdatePartialByFilter(map[string]interface{}{
 		"_id": ctx.GetStringContextData("UserID"),
@@ -278,6 +346,13 @@ func UpdatePhone(ctx *interfaces.ApplicationContext[dto.UpdatePhoneDTO]) {
 		return
 	}
 	userRepo := repository.UserRepo()
+	account, err := userRepo.CountDocs(map[string]interface{}{
+		"phone.localNumber": ctx.Body.Phone,
+	})
+	if account != 0 {
+		apperrors.EntityAlreadyExistsError(ctx.Ctx, "this number is already linked to another account", ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
 	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]any{
 		"phone": entities.PhoneNumber{
 			WhatsApp:    ctx.Body.WhatsApp,
@@ -316,11 +391,107 @@ func UpdatePhone(ctx *interfaces.ApplicationContext[dto.UpdatePhoneDTO]) {
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone set", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func VerifyCurrentAddress(ctx *interfaces.ApplicationContext[any]) {
+func VerifyCurrentPhone(ctx *interfaces.ApplicationContext[dto.IsAuthOne]) {
 	userRepo := repository.UserRepo()
-	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), map[string]any{
+	account, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
+		"phone":     1,
+		"nextOfKin": 1,
+		"bvn":       1,
+		"nin":       1,
+		"address":   1,
+	}))
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if account == nil {
+		apperrors.NotFoundError(ctx.Ctx, "this account does not exist", ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if account.Phone.Modified {
+		apperrors.ClientError(ctx.Ctx, "current phone number cannot be verified because it has been modfied", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	account.Phone.IsVerified = true
+	if account.Phone != nil {
+		if account.Phone.LocalNumber != "" {
+			account.Phone.IsVerified = true
+		}
+	} else {
+		apperrors.ClientError(ctx.Ctx, "phone number not set", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+
+	payload := map[string]any{
+		"phone": account.Phone,
+	}
+
+	if ctx.Body.AuthOne {
+		if account.Address.Verified && account.NextOfKin != nil && account.BVN != "" && account.NIN != "" {
+			if account.Tier == 2 {
+				payload["tier"] = 3
+			}
+		} else if (account.Address.Verified && account.NextOfKin != nil) && (account.BVN == "" || account.NIN == "") {
+			if account.Tier == 1 {
+				payload["tier"] = 2
+			}
+		}
+	}
+
+	success, err := userRepo.UpdatePartialByID(account.ID, payload)
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if success != 1 {
+		err = errors.New("could not modify account phone details")
+		logger.Error(err, logger.LoggerOptions{
+			Key:  "id",
+			Data: account.ID,
+		}, logger.LoggerOptions{
+			Key:  "phone",
+			Data: account.Phone,
+		})
+		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+}
+
+func VerifyCurrentAddress(ctx *interfaces.ApplicationContext[dto.IsAuthOne]) {
+	userRepo := repository.UserRepo()
+	user, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
+		"phone":     1,
+		"nextOfKin": 1,
+		"bvn":       1,
+		"nin":       1,
+		"tier":      1,
+		"address":   1,
+	}))
+	if err != nil {
+		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	var payload = map[string]any{
 		"address.verified": true,
-	})
+	}
+	if user.Address.FullAddress == nil || *user.Address.FullAddress == "" {
+		apperrors.ClientError(ctx.Ctx, "current address is not set. manually set your address", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+
+	if ctx.Body.AuthOne {
+		if user.Phone.IsVerified && user.NextOfKin != nil && user.BVN != "" && user.NIN != "" {
+			if user.Tier == 2 {
+				payload["tier"] = 3
+			}
+		} else if (user.Phone.IsVerified && user.NextOfKin != nil) && (user.BVN == "" || user.NIN == "") {
+			if user.Tier == 1 {
+				payload["tier"] = 2
+			}
+		}
+	}
+	updated, err := userRepo.UpdatePartialByID(ctx.GetStringContextData("UserID"), payload)
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
@@ -343,6 +514,8 @@ func SetNextOfKin(ctx *interfaces.ApplicationContext[dto.SetNextOfKin]) {
 		"phone":     1,
 		"address":   1,
 		"nextOfKin": 1,
+		"bvn":       1,
+		"nin":       1,
 		"tier":      1,
 	}))
 	if err != nil {
@@ -356,14 +529,27 @@ func SetNextOfKin(ctx *interfaces.ApplicationContext[dto.SetNextOfKin]) {
 			Relationship: ctx.Body.Relationship,
 		},
 	}
-	if user.Phone.IsVerified && user.Address.Verified {
-		if user.Tier == 1 {
-			payload["tier"] = 2
+	if !ctx.Body.AuthOne {
+		if user.Phone.IsVerified && user.Address.Verified {
+			if user.Tier == 1 {
+				payload["tier"] = 2
+			}
+		} else {
+			apperrors.ClientError(ctx.Ctx, "could not upgrade your account", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+			return
 		}
 	} else {
-		apperrors.ClientError(ctx.Ctx, "could not upgrade your account", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-		return
+		if user.Phone.IsVerified && user.Address.Verified && user.BVN != "" && user.NIN != "" {
+			if user.Tier == 2 {
+				payload["tier"] = 3
+			}
+		} else if (user.Phone.IsVerified && user.Address.Verified) && (user.BVN == "" || user.NIN == "") {
+			if user.Tier == 1 {
+				payload["tier"] = 2
+			}
+		}
 	}
+
 	updated, err := userRepo.UpdatePartialByFilter(map[string]interface{}{
 		"_id": ctx.GetStringContextData("UserID"),
 	}, payload, nil)
@@ -388,7 +574,7 @@ func GenerateFileURL(ctx *interfaces.ApplicationContext[dto.FileUploadOptions]) 
 		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	fileName := fmt.Sprintf("%s/%s", ctx.GetStringContextData("UserID"), ctx.GetStringContextData("UserID"))
+	fileName := fmt.Sprintf("%s/%s", ctx.GetStringContextData("UserID"), ctx.Body.Type)
 	url, err := fileupload.FileUploader.GeneratedSignedURL(fileName, ctx.Body.Permissions)
 	if err != nil {
 		apperrors.CustomError(ctx.Ctx, err.Error(), ctx.GetHeader("Polymer-Device-Id"))

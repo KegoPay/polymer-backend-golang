@@ -17,3 +17,7 @@ type SearchCACByName struct {
 type SetCACInfo struct {
 	RCNumber string `json:"rcNumber" validate:"required,min=7,max=7"`
 }
+
+type IsAuthOne struct {
+	AuthOne bool `json:"authone"`
+}

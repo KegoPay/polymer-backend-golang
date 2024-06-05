@@ -33,9 +33,9 @@ type User struct {
 	Phone                 *PhoneNumber        `bson:"phone" json:"phone"`
 	Password              string              `bson:"password" json:"-" validate:"required,password"`
 	TransactionPin        string              `bson:"transactionPin" json:"-"`
-	UserAgent             string              `bson:"userAgent" json:"-" validate:"required"`
-	DeviceID              string              `bson:"deviceID" json:"-" validate:"required"`
-	PushNotificationToken string              `bson:"pushNotificationToken" json:"-" validate:"required"`
+	UserAgent             string              `bson:"userAgent" json:"-"`
+	DeviceID              string              `bson:"deviceID" json:"-"`
+	PushNotificationToken string              `bson:"pushNotificationToken" json:"-"`
 	AppVersion            string              `bson:"appVersion" json:"-"`
 	WalletID              string              `bson:"walletID" json:"walletID"`
 	KYCCompleted          bool                `bson:"kycCompleted" json:"kycCompleted"`
@@ -47,6 +47,9 @@ type User struct {
 	BVN                   string              `bson:"bvn" json:"-"`
 	NIN                   string              `bson:"nin" json:"-"`
 	Gender                string              `bson:"gender" json:"gender"`
+	LGAOfOrigin           string              `json:"lgaOfOrigin" bson:"lgaOfOrigin"`
+	StateOfOrigin         string              `json:"stateOfOrigin" bson:"stateOfOrigin" `
+	Title                 string              `json:"title" bson:"title"`
 	Address               *Address            `bson:"address" json:"address"`
 	DOB                   string              `bson:"dob" json:"dob"`
 	WatchListed           bool                `bson:"watchListed" json:"-"`

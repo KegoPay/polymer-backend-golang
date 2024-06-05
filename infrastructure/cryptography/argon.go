@@ -9,9 +9,9 @@ import (
 
 type argonHasher struct{}
 
-func (ah argonHasher) HashString(data string) ([]byte, error) {
+func (ah argonHasher) HashString(data string, salt []byte) ([]byte, error) {
 	config := argon2.DefaultConfig()
-	raw, err := config.Hash([]byte(data), nil)
+	raw, err := config.Hash([]byte(data), salt)
 	if err != nil {
 		logger.Error(errors.New("argon - error while hashing data"), logger.LoggerOptions{
 			Key:  "error",

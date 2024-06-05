@@ -1,15 +1,9 @@
 package controllers
 
 import (
-	"bytes"
-	"encoding/base64"
-	"encoding/gob"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -35,6 +29,7 @@ import (
 	"usepolymer.co/infrastructure/cryptography"
 	"usepolymer.co/infrastructure/database/repository/cache"
 	fileupload "usepolymer.co/infrastructure/file_upload"
+	file_upload_types "usepolymer.co/infrastructure/file_upload/types"
 	identityverification "usepolymer.co/infrastructure/identity_verification"
 	"usepolymer.co/infrastructure/logger"
 	pushnotification "usepolymer.co/infrastructure/messaging/push_notifications"
@@ -44,58 +39,58 @@ import (
 	"usepolymer.co/infrastructure/validator"
 )
 
-func KeyExchange(ctx *interfaces.ApplicationContext[dto.KeyExchangeDTO]) {
-	serverPublicKey, secretKey, err := authusecases.InitiateKeyExchange(ctx.Ctx, ctx.Body.DeviceID, ctx.Body.ClientPublicKey, ctx.GetHeader("Polymer-Device-Id"))
-	if err != nil {
-		return
-	}
-	payload := map[string]any{
-		"pubKey": hex.EncodeToString(serverPublicKey),
-	}
-	if os.Getenv("ENV") != "prod" {
-		payload["secret"] = secretKey
-	}
-	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusCreated, "key exchanged", payload, nil, nil)
-}
+// func KeyExchange(ctx *interfaces.ApplicationContext[dto.KeyExchangeDTO]) {
+// 	serverPublicKey, secretKey, err := authusecases.InitiateKeyExchange(ctx.Ctx, ctx.Body.DeviceID, ctx.Body.ClientPublicKey, ctx.GetHeader("Polymer-Device-Id"))
+// 	if err != nil {
+// 		return
+// 	}
+// 	payload := map[string]any{
+// 		"pubKey": hex.EncodeToString(serverPublicKey),
+// 	}
+// 	if os.Getenv("ENV") != "prod" {
+// 		payload["secret"] = secretKey
+// 	}
+// 	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusCreated, "key exchanged", payload, nil, nil)
+// }
 
-func EncryptForStaging(ctx *interfaces.ApplicationContext[dto.EncryptForStagingDTO]) {
-	if os.Getenv("ENV") == "prod" {
-		apperrors.ClientError(ctx.Ctx, "this endpoint cannot be used in a production environment", nil, utils.GetUIntPointer(401), nil)
-		return
-	}
-	payloadByte, err := json.Marshal(ctx.Body.Payload)
-	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err, nil)
-		return
-	}
-	encrypted, err := cryptography.SymmetricEncryption(hex.EncodeToString(payloadByte), &ctx.Body.EncKey)
-	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err, nil)
-		return
-	}
-	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusOK, "encrypted", encrypted, nil, nil)
-}
+// func EncryptForStaging(ctx *interfaces.ApplicationContext[dto.EncryptForStagingDTO]) {
+// 	if os.Getenv("ENV") == "prod" {
+// 		apperrors.ClientError(ctx.Ctx, "this endpoint cannot be used in a production environment", nil, utils.GetUIntPointer(401), nil)
+// 		return
+// 	}
+// 	payloadByte, err := json.Marshal(ctx.Body.Payload)
+// 	if err != nil {
+// 		apperrors.FatalServerError(ctx.Ctx, err, nil)
+// 		return
+// 	}
+// 	encrypted, err := cryptography.SymmetricEncryption(hex.EncodeToString(payloadByte), &ctx.Body.EncKey)
+// 	if err != nil {
+// 		apperrors.FatalServerError(ctx.Ctx, err, nil)
+// 		return
+// 	}
+// 	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusOK, "encrypted", encrypted, nil, nil)
+// }
 
-func DecryptForStaging(ctx *interfaces.ApplicationContext[dto.DecryptForStagingDTO]) {
-	if os.Getenv("ENV") == "prod" {
-		apperrors.ClientError(ctx.Ctx, "this endpoint cannot be used in a production environment", nil, utils.GetUIntPointer(401), nil)
-		return
-	}
-	decrypted, err := cryptography.DecryptData(ctx.Body.Payload, &ctx.Body.EncKey)
-	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err, nil)
-		return
-	}
-	byteBuffer := bytes.NewBuffer([]byte(decrypted))
-	dec := gob.NewDecoder(byteBuffer) // Will read from byteBuffer
-	var person map[string]string
-	err = dec.Decode(&person)
-	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusOK, "decrypted", person, nil, nil)
-}
+// func DecryptForStaging(ctx *interfaces.ApplicationContext[dto.DecryptForStagingDTO]) {
+// 	if os.Getenv("ENV") == "prod" {
+// 		apperrors.ClientError(ctx.Ctx, "this endpoint cannot be used in a production environment", nil, utils.GetUIntPointer(401), nil)
+// 		return
+// 	}
+// 	decrypted, err := cryptography.DecryptData(ctx.Body.Payload, &ctx.Body.EncKey)
+// 	if err != nil {
+// 		apperrors.FatalServerError(ctx.Ctx, err, nil)
+// 		return
+// 	}
+// 	byteBuffer := bytes.NewBuffer([]byte(decrypted))
+// 	dec := gob.NewDecoder(byteBuffer) // Will read from byteBuffer
+// 	var person map[string]string
+// 	err = dec.Decode(&person)
+// 	server_response.Responder.UnEncryptedRespond(ctx.Ctx, http.StatusOK, "decrypted", person, nil, nil)
+// }
 
 func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 	if ctx.Body.Phone == nil && ctx.Body.Email == nil {
-		apperrors.ClientError(ctx.Ctx, "pass in either a phone number or email", nil, &constants.NIN_VERIFICATION_FAILED, ctx.GetHeader("Polymer-Device-Id"))
+		apperrors.ClientError(ctx.Ctx, "pass in either a phone number or email", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	var channel = ""
@@ -105,7 +100,7 @@ func VerifyOTP(ctx *interfaces.ApplicationContext[dto.VerifyOTPDTO]) {
 		filter["email"] = channel
 		msg, success := auth.VerifyOTP(channel, ctx.Body.OTP)
 		if !success {
-			apperrors.ClientError(ctx.Ctx, msg, nil, &constants.NIN_VERIFICATION_FAILED, ctx.GetHeader("Polymer-Device-Id"))
+			apperrors.ClientError(ctx.Ctx, msg, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 			return
 		}
 	} else {
@@ -173,27 +168,30 @@ func CreateAccount(ctx *interfaces.ApplicationContext[dto.CreateAccountDTO]) {
 		Tier:                  0,
 		Longitude:             ctx.GetFloat64ContextData("Longitude"),
 		Latitude:              ctx.GetFloat64ContextData("Latitude"),
-	}, &ctx.Body.DeviceID)
+	}, &ctx.Body.DeviceID, ctx.Body.AuthOne)
 	if err != nil {
 		return
 	}
-	otp, err := auth.GenerateOTP(6, account.Email)
-	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
-		return
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), 3, time.Hour*24*100)
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", account.Email), 2, time.Hour*24*100)
+	cache.Cache.CreateEntry(fmt.Sprintf("%s-bvn-kyc-attempts-left", account.Email), 2, time.Hour*24*100)
+	if !ctx.Body.AuthOne {
+		otp, err := auth.GenerateOTP(6, account.Email)
+		if err != nil {
+			apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+			return
+		}
+		background.Scheduler.Emit("send_email", map[string]any{
+			"email":        account.Email,
+			"subject":      "Welcome to Polymer! Verify your account to continue",
+			"templateName": "otp",
+			"opts": map[string]interface{}{
+				"FIRSTNAME": account.FirstName,
+				"OTP":       otp,
+			},
+		})
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Email), "verify_account", time.Minute*10)
 	}
-	cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), 2, time.Hour*24*365)     // keep data cached for a year
-	cache.Cache.CreateEntry(fmt.Sprintf("%s-nin-kyc-attempts-left", account.Email), 2, time.Hour*24*365) // keep data cached for a year
-	background.Scheduler.Emit("send_email", map[string]any{
-		"email":        account.Email,
-		"subject":      "Welcome to Kego! Verify your account to continue",
-		"templateName": "otp",
-		"opts": map[string]interface{}{
-			"FIRSTNAME": account.FirstName,
-			"OTP":       otp,
-		},
-	})
-	cache.Cache.CreateEntry(fmt.Sprintf("%s-otp-intent", ctx.Body.Email), "verify_account", time.Minute*10)
 	server_response.Responder.Respond(ctx.Ctx, http.StatusCreated, "account created", nil, nil, nil, &ctx.Body.DeviceID)
 }
 
@@ -272,7 +270,7 @@ func ResetPassword(ctx *interfaces.ApplicationContext[dto.ResetPasswordDTO]) {
 		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	hashedPassword, err := cryptography.CryptoHahser.HashString(ctx.Body.NewPassword)
+	hashedPassword, err := cryptography.CryptoHahser.HashString(ctx.Body.NewPassword, nil)
 	if err != nil {
 		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
@@ -327,7 +325,7 @@ func UpdatePassword(ctx *interfaces.ApplicationContext[dto.UpdatePassword]) {
 		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	hashed_password, err := cryptography.CryptoHahser.HashString(ctx.Body.NewPassword)
+	hashed_password, err := cryptography.CryptoHahser.HashString(ctx.Body.NewPassword, nil)
 	if err != nil {
 		logger.Error(errors.New("error hashing users new password"), logger.LoggerOptions{
 			Key:  "error",
@@ -475,7 +473,7 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[any]) {
 		return
 	}
 	cache.Cache.CreateEntry(ctx.GetStringContextData("OTPToken"), true, time.Minute*5)
-	hashedToken, err := cryptography.CryptoHahser.HashString(*token)
+	hashedToken, err := cryptography.CryptoHahser.HashString(*token, nil)
 	if err != nil {
 		apperrors.FatalServerError(ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
@@ -486,7 +484,7 @@ func VerifyEmail(ctx *interfaces.ApplicationContext[any]) {
 	}, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func VerifyPhone(ctx *interfaces.ApplicationContext[any]) {
+func VerifyPhone(ctx *interfaces.ApplicationContext[dto.IsAuthOne]) {
 	userRepo := repository.UserRepo()
 	account, err := userRepo.FindOneByFilter(map[string]interface{}{
 		"phone.localNumber": ctx.GetStringContextData("OTPPhone"),
@@ -498,6 +496,18 @@ func VerifyPhone(ctx *interfaces.ApplicationContext[any]) {
 	if account == nil {
 		apperrors.NotFoundError(ctx.Ctx, "this number is not assigned to any account", ctx.GetHeader("Polymer-Device-Id"))
 		return
+	}
+
+	if ctx.Body.AuthOne {
+		if account.Phone.IsVerified && account.NextOfKin != nil && account.BVN != "" && account.NIN != "" {
+			if account.Tier == 2 {
+				account.Tier = 3
+			}
+		} else if (account.Phone.IsVerified && account.NextOfKin != nil) && (account.BVN == "" || account.NIN == "") {
+			if account.Tier == 1 {
+				account.Tier = 2
+			}
+		}
 	}
 	account.Phone.IsVerified = true
 	success, err := userRepo.UpdateByID(account.ID, account)
@@ -512,55 +522,7 @@ func VerifyPhone(ctx *interfaces.ApplicationContext[any]) {
 	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 }
 
-func VerifyCurrentPhone(ctx *interfaces.ApplicationContext[any]) {
-	userRepo := repository.UserRepo()
-	account, err := userRepo.FindByID(ctx.GetStringContextData("UserID"), options.FindOne().SetProjection(map[string]any{
-		"phone": 1,
-	}))
-	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
-		return
-	}
-	if account == nil {
-		apperrors.NotFoundError(ctx.Ctx, "this account does not exist", ctx.GetHeader("Polymer-Device-Id"))
-		return
-	}
-	if account.Phone.Modified {
-		apperrors.ClientError(ctx.Ctx, "current phone number cannot be verified because it has been modfied", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-		return
-	}
-	account.Phone.IsVerified = true
-	if account.Phone != nil {
-		if account.Phone.LocalNumber != "" {
-			account.Phone.IsVerified = true
-		}
-	} else {
-		apperrors.ClientError(ctx.Ctx, "phone number not set", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-		return
-	}
-	success, err := userRepo.UpdatePartialByID(account.ID, map[string]any{
-		"phone": account.Phone,
-	})
-	if err != nil {
-		apperrors.FatalServerError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
-		return
-	}
-	if success != 1 {
-		err = errors.New("could not modify account phone details")
-		logger.Error(err, logger.LoggerOptions{
-			Key:  "id",
-			Data: account.ID,
-		}, logger.LoggerOptions{
-			Key:  "phone",
-			Data: account.Phone,
-		})
-		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
-		return
-	}
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "phone verified", nil, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-}
-
-func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDForBiometricVerificationDTO]) {
+func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
 	valiedationErr := validator.ValidatorInstance.ValidateStruct(ctx.Body)
 	if valiedationErr != nil {
 		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
@@ -580,6 +542,7 @@ func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDF
 		apperrors.ClientError(ctx.Ctx, `You’ve reach the maximum number of tries allowed for this.`, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
+
 	userRepo := repository.UserRepo()
 	account, err := userRepo.FindOneByFilter(map[string]interface{}{
 		"email": ctx.GetStringContextData("Email"),
@@ -601,6 +564,33 @@ func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDF
 		apperrors.ClientError(ctx.Ctx, "you have completed your identity verification", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
+
+	url, err := fileupload.FileUploader.GeneratedSignedURL(ctx.Body.ProfileImage, file_upload_types.SignedURLPermission{
+		Read: true,
+	})
+	if err != nil {
+		logger.Error(errors.New("signed url could not be generated for file download"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		})
+		return
+	}
+	if url == nil {
+		logger.Error(errors.New("signed url could not be generated for file download. nil url returned and no error"))
+		return
+	}
+
+	success, err := biometric.BiometricService.LivenessCheck(url)
+	if err != nil {
+		apperrors.ClientError(ctx.Ctx, "something went wrong while performing face verification", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+	if !success {
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft-1, time.Hour*24*365) // keep data cached for a yea
+		apperrors.ClientError(ctx.Ctx, "Face verification failed. Please ensure you are in a well lit environment and have no coverings on your face.", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
+		return
+	}
+
 	kycDetails := struct {
 		Gender      string
 		WatchListed *string
@@ -613,11 +603,10 @@ func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDF
 		Base64Image string
 		Address     string
 	}{}
-
 	if ctx.Body.Path == "bvn" {
 		bvnDetails, err := identityverification.IdentityVerifier.FetchBVNDetails(ctx.Body.ID)
 		if err != nil {
-			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft-1, time.Hour*24*365) // keep data cached for a year
+			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft-1, time.Hour*24*365) // keep data cached for a yea
 			apperrors.CustomError(ctx.Ctx, err.Error(), ctx.GetHeader("Polymer-Device-Id"))
 			return
 		}
@@ -632,63 +621,47 @@ func SetIDForBiometricVerification(ctx *interfaces.ApplicationContext[dto.SetIDF
 		kycDetails.DateOfBirth = bvnDetails.DateOfBirth
 		kycDetails.Address = bvnDetails.Address
 	} else if ctx.Body.Path == "nin" {
-		apperrors.ClientError(ctx.Ctx, "this id verification is not available at this time", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-		return
+		ninDetails, err := identityverification.IdentityVerifier.FetchNINDetails(ctx.Body.ID)
+		if err != nil {
+			cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft-1, time.Hour*24*365) // keep data cached for a yea
+			apperrors.CustomError(ctx.Ctx, err.Error(), ctx.GetHeader("Polymer-Device-Id"))
+			return
+		}
+		kycDetails.Base64Image = ninDetails.Base64Image
+		kycDetails.FirstName = ninDetails.FirstName
+		kycDetails.MiddleName = ninDetails.MiddleName
+		kycDetails.LastName = ninDetails.LastName
+		kycDetails.Gender = ninDetails.Gender
+		kycDetails.PhoneNumber = ninDetails.PhoneNumber
+		kycDetails.DateOfBirth = ninDetails.DateOfBirth
+		kycDetails.Address = ninDetails.Address
 	} else {
 		apperrors.ClientError(ctx.Ctx, "unknown id type selected", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	data, err := base64.StdEncoding.DecodeString(kycDetails.Base64Image)
+	result, err := biometric.BiometricService.FaceMatch(url, &kycDetails.Base64Image)
 	if err != nil {
-		logger.Error(errors.New("error converting base64 file to []byte"), logger.LoggerOptions{
-			Key:  "error",
-			Data: err,
-		})
+		apperrors.ClientError(ctx.Ctx, "something went wrong while performing face verification", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	parsedKycInfo, _ := json.Marshal(kycDetails)
-	success := cache.Cache.CreateEntry(fmt.Sprintf("%s-%s-info", ctx.Body.Path, account.Email), parsedKycInfo, time.Minute*10)
-	if !success {
-		err := errors.New("could not save kyc details to cache")
-		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
+	if !result {
+		cache.Cache.CreateEntry(fmt.Sprintf("%s-kyc-attempts-left", account.Email), parsedAttemptsLeft-1, time.Hour*24*365) // keep data cached for a yea
+		apperrors.ClientError(ctx.Ctx, "We compared your face with that on your ID and it did not match. Please ensure you are in a well lit environment and have no coverings on your face.", nil, nil, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	encryptedID, err := cryptography.SymmetricEncryption(ctx.Body.ID, nil)
-	cache.Cache.CreateEntry(fmt.Sprintf("%s-%s-cache", ctx.Body.Path, account.Email), encryptedID, time.Minute*12)
-	response, err := biometric.BiometricService.FaceMatchWithLiveness(data, *ctx.GetHeader("Polymer-Device-Id"))
-	server_response.Responder.Respond(ctx.Ctx, http.StatusOK, "verification information saved", response, nil, nil, ctx.GetHeader("Polymer-Device-Id"))
-}
-
-func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
-	idDetails := cache.Cache.FindOneByteArray(fmt.Sprintf("%s-%s-info", ctx.Body.Path, ctx.GetStringContextData("Email")))
-	var kycDetails struct {
-		Gender      string
-		WatchListed *string
-		FirstName   string
-		MiddleName  *string
-		LastName    string
-		DateOfBirth string
-		PhoneNumber *string
-		Nationality string
-		Base64Image string
-		Address     string
-	}
-	json.Unmarshal(*idDetails, &kycDetails)
-	profileImageFilePath := fmt.Sprintf("%s/%s", ctx.GetStringContextData("UserID"), utils.GenerateUUIDString())
-	fileupload.FileUploader.UploadBase64File(profileImageFilePath, &kycDetails.Base64Image)
 	watchListed := false
 	if kycDetails.WatchListed != nil {
 		if *kycDetails.WatchListed == "True" {
 			watchListed = true
 		}
 	}
-	cachedID := cache.Cache.FindOne(fmt.Sprintf("%s-%s-cache", ctx.Body.Path, ctx.GetStringContextData("Email")))
-	id, err := cryptography.DecryptData(*cachedID, nil)
+	profileImageFilePath := fmt.Sprintf("%s/%s", ctx.GetStringContextData("UserID"), "profile-image")
+	fileupload.FileUploader.UploadBase64File(profileImageFilePath, &kycDetails.Base64Image)
+	encryptedID, err := cryptography.CryptoHahser.HashString(ctx.Body.ID, []byte{})
 	if err != nil {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	encryptedID, err := cryptography.SymmetricEncryption(id, nil)
 	userUpdatedInfo := map[string]any{
 		"gender":    kycDetails.Gender,
 		"dob":       kycDetails.DateOfBirth,
@@ -712,17 +685,17 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
 			}
 			return nil
 		}(),
-		"profileImage": profileImageFilePath,
+		"profileImage": ctx.Body.ProfileImage,
 		"kycCompleted": true,
 		"bvn": func() *string {
 			if ctx.Body.Path == "bvn" {
-				return &encryptedID
+				return utils.GetStringPointer(string(encryptedID))
 			}
 			return nil
 		}(),
 		"nin": func() *string {
 			if ctx.Body.Path == "nin" {
-				return &encryptedID
+				return utils.GetStringPointer(string(encryptedID))
 			}
 			return nil
 		}(),
@@ -732,31 +705,31 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
 		},
 		"tier": 1,
 	}
-	userRepo := repository.UserRepo()
 	userRepo.UpdatePartialByFilter(map[string]interface{}{
 		"email": ctx.GetStringContextData("Email"),
 	}, userUpdatedInfo)
-	account, err := userRepo.FindOneByFilter(map[string]interface{}{
-		"email": ctx.GetStringContextData("Email"),
-	}, options.FindOne().SetProjection(map[string]any{
-		"walletID": 1,
-	}))
 	if err != nil {
 		apperrors.UnknownError(ctx.Ctx, err, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
 	if ctx.Body.Path == "bvn" {
-		wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID, ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), ctx.GetStringContextData("Email"), id, ctx.GetHeader("Polymer-Device-Id"))
+		wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID, ctx.GetStringContextData("FirstName"), ctx.GetStringContextData("LastName"), ctx.GetStringContextData("Email"), ctx.Body.ID, ctx.GetHeader("Polymer-Device-Id"))
 	}
 	cache.Cache.DeleteOne(fmt.Sprintf("%s-kyc-attempts-left", ctx.GetStringContextData("Email")))
+	cache.Cache.DeleteOne(fmt.Sprintf("%s-%s-kyc-attempts-left", ctx.GetStringContextData("Email"), ctx.Body.Path))
 	now := time.Now()
 	token, err := auth.GenerateAuthToken(auth.ClaimsData{
 		Email: utils.GetStringPointer(ctx.GetStringContextData("Email")),
-		Phone: &entities.PhoneNumber{
-			Prefix:      "234",
-			ISOCode:     "NG",
-			LocalNumber: *kycDetails.PhoneNumber,
-		},
+		Phone: func() *entities.PhoneNumber {
+			if kycDetails.PhoneNumber != nil {
+				return &entities.PhoneNumber{
+					Prefix:      "234",
+					ISOCode:     "NG",
+					LocalNumber: *kycDetails.PhoneNumber,
+				}
+			}
+			return nil
+		}(),
 		UserID:                ctx.GetStringContextData("UserID"),
 		IssuedAt:              now.Unix(),
 		ExpiresAt:             now.Local().Add(time.Minute * time.Duration(15)).Unix(), //lasts for 10 mins
@@ -810,7 +783,7 @@ func SetTransactionPin(ctx *interfaces.ApplicationContext[dto.SetTransactionPinD
 		apperrors.ValidationFailedError(ctx.Ctx, valiedationErr, ctx.GetHeader("Polymer-Device-Id"))
 		return
 	}
-	hashedPin, err := cryptography.CryptoHahser.HashString(ctx.Body.TransactionPin)
+	hashedPin, err := cryptography.CryptoHahser.HashString(ctx.Body.TransactionPin, nil)
 	if err != nil {
 		logger.Error(errors.New("an error occured while hashing users transaction pin"), logger.LoggerOptions{
 			Key:  "userID",

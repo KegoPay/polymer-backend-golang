@@ -39,7 +39,7 @@ func GenerateOTP(length int, channel string) (*string, error) {
 }
 
 func saveOTP(channel string, otp string) bool {
-	hashedOTP, err := cryptography.CryptoHahser.HashString(otp)
+	hashedOTP, err := cryptography.CryptoHahser.HashString(otp, nil)
 	if err != nil {
 		logger.Error(errors.New("auth module error - error while saving otp"), logger.LoggerOptions{
 			Key:  "error",
@@ -95,6 +95,29 @@ func DecodeAuthToken(tokenString string) (*jwt.Token, error) {
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
 			logger.Warning("this will trigger a wallet lock")
+			err = errors.New("invalid token signature used")
+			return nil, err
+		}
+		logger.Error(errors.New("error decoding jwt"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		})
+		return nil, err
+	}
+	if !token.Valid {
+		err := errors.New("invalid token used")
+		logger.Error(err)
+		return nil, err
+	}
+	return token, nil
+}
+
+func DecodeInterserviceAuthToken(tokenString string, signingKey string) (*jwt.Token, error) {
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		return []byte(signingKey), nil
+	})
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
 			err = errors.New("invalid token signature used")
 			return nil, err
 		}

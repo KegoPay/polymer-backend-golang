@@ -7,6 +7,7 @@ import (
 	"usepolymer.co/application/controllers/dto"
 	"usepolymer.co/application/interfaces"
 	"usepolymer.co/application/utils"
+	"usepolymer.co/infrastructure/logger"
 	middlewares "usepolymer.co/infrastructure/middleware"
 )
 
@@ -80,7 +81,33 @@ func UserRouter(router *gin.RouterGroup) {
 
 		userRouter.PATCH("/address/verify", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
 			appContext, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
-			controllers.VerifyCurrentAddress(appContext)
+			var body dto.IsAuthOne
+			err := ctx.ShouldBindJSON(&body)
+			logger.Info("error parsing json body for PATCH /address/verify", logger.LoggerOptions{
+				Key:  "error",
+				Data: err,
+			})
+
+			controllers.VerifyCurrentAddress(&interfaces.ApplicationContext[dto.IsAuthOne]{
+				Ctx:  ctx,
+				Body: &body,
+				Keys: appContext.Keys,
+			})
+		})
+
+		userRouter.PATCH("/phone/current/verify", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
+			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
+			var body dto.IsAuthOne
+			err := ctx.ShouldBindJSON(&body)
+			logger.Info("error parsing json body for PATCH /phone/current/verify", logger.LoggerOptions{
+				Key:  "error",
+				Data: err,
+			})
+			controllers.VerifyCurrentPhone(&interfaces.ApplicationContext[dto.IsAuthOne]{
+				Ctx:  ctx,
+				Body: &body,
+				Keys: appContextAny.Keys,
+			})
 		})
 
 		userRouter.PATCH("/profile/payment-tag", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {

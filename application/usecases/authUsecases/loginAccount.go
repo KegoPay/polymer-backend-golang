@@ -121,7 +121,7 @@ func LoginAccount(ctx any, email *string, phone *string, password *string, appVe
 	updateAccountPayload["pushNotificationToken"] = pushNotificationToken
 	account.DeviceID = deviceID
 	userRepo.UpdatePartialByID(account.ID, updateAccountPayload)
-	hashedToken, err := cryptography.CryptoHahser.HashString(*token)
+	hashedToken, err := cryptography.CryptoHahser.HashString(*token, nil)
 	if err != nil {
 		apperrors.FatalServerError(ctx, err, device_id)
 		return nil, nil, nil

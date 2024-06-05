@@ -128,6 +128,32 @@ func (repo *MongoRepository[T]) FindOneByFilter(filter map[string]interface{}, o
 	return &result, nil
 }
 
+func (repo *MongoRepository[T]) FindOneByByFilterStripped(filter map[string]interface{}, opts ...*options.FindOneOptions) (*map[string]any, error) {
+	c, cancel := repo.createCtx()
+
+	defer func() {
+		cancel()
+	}()
+	var result map[string]any
+	doc := repo.Model.FindOne(c, filter, opts...)
+	err := doc.Decode(&result)
+	if err != nil {
+		if err.Error() == "mongo: no documents in result" {
+			return nil, nil
+		}
+		logger.Error(errors.New("mongo error occured while running FindOneByFilter"), logger.LoggerOptions{
+			Key:  "error",
+			Data: err,
+		}, logger.LoggerOptions{
+			Key:  "filter",
+			Data: filter,
+		})
+		return nil, err
+	}
+	logger.Info("FindOneByFilter complete")
+	return &result, nil
+}
+
 func (repo *MongoRepository[T]) FindMany(filter map[string]interface{}, opts ...*options.FindOptions) (*[]T, error) {
 	c, cancel := repo.createCtx()
 

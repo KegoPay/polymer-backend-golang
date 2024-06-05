@@ -1,59 +1,19 @@
 package routev1
 
 import (
-	"crypto/ecdh"
-
 	"github.com/gin-gonic/gin"
 	apperrors "usepolymer.co/application/appErrors"
 	"usepolymer.co/application/controllers"
 	"usepolymer.co/application/controllers/dto"
 	"usepolymer.co/application/interfaces"
 	"usepolymer.co/application/utils"
+	"usepolymer.co/infrastructure/logger"
 	middlewares "usepolymer.co/infrastructure/middleware"
 )
 
 func AuthRouter(router *gin.RouterGroup) {
 	authRouter := router.Group("/auth")
 	{
-		authRouter.POST("/key-exchange", func(ctx *gin.Context) {
-			clientPubKeyBytes, _ := ctx.GetRawData()
-			clientPubKey, _ := ecdh.P256().NewPublicKey(clientPubKeyBytes)
-			deviceID := ctx.GetHeader("Polymer-Device-Id")
-			controllers.KeyExchange(&interfaces.ApplicationContext[dto.KeyExchangeDTO]{
-				Ctx: ctx,
-				Body: &dto.KeyExchangeDTO{
-					ClientPublicKey: clientPubKey,
-					DeviceID:        deviceID,
-				},
-			})
-		})
-
-		authRouter.POST("/staging/encrypt", func(ctx *gin.Context) {
-			var body dto.EncryptForStagingDTO
-			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx, nil)
-				return
-			}
-			body.DeviceID = ctx.GetHeader("Polymer-Device-Id")
-			controllers.EncryptForStaging(&interfaces.ApplicationContext[dto.EncryptForStagingDTO]{
-				Ctx:  ctx,
-				Body: &body,
-			})
-		})
-
-		authRouter.POST("/staging/decrypt", func(ctx *gin.Context) {
-			var body dto.DecryptForStagingDTO
-			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx, nil)
-				return
-			}
-			body.DeviceID = ctx.GetHeader("Polymer-Device-Id")
-			controllers.DecryptForStaging(&interfaces.ApplicationContext[dto.DecryptForStagingDTO]{
-				Ctx:  ctx,
-				Body: &body,
-			})
-		})
-
 		authRouter.POST("/account/create", middlewares.AttestationMiddleware(), func(ctx *gin.Context) {
 			var body dto.CreateAccountDTO
 			if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -136,17 +96,16 @@ func AuthRouter(router *gin.RouterGroup) {
 
 		authRouter.PATCH("/phone/verify", middlewares.OTPTokenMiddleware("verify_phone"), func(ctx *gin.Context) {
 			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
-			controllers.VerifyPhone(&interfaces.ApplicationContext[any]{
-				Ctx:  ctx,
-				Keys: appContextAny.Keys,
+			var body dto.IsAuthOne
+			err := ctx.ShouldBindJSON(&body)
+			logger.Info("error parsing json body for PATCH /phone/verify", logger.LoggerOptions{
+				Key:  "error",
+				Data: err,
 			})
-		})
-
-		authRouter.PATCH("/phone/current/verify", middlewares.AuthenticationMiddleware(false, true), func(ctx *gin.Context) {
-			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
-			controllers.VerifyCurrentPhone(&interfaces.ApplicationContext[any]{
+			controllers.VerifyPhone(&interfaces.ApplicationContext[dto.IsAuthOne]{
 				Ctx:  ctx,
 				Keys: appContextAny.Keys,
+				Body: &body,
 			})
 		})
 
@@ -176,25 +135,9 @@ func AuthRouter(router *gin.RouterGroup) {
 				return
 			}
 			controllers.VerifyAccount(&interfaces.ApplicationContext[dto.VerifyAccountData]{
-				Ctx:    ctx,
-				Body:   &body,
-				Keys:   appContextAny.Keys,
-				Header: ctx.Request.Header,
-			})
-		})
-
-		authRouter.POST("/account/id/set", middlewares.AuthenticationMiddleware(false, false), func(ctx *gin.Context) {
-			appContextAny, _ := ctx.MustGet("AppContext").(*interfaces.ApplicationContext[any])
-			var body dto.SetIDForBiometricVerificationDTO
-			if err := ctx.ShouldBindJSON(&body); err != nil {
-				apperrors.ErrorProcessingPayload(ctx, utils.GetStringPointer(ctx.GetHeader("Polymer-Device-Id")))
-				return
-			}
-			controllers.SetIDForBiometricVerification(&interfaces.ApplicationContext[dto.SetIDForBiometricVerificationDTO]{
-				Ctx:    ctx,
-				Body:   &body,
-				Keys:   appContextAny.Keys,
-				Header: ctx.Request.Header,
+				Ctx:  ctx,
+				Body: &body,
+				Keys: appContextAny.Keys,
 			})
 		})
 
