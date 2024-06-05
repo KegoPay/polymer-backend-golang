@@ -592,16 +592,19 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
 	}
 
 	kycDetails := struct {
-		Gender      string
-		WatchListed *string
-		FirstName   string
-		MiddleName  *string
-		LastName    string
-		DateOfBirth string
-		PhoneNumber *string
-		Nationality string
-		Base64Image string
-		Address     string
+		Gender        string
+		WatchListed   *string
+		FirstName     string
+		MiddleName    *string
+		LastName      string
+		DateOfBirth   string
+		PhoneNumber   *string
+		Nationality   string
+		Base64Image   string
+		Address       string
+		StateOfOrigin string
+		LGAOfOrigin   string
+		Title         string
 	}{}
 	if ctx.Body.Path == "bvn" {
 		bvnDetails, err := identityverification.IdentityVerifier.FetchBVNDetails(ctx.Body.ID)
@@ -620,6 +623,9 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
 		kycDetails.Nationality = bvnDetails.Nationality
 		kycDetails.DateOfBirth = bvnDetails.DateOfBirth
 		kycDetails.Address = bvnDetails.Address
+		kycDetails.Title = bvnDetails.Title
+		kycDetails.LGAOfOrigin = bvnDetails.LGAOfOrigin
+		kycDetails.StateOfOrigin = bvnDetails.StateOfOrigin
 	} else if ctx.Body.Path == "nin" {
 		ninDetails, err := identityverification.IdentityVerifier.FetchNINDetails(ctx.Body.ID)
 		if err != nil {
