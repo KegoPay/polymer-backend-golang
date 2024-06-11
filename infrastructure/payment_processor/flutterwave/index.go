@@ -60,7 +60,7 @@ func (fpp *FlutterwavePaymentProcessor) InitiateLocalTransfer(payload *types.Ini
 	response, statusCode, err := fpp.Network.Post("/transfers", &map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", fpp.AuthToken),
 		"Content-Type":  "application/json",
-	}, any(payload).(map[string]any), nil, false, nil)
+	}, any(payload), nil, false, nil)
 	if err != nil {
 		logger.Error(errors.New("an error occured while initiating local transfer on flutterwave"), logger.LoggerOptions{
 			Key:  "error",
