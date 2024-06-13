@@ -723,9 +723,9 @@ func VerifyAccount(ctx *interfaces.ApplicationContext[dto.VerifyAccountData]) {
 		return
 	}
 	if ctx.Body.Path == "bvn" {
-		wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID, kycDetails.FirstName, kycDetails.LastName, ctx.GetStringContextData("Email"), ctx.Body.ID, *utils.GenerateDummyKYCID(), ctx.GetHeader("Polymer-Device-Id"))
+		wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID, kycDetails.FirstName, kycDetails.LastName, ctx.GetStringContextData("Email"), *utils.GenerateDummyKYCID(), *utils.GenerateDummyKYCID(), ctx.GetHeader("Polymer-Device-Id"))
 	} else {
-		wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID, kycDetails.FirstName, kycDetails.LastName, ctx.GetStringContextData("Email"), *utils.GenerateDummyKYCID(), ctx.Body.ID, ctx.GetHeader("Polymer-Device-Id"))
+		wallet.GenerateNGNDVA(ctx.Ctx, account.WalletID, kycDetails.FirstName, kycDetails.LastName, ctx.GetStringContextData("Email"), *utils.GenerateDummyKYCID(), *utils.GenerateDummyKYCID(), ctx.GetHeader("Polymer-Device-Id"))
 	}
 	cache.Cache.DeleteOne(fmt.Sprintf("%s-kyc-attempts-left", ctx.GetStringContextData("Email")))
 	cache.Cache.DeleteOne(fmt.Sprintf("%s-%s-kyc-attempts-left", ctx.GetStringContextData("Email"), ctx.Body.Path))
