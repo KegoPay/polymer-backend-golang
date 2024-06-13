@@ -8,27 +8,29 @@ import (
 	apperrors "usepolymer.co/application/appErrors"
 	"usepolymer.co/application/repository"
 	"usepolymer.co/application/services"
-	"usepolymer.co/application/utils"
 	"usepolymer.co/infrastructure/logger"
-	"usepolymer.co/infrastructure/payment_processor/types"
+	kora_local_payment_processor "usepolymer.co/infrastructure/payment_processor/kora"
 )
 
-func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string, email string, bvn string, device_id *string) (accountNumber *string, bankName *string, err error) {
-	dva := services.GenerateDVA(ctx, &types.CreateVirtualAccountPayload{
-		Permanent:            os.Getenv("ENV") == "production",
-		Currency:             "NGN",
-		FirstName:            firstName,
-		LastName:             lastName,
-		Email:                email,
-		TransactionReference: walletID,
-		Narration:            fmt.Sprintf("%s %s", firstName, lastName),
-		BVN:                  bvn,
-		Amount: func() *uint64 {
-			if os.Getenv("ENV") != "production" {
-				return utils.GetUInt64Pointer(10000000)
+func GenerateNGNDVA(ctx any, walletID string, firstName string, lastName string, email string, bvn string, nin string, device_id *string) (accountNumber *string, bankName *string, err error) {
+	dva := services.GenerateDVA(ctx, &kora_local_payment_processor.CreateVirtualAccountPayload{
+		Reference: walletID,
+		Name:      fmt.Sprintf("%s %s", firstName, lastName),
+		Permanent: true,
+		BankCode: func() string {
+			if os.Getenv("ENV") != "prod" {
+				return "000"
 			}
-			return utils.GetUInt64Pointer(0)
+			return "035"
 		}(),
+		Customer: kora_local_payment_processor.DVACustomer{
+			Name:  fmt.Sprintf("%s %s", firstName, lastName),
+			Email: email,
+		},
+		KYC: kora_local_payment_processor.DVAKYC{
+			BVN: bvn,
+			NIN: nin,
+		},
 	}, device_id)
 	walletRepo := repository.WalletRepo()
 	affected, err := walletRepo.UpdatePartialByID(walletID, map[string]any{

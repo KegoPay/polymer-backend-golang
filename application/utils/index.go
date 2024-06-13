@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"math/rand"
 	"regexp"
 	"strings"
 	"time"
@@ -9,6 +10,12 @@ import (
 	"github.com/oklog/ulid/v2"
 	"usepolymer.co/application/constants"
 )
+
+func GenerateDummyKYCID() *string {
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+	randomNumber := fmt.Sprintf("%d", 10000000000+rand.Int63n(90000000000))
+	return &randomNumber
+}
 
 func GenerateUUIDString() string {
 	return ulid.MustNew(ulid.Timestamp(time.Now()), ulid.DefaultEntropy()).String()

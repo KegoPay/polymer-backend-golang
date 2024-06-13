@@ -6,9 +6,9 @@ import (
 	"os"
 
 	apperrors "usepolymer.co/application/appErrors"
-	"usepolymer.co/application/utils"
 	"usepolymer.co/infrastructure/logger"
 	paymentprocessor "usepolymer.co/infrastructure/payment_processor"
+	kora_local_payment_processor "usepolymer.co/infrastructure/payment_processor/kora"
 	"usepolymer.co/infrastructure/payment_processor/types"
 )
 
@@ -22,6 +22,8 @@ func NameVerification(ctx any, accountNumber string, bankCode string, device_id 
 }
 
 func InitiateLocalPayment(ctx any, payload *types.InitiateLocalTransferPayload, device_id *string) *types.InitiateLocalTransferDataField {
+	payload.Destination.Type = "bank_account"
+	payload.Destination.Currency = "NGN"
 	response, statusCode, err := paymentprocessor.LocalPaymentProcessor.InitiateLocalTransfer(payload)
 	if err != nil {
 		apperrors.ExternalDependencyError(ctx, os.Getenv("LOCAL_PAYMENT_PROCESSOR"), fmt.Sprintf("%d", statusCode), err, device_id)
@@ -42,13 +44,10 @@ func InitiateLocalPayment(ctx any, payload *types.InitiateLocalTransferPayload, 
 	return response
 }
 
-func GenerateDVA(ctx any, payload *types.CreateVirtualAccountPayload, device_id *string) *types.VirtualAccountPayload {
-	if os.Getenv("GIN_MODE") != "release" {
-		payload.Amount = utils.GetUInt64Pointer(10000000)
-	}
+func GenerateDVA(ctx any, payload *kora_local_payment_processor.CreateVirtualAccountPayload, device_id *string) *types.VirtualAccountPayload {
 	response, statusCode, err := paymentprocessor.LocalPaymentProcessor.GenerateDVA(payload)
 	if err != nil {
-		apperrors.ExternalDependencyError(ctx, "flutterwave", fmt.Sprintf("%d", *statusCode), err, device_id)
+		apperrors.ExternalDependencyError(ctx, "kora", fmt.Sprintf("%d", *statusCode), err, device_id)
 		return nil
 	}
 	return response

@@ -574,17 +574,17 @@ func InitiateBusinessLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		reference = fmt.Sprintf("%s_PMCKDU_1", reference)
 	}
 	response := services.InitiateLocalPayment(ctx.Ctx, &types.InitiateLocalTransferPayload{
-		AccountNumber: ctx.Body.AccountNumber,
-		AccountBank:   ctx.Body.BankCode,
-		Currency:      "NGN",
-		Amount:        utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-		Narration:     narration,
-		Reference:     reference,
-		DebitCurrency: "NGN",
-		CallbackURL:   os.Getenv("LOCAL_TRANSFER_WEBHOOK_URL"),
-		Meta: types.InitiateLocalTransferMeta{
-			WalletID: wallet.ID,
-			UserID:   wallet.UserID,
+		Reference: reference,
+		Destination: types.LocalTransferDestination{
+			Amount:    utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+			Narration: narration,
+			BankAccount: types.LocalTransferDestinationBankAccount{
+				Bank:    ctx.Body.BankCode,
+				Account: ctx.Body.AccountNumber,
+			},
+			Customer: types.LocalTransferDestinationCustomer{
+				Name: *ctx.Body.FullName,
+			},
 		},
 	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {
@@ -775,17 +775,17 @@ func InitiatePersonalLocalPayment(ctx *interfaces.ApplicationContext[dto.SendPay
 		reference = fmt.Sprintf("%s_PMCKDU_1", reference)
 	}
 	response := services.InitiateLocalPayment(ctx.Ctx, &types.InitiateLocalTransferPayload{
-		AccountNumber: ctx.Body.AccountNumber,
-		AccountBank:   ctx.Body.BankCode,
-		Currency:      "NGN",
-		Amount:        utils.UInt64ToFloat32Currency(ctx.Body.Amount),
-		Narration:     narration,
-		Reference:     reference,
-		DebitCurrency: "NGN",
-		CallbackURL:   os.Getenv("LOCAL_TRANSFER_WEBHOOK_URL"),
-		Meta: types.InitiateLocalTransferMeta{
-			WalletID: wallet.ID,
-			UserID:   wallet.UserID,
+		Reference: reference,
+		Destination: types.LocalTransferDestination{
+			Amount:    utils.UInt64ToFloat32Currency(ctx.Body.Amount),
+			Narration: narration,
+			BankAccount: types.LocalTransferDestinationBankAccount{
+				Bank:    ctx.Body.BankCode,
+				Account: ctx.Body.AccountNumber,
+			},
+			Customer: types.LocalTransferDestinationCustomer{
+				Name: *ctx.Body.FullName,
+			},
 		},
 	}, ctx.GetHeader("Polymer-Device-Id"))
 	if response == nil {

@@ -10,6 +10,7 @@ import (
 	apperrors "usepolymer.co/application/appErrors"
 	"usepolymer.co/application/repository"
 	walletUsecases "usepolymer.co/application/usecases/wallet"
+	"usepolymer.co/application/utils"
 	"usepolymer.co/entities"
 	"usepolymer.co/infrastructure/logger"
 	"usepolymer.co/infrastructure/validator"
@@ -111,6 +112,7 @@ func CreateBusiness(ctx any, payload *entities.Business, device_id *string) (*en
 	userRepo := repository.UserRepo()
 	user, err := userRepo.FindByID(payload.UserID, options.FindOne().SetProjection(map[string]any{
 		"bvn": 1,
+		"nin": 1,
 	}))
 	if err != nil {
 		logger.Error(errors.New("error fetching user bvn to create business account dva"), logger.LoggerOptions{
@@ -122,7 +124,11 @@ func CreateBusiness(ctx any, payload *entities.Business, device_id *string) (*en
 		})
 		return nil, nil, err
 	}
-	wallet.AccountNumber, wallet.BankName, err = walletUsecases.GenerateNGNDVA(ctx, business.WalletID, business.Name, "Polymer Software", business.Email, user.BVN, device_id)
+	if user.NIN != "" {
+		wallet.AccountNumber, wallet.BankName, err = walletUsecases.GenerateNGNDVA(ctx, business.WalletID, business.Name, "Polymer Software", business.Email, *utils.GenerateDummyKYCID(), user.NIN, device_id)
+	} else {
+		wallet.AccountNumber, wallet.BankName, err = walletUsecases.GenerateNGNDVA(ctx, business.WalletID, business.Name, "Polymer Software", business.Email, user.BVN, *utils.GenerateDummyKYCID(), device_id)
+	}
 	if err != nil {
 		return business, wallet, nil
 	}
